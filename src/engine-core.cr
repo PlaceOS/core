@@ -1,6 +1,8 @@
 require "engine-driver"
-require "rethinkdb-orm"
+require "engine-models"
 
-class EngineCore
-
+module Engine
 end
+
+require "./engine-core/*"
+require "./engine-core/**"
