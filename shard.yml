@@ -1,12 +1,22 @@
 name: engine-core
-version: 1.0.0
+version: 0.1.0
 
 dependencies:
+  action-controller:
+    github: spider-gazelle/action-controller
+    version: "~> 1.6.0"
+
   engine-driver:
     github: aca-labs/crystal-engine-driver
-  engine-models:
-    github: aca-labs/crystal-engine-models
+
+  engine-rest-api: # This should be split into a seperate models library.
+    github: aca-labs/crystal-engine-rest-api
 
 development_dependencies:
   ameba:
     github: veelenga/ameba
+
+# compile target
+targets:
+  engine-core:
+    main: src/engine-core.cr

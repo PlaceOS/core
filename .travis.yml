@@ -1,9 +1,24 @@
 sudo: required
 language: crystal
-services: redis-server
+
 addons:
+  # Add RethinkDB
   rethinkdb: '2.3'
+
+services:
+  - redis-server
+
+env:
+  # Set spider-gazelle environment
+  - SG_ENV=production
+
 install:
   - shards install
+
 script:
-  - crystal spec
+  # Specs
+  - crystal spec --no-debug
+  # Linter
+  - bin/ameba
+  # Formatter
+  - crystal tool format --check
