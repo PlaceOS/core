@@ -50,4 +50,4 @@ ActionController::Session.configure do |settings|
 end
 
 APP_NAME = "engine-core"
-VERSION  = "0.1.0"
+VERSION  = `shards version`
