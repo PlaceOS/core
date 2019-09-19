@@ -61,3 +61,21 @@ end
 
 # Shutdown message
 puts "#{APP_NAME} leaps through the veldt\n"
+
+# Engine Core: (startup)
+# 1. Load all the repositories from the database (push into a queue)
+#    * Start listening for changes (push any repository changes to the queue)
+#    * Consume the repository queue
+#      + Make sure the repository is cloned and up to date (ruby-engine-drivers libraries)
+# 2. Once repositories are ready (compile drivers)
+#    * Stream through all the drivers - checking they have been compiled (push any that haven't to a queue)
+#    * Start listening for changes (pushing any that require compiling to a queue)
+#    * Consume the driver queue  (ruby-engine-drivers libraries)
+#      + Compiling the drivers as required (some updates might be JSON settings etc and this will be ignored if the driver isn't running)
+# 3. Once the driver queue is empty (register with etcd)
+#    * Register the instance with ETCD
+#    * Once registered, run through all the modules, consistent hashing to determine what modules need to be loaded
+# 4. Load the modules  (ruby-engine-driver test runner has sample code on how this is done)
+#    * Start the driver processes as required.
+#    * Lunch the modules on those processes etc
+# 5. Once all the modules are running. Mark in etcd that load is complete.

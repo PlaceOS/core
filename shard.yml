@@ -11,6 +11,12 @@ dependencies:
   engine-rest-api: # This should be split into a seperate models library.
     github: aca-labs/crystal-engine-rest-api
 
+  etcd:
+    github: aca-labs/crystal-etcd
+
+  hound-dog:
+    github: aca-labs/hound-dog
+
 development_dependencies:
   ameba:
     github: veelenga/ameba
