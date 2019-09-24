@@ -1,34 +1,29 @@
-FROM alpine:3.10 as builder
+FROM crystallang/crystal:0.30.1
 
-ARG SHARDS_VERSION="0.8.1"
+WORKDIR /app
 
-RUN apk add --no-cache curl yaml-dev git build-base libressl-dev zlib-dev libxml2-dev upx
-
-# Add crystal from edge
-RUN apk add --no-cache crystal=0.30.1-r0 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
-
-# Compile shards
-RUN curl -L https://github.com/crystal-lang/shards/archive/v${SHARDS_VERSION}.tar.gz | tar -xz
-RUN CRFLAGS=--release make -C ./shards-${SHARDS_VERSION}
+# Add
+# - curl (necessary for scrypt install)
+# - ping (not in base xenial image the crystal image is based off)
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y curl=7.47.0-1ubuntu2.13 iputils-ping=3:20121221-5ubuntu2 && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install shards for caching
 COPY shard.yml shard.yml
-RUN ./shards-${SHARDS_VERSION}/bin/shards install --production
+RUN shards install --production
+
+# Manually remake libscrypt, PostInstall fails inexplicably
+RUN make -C lib/scrypt/ clean
+RUN make -C lib/scrypt/
 
 # Add src
-COPY . ./
+COPY ./src /app/src
 
 # Build application
-RUN crystal build src/engine-core.cr --release --no-debug --static
-
-# Compress static executable
-RUN upx --best engine-core
-
-# Build a minimal docker image
-FROM alpine:3.10
-COPY --from=builder engine-core engine-core
+RUN crystal build /app/src/app.cr -o engine-core --release --no-debug
 
 # Run the app binding on port 3000
 EXPOSE 3000
 HEALTHCHECK CMD wget --spider localhost:3000/
-CMD ["/engine-core", "-b", "0.0.0.0", "-p", "3000"]
+CMD ["/app/engine-core", "-b", "0.0.0.0", "-p", "3000"]
