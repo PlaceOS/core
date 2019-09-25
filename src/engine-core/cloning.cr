@@ -1,5 +1,5 @@
-require "crystal-engine-api/repository"
-require "crystal-engine-drivers/helper"
+require "engine-rest-api/models/repository"
+require "engine-drivers/helper"
 
 require "./resource"
 
