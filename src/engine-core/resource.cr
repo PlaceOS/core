@@ -25,7 +25,7 @@ abstract class Engine::Core::Resource(T)
   end
 
   # Load all resources from the database, push into a queue
-  abstract def load_resources
+  def load_resources
     T.all.each do |resource|
       resource_channel.send(resource)
     end
@@ -34,7 +34,7 @@ abstract class Engine::Core::Resource(T)
   abstract def process_resource(resource : T)
 
   # Listen to changes on the resource table
-  abstract def watch_resources
+  def watch_resources
     T.changes do |change|
       resource = change[:value]
 
