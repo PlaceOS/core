@@ -7,7 +7,14 @@ class HTTP::Request
   property id : String?
 end
 
+# For some reason I could not convince Crystal this was not a module without
+# putting it here
+abstract class EngineDriver; end
+
+class EngineDriver::Protocol; end
+
 # Application code
+require "engine-driver/protocol/management"
 require "./controllers/application"
 require "./controllers/*"
 

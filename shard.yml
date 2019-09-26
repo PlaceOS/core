@@ -20,6 +20,9 @@ dependencies:
   hound-dog:
     github: aca-labs/hound-dog
 
+  hardware:
+    github: crystal-community/hardware
+
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba

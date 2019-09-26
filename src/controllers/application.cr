@@ -1,7 +1,7 @@
 require "uuid"
 
 module Engine::Core
-  abstract class Controller < ActionController::Base
+  abstract class Application < ActionController::Base
     before_action :set_request_id
 
     # This makes it simple to match client requests with server side logs.
