@@ -1,10 +1,7 @@
 require "hound-dog"
 
 module Engine
-  class Core::Manager
-    @cloning : Cloning
-    @compilation : Compilation
-
+  class Core::ModuleManager
     # 1-4. Repos cloned, drivers compiled
     #    * Register the instance with ETCD
     #    * Once registered, run through all the modules, consistent hashing to determine what modules need to be loaded
@@ -13,8 +10,15 @@ module Engine
     #    * Launch the modules on those processes etc
     # 5. Once all the modules are running. Mark in etcd that load is complete.
     def initialize
-      @cloning = Cloning.new
-      @compilation = Compilation.new
     end
+
+    def load_modules
+    end
+
+    # def manager_by_module_id : EngineDriver::Protocol::Manangement
+    # end
+
+    # def manager_by_driver_path : EngineDriver::Protocol::Manangement
+    # end
   end
 end

@@ -1,57 +1,68 @@
 require "logger"
+require "rethinkdb-orm"
+
+require "engine-drivers/helper"
 
 abstract class Engine::Core::Resource(T)
+  include EngineDrivers::Helper
   private getter logger : Logger
-  private getter resource_channel = Channel(T).new
+  private getter resource_channel : Channel(T)
 
-  def initialize(@logger = Logger.new(STDOUT))
+  abstract def process_resource(resource : T) : Bool
+
+  def initialize(@logger = Logger.new(STDOUT), buffer_size : Int32 = 128)
+    @resource_channel = Channel(T).new(buffer_size)
+
     # Listen for changes on the resource table
     spawn watch_resources
 
     # Load all the resources into a channel
-    load_resource
+    initial_resource_count = load_resources
 
-    # Consume and process resources until channel drained
-    while (resource = consume_resource)
-      process_resource(resource)
-    end
+    # TODO: Defer using a form of Promise.all
+    initial_resource_count.times { process_resource(consume_resource) }
 
     # Begin background processing
     spawn watch_processing
   end
 
-  def consume_resource : T?
-    resource_channel.receive?
+  def stop
+    # TODO
   end
 
-  # Load all resources from the database, push into a queue
+  def consume_resource : T
+    resource_channel.receive
+  end
+
+  # Load all resources from the database, push into a channel
   def load_resources
+    count = 0
     T.all.each do |resource|
       resource_channel.send(resource)
+      count += 1
     end
-  end
 
-  abstract def process_resource(resource : T)
+    count
+  end
 
   # Listen to changes on the resource table
   def watch_resources
-    T.changes do |change|
+    T.changes.each do |change|
       resource = change[:value]
 
       case change[:event]
-      when RethinkORM::Changefeed::Deleted
+      when RethinkORM::Changefeed::Event::Deleted
         # TODO: Remove the resource
-      when RethinkORM::Changefeed::Updated
-        resource_channel.send(resource)
-      when RethinkORM::Changefeed::Created
-        resource_channel.send(resource)
+      when RethinkORM::Changefeed::Event::Updated
+        resource_channel.send(resource.as(T))
+      when RethinkORM::Changefeed::Event::Created
+        resource_channel.send(resource.as(T))
       end
     end
   end
 
   def watch_processing
     # Block on the resource channel
-    resource = resource_channel.receive?
-    process_resource(resource)
+    process_resource(consume_resource)
   end
 end

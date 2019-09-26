@@ -1,12 +1,14 @@
 require "engine-rest-api/models/driver"
-require "engine-drivers/helper"
 
 require "./resource"
 
 module Engine
   class Core::Compilation < Core::Resource(Model::Driver)
-    def process_resource(resource : Model::Driver)
-      # TODO: Use engine-drivers/helper methods to compile
+    def process_resource(driver) : Bool
+      # Check if driver's commit is a part of existing repository
+      # Pull if not already present
+      # If still not present, log an error
+      false
     end
   end
 end

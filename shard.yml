@@ -13,6 +13,7 @@ dependencies:
 
   engine-rest-api: # This should be split into a seperate models library.
     github: aca-labs/crystal-engine-rest-api
+    branch: master
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -23,11 +24,17 @@ dependencies:
   hardware:
     github: crystal-community/hardware
 
+  rethinkdb-orm:
+    github: spider-gazelle/rethinkdb-orm
+    branch: master
+
 development_dependencies:
+  faker:
+    github: askn/faker
   ameba:
     github: crystal-ameba/ameba
 
 # compile target
 targets:
   engine-core:
-    main: src/engine-core.cr
+    main: src/app.cr
