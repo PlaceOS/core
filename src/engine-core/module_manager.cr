@@ -43,7 +43,7 @@ module Engine
     )
 
     # Mapping from module_id to protocol manager
-    @@mod_proc_managers = {} of String => EngineDriver::Protocol::Management
+    @@module_proc_managers = {} of String => EngineDriver::Protocol::Management
     # Mapping from driver path to protocol manager
     @@driver_proc_managers = {} of String => EngineDriver::Protocol::Management
 
@@ -60,6 +60,24 @@ module Engine
       @@instance
     end
 
+    def watch_modules
+      Model::Module.changes.each do |change|
+        mod = change[:value]
+        mod_id = mod.id.as(String)
+        if change[:event] == RethinkORM::Changefeed::Event::Type::Deleted
+          remove_module(mod) if manager_by_module_id(mod_id)
+        else
+          if mod.running_changed?
+            # Running state of the module changed
+            mod.running ? start_module(mod_id) : stop_module(mod_id)
+          else
+            # Load/Reload the module
+            load_module(mod)
+          end
+        end
+      end
+    end
+
     # The number of drivers loaded on current node
     def running_drivers
       @@driver_proc_managers.size
@@ -67,11 +85,11 @@ module Engine
 
     # The number of module processes on current node
     def running_modules
-      @@mod_proc_managers.size
+      @@module_proc_managers.size
     end
 
     def manager_by_module_id(mod_id : String) : EngineDriver::Protocol::Management?
-      @@mod_proc_managers[mod_id]?
+      @@module_proc_managers[mod_id]?
     end
 
     def manager_by_driver_path(path : String) : EngineDriver::Protocol::Management?
@@ -81,6 +99,10 @@ module Engine
     def start
       # Self-register
       spawn discovery.register { balance_modules }
+
+      # Listen for incoming module changes
+      spawn watch_modules
+
       balance_modules
     end
 
@@ -108,16 +130,28 @@ module Engine
 
       mod_id = mod.id.as(String)
       proc_manager = manager_by_module_id[mod_id]
+
       logger.info("starting module protocol manager: module_id=#{mod_id} driver_path=#{proc_manager.driver_path}")
       proc_manager.start(mod_id, payload)
     end
 
+    def stop_module(mod : Model::Module)
+      mod_id = mod.id.as(String)
+      manager_by_module_id(mod_id).not_nil!.stop(mod_id)
+    end
+
+    # Stop and remove the module from node
+    def remove_module(mod : Model::Module)
+      manager_by_module_id(mod_id).stop(mod_id)
+      @@module_proc_managers.delete(mod_id)
+    end
+
     def balance_modules
-      Model::Module.all.each &->balance_module(Model::Module)
+      Model::Module.all.each &->load_module(Model::Module)
     end
 
     # Load the module if current node is responsible
-    def balance_module(mod : Model::Module)
+    def load_module(mod : Model::Module)
       mod_id = mod.id.as(String)
       if discovery.own_node?(mod_id)
         driver = mod.driver.as(Model::Driver)
@@ -131,13 +165,10 @@ module Engine
           return
         end
 
-        # Module already loaded
         if @@module_proc_managers[mod_id]?
+          # Module already loaded
           logger.info("module already loaded: module_id=#{mod_id} driver_name=#{driver_name} driver_commit=#{driver_commit}")
-          return
-        end
-
-        if (existing_driver_manager = @@driver_proc_managers[driver_path]?)
+        elsif (existing_driver_manager = @@driver_proc_managers[driver_path]?)
           # Use the existing driver protocol manager
           @@module_proc_managers[mod_id] = existing_driver_manager
         else
@@ -151,8 +182,7 @@ module Engine
       elsif (protocol_manager == @@module_proc_managers[mod_id]?)
         # Not on node, but protocol manager exists
         logger.info("stopping module protocol manager: module_id=#{mod_id}")
-        protocol_manager.stop(mod_id)
-        @@module_proc_managers.delete(mod_id)
+        remove_module(mod)
       end
     end
   end
