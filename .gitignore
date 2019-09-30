@@ -1,6 +1,7 @@
 doc
 lib
 bin
+repositories
 .crystal
 .shards
 app

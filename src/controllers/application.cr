@@ -1,4 +1,5 @@
 require "uuid"
+require "../engine-core/module_manager"
 
 module Engine::Core
   abstract class Application < ActionController::Base

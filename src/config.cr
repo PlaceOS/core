@@ -17,6 +17,7 @@ class EngineDriver::Protocol; end
 require "engine-driver/protocol/management"
 require "./controllers/application"
 require "./controllers/*"
+require "./engine-core"
 
 # Server required after application controllers
 require "action-controller/server"

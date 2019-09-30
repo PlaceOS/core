@@ -26,10 +26,6 @@ abstract class Engine::Core::Resource(T)
     spawn watch_processing
   end
 
-  def stop
-    # TODO
-  end
-
   def consume_resource : T
     resource_channel.receive
   end
@@ -63,6 +59,7 @@ abstract class Engine::Core::Resource(T)
 
   def watch_processing
     # Block on the resource channel
-    process_resource(consume_resource)
+    resource = consume_resource
+    spawn process_resource(resource)
   end
 end

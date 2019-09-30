@@ -54,6 +54,10 @@ Signal::INT.trap &terminate
 # Docker containers use the term signal
 Signal::TERM.trap &terminate
 
+# Acquire resources
+resource_manager = Engine::Core::ResourceManager.new # ameba:disable Lint/UselessAssign
+# resource_manager = Engine::Core::ResourceManager.instance # ameba:disable Lint/UselessAssign
+
 # Start the server
 server.run do
   puts "Listening on #{server.print_addresses}"
@@ -75,7 +79,7 @@ puts "#{APP_NAME} leaps through the veldt\n"
 # 3. Once the driver queue is empty (register with etcd)
 #    * Register the instance with ETCD
 #    * Once registered, run through all the modules, consistent hashing to determine what modules need to be loaded
-# 4. Load the modules  (ruby-engine-driver test runner has sample code on how this is done)
+# 4. Load the modules  (engine-driver test runner has sample code on how this is done)
 #    * Start the driver processes as required.
 #    * Lunch the modules on those processes etc
 # 5. Once all the modules are running. Mark in etcd that load is complete.

@@ -1,4 +1,4 @@
-require "engine-rest-api/models/repository"
+require "engine-rest-api/models"
 require "engine-drivers/git_commands"
 require "engine-drivers/compiler"
 
@@ -10,7 +10,7 @@ module Engine
       @username : String? = nil,
       @password : String? = nil,
       @working_dir : String = EngineDrivers::Compiler.repository_dir,
-      @logger : Logger = Logger.new(STDOUT),
+      @logger : Logger = Logger.new(STDOUT)
     )
       super(@logger)
     end

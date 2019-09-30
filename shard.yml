@@ -7,9 +7,11 @@ dependencies:
 
   engine-driver:
     github: aca-labs/crystal-engine-driver
+    branch: master
 
   engine-drivers:
     github: aca-labs/crystal-engine-drivers
+    branch: master
 
   engine-rest-api: # This should be split into a seperate models library.
     github: aca-labs/crystal-engine-rest-api
@@ -18,11 +20,14 @@ dependencies:
   etcd:
     github: aca-labs/crystal-etcd
 
-  hound-dog:
-    github: aca-labs/hound-dog
-
   hardware:
     github: crystal-community/hardware
+
+  habitat:
+    github: luckyframework/habitat
+
+  hound-dog:
+    github: aca-labs/hound-dog
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm

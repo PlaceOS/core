@@ -7,29 +7,27 @@ module Engine::Core
     base "/api/core/v1/status/"
     id_param :commit_hash
 
-    # TODO:: lookup the driver manager in a global dispatch
-    # This needs to exist somewhere
-    DriverExecLookup = {} of String => EngineDriver::Protocol::Management
+    getter module_manager = ModuleManager.instance
 
     # General statistics related to the process
     def index
       helper = EngineDrivers::Helper
 
       render json: {
-        compiled_drivers: helper.compiled_drivers,
+        compiled_drivers:       helper.compiled_drivers,
         available_repositories: helper.repositories,
 
-        # TODO::
-        running_drivers: DriverExecLookup.size,
-        module_instances: 200, # ModuleExecLookup.size
+        running_drivers:  module_manager.running_drivers,
+        module_instances: module_manager.running_modules,
+        # TODO: Pick off errors from ModuleManager, ResourceManagers
         unavailable_repositories: [{
-          name: "private_1",
-          reason: "401 unauthorised while cloning"
+          name:   "private_1",
+          reason: "401 unauthorised while cloning",
         }],
         unavailable_drivers: [{
-          name: "Cisco XXX",
-          reason: "failed to compile / failed to run"
-        }]
+          name:   "Cisco XXX",
+          reason: "failed to compile / failed to run",
+        }],
       }
     end
 
@@ -37,15 +35,15 @@ module Engine::Core
     # /api/core/v1/status/driver?path=/path/to/compiled_driver
     get "/driver" do
       driver = params["path"]
-      manager = DriverExecLookup[driver]?
+      manager = module_manager.manager_by_driver_path(driver)
       head :not_found unless manager
 
       response = {
-        running: manager.running?,
+        running:          manager.running?,
         module_instances: manager.module_instances,
-        last_exit_code: manager.last_exit_code,
-        launch_count: manager.launch_count,
-        launch_time: manager.launch_time
+        last_exit_code:   manager.last_exit_code,
+        launch_count:     manager.launch_count,
+        launch_time:      manager.launch_time,
       }
 
       # Obtain process statistics - anything that might be useful for debugging
@@ -56,8 +54,8 @@ module Engine::Core
         response = response.merge({
           # CPU in % and memory in KB
           percentage_cpu: process.cpu_usage,
-          memory_total: memory.total,
-          memory_usage: process.memory,
+          memory_total:   memory.total,
+          memory_usage:   process.memory,
         })
       end
 
@@ -72,17 +70,17 @@ module Engine::Core
 
       render json: {
         # These will be the values in the container but that's all good
-        hostname: System.hostname,
+        hostname:  System.hostname,
         cpu_count: System.cpu_count,
 
         # these are as a percent of the total available
-        core_cpu: process.cpu_usage,
+        core_cpu:  process.cpu_usage,
         total_cpu: cpu.usage,
 
         # Memory in KB
         memory_total: memory.total,
         memory_usage: memory.used,
-        core_memory: memory.used
+        core_memory:  memory.used,
       }
     end
   end

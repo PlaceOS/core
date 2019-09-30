@@ -1,9 +1,13 @@
-require "engine-rest-api/models/driver"
+require "engine-rest-api/models"
 
 require "./resource"
 
 module Engine
   class Core::Compilation < Core::Resource(Model::Driver)
+    def initialize(@logger = Logger.new(STDOUT), @buffer_size = System.cpu_count)
+      super(@logger, @buffer_size)
+    end
+
     def process_resource(driver) : Bool
       name = driver.name.as(String)
       commit = driver.commit.as(String)

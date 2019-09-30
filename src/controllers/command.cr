@@ -4,14 +4,12 @@ module Engine::Core
   class Command < Application
     base "/api/core/v1/command/"
 
-    # TODO:: lookup the driver manager in a global dispatch
-    # This needs to exist somewhere
-    ModuleExecLookup = {} of String => EngineDriver::Protocol::Management
+    getter module_manager = ModuleManager.instance
 
     # Executes a command against a module
     post "/:module_id/execute" do
       module_id = params["module_id"]
-      manager = ModuleExecLookup[module_id]?
+      manager = module_manager.manager_by_module_id(module_id)
       head :not_found unless manager
 
       body = request.body
@@ -26,7 +24,7 @@ module Engine::Core
     # a common operation and limited to system administrators
     ws "/:module_id/debugger" do |socket|
       module_id = params["module_id"]
-      manager = ModuleExecLookup[module_id]?
+      manager = module_manager.manager_by_module_id(module_id)
       raise "module not loaded" unless manager
 
       # Forward debug messages to the websocket
@@ -39,7 +37,7 @@ module Engine::Core
 
     # In the long term we should move to a single websocket between API instances
     # and core instances, then we multiplex the debugging signals accross.
-    ws "/debugger" do |socket|
+    ws "/debugger" do |_socket|
       raise "not implemented"
     end
   end

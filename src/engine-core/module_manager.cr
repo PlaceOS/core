@@ -1,24 +1,139 @@
+require "logger"
 require "hound-dog"
+require "habitat"
+require "engine-driver/protocol/management"
+require "engine-rest-api/models"
 
 module Engine
   class Core::ModuleManager
-    # 1-4. Repos cloned, drivers compiled
-    #    * Register the instance with ETCD
-    #    * Once registered, run through all the modules, consistent hashing to determine what modules need to be loaded
-    # 4. Load the modules  (ruby-engine-driver test runner has sample code on how this is done)
-    #    * Start the driver processes as required.
-    #    * Launch the modules on those processes etc
-    # 5. Once all the modules are running. Mark in etcd that load is complete.
-    def initialize
+    getter discovery : HoundDog::Discovery
+    getter logger : Logger = settings.logger
+
+    Habitat.create do
+      setting ip : String = ENV["CORE_HOST"]? || "localhost"
+      setting port : UInt16 = (ENV["CORE_PORT"]? || 3000).to_u16
+      setting logger : Logger = Logger.new(STDOUT)
     end
 
-    def load_modules
+    # From environment
+    @@instance = new(
+      ip: settings.ip,
+      port: settings.port,
+      logger: settings.logger,
+    )
+
+    # Mapping from module_id to protocol manager
+    @@mod_proc_managers = {} of String => EngineDriver::Protocol::Management
+    # Mapping from driver path to protocol manager
+    @@driver_proc_managers = {} of String => EngineDriver::Protocol::Management
+
+    # Once registered, run through all the modules, consistent hashing to determine what modules need to be loaded
+    # Start the driver processes as required.
+    # Launch the modules on those processes etc
+    # Once all the modules are running. Mark in etcd that load is complete.
+    def initialize(ip : String, port : UInt16, @logger = Logger.new(STDOUT))
+      @discovery = HoundDog::Discovery.new(service: "core", ip: ip, port: port)
     end
 
-    # def manager_by_module_id : EngineDriver::Protocol::Manangement
-    # end
+    # Class to be used as a singleton
+    def self.instance : ModuleManager
+      @@instance
+    end
 
-    # def manager_by_driver_path : EngineDriver::Protocol::Manangement
-    # end
+    # The number of drivers loaded on current node
+    def running_drivers
+      @@driver_proc_managers.size
+    end
+
+    # The number of module processes on current node
+    def running_modules
+      @@mod_proc_managers.size
+    end
+
+    def manager_by_module_id(mod_id : String) : EngineDriver::Protocol::Management?
+      @@mod_proc_managers[mod_id]?
+    end
+
+    def manager_by_driver_path(path : String) : EngineDriver::Protocol::Management?
+      @@driver_proc_managers[path]?
+    end
+
+    def start
+      # Self-register
+      spawn discovery.register { balance_modules }
+      balance_modules
+    end
+
+    def start_module(mod : Model::Module)
+      cs = mod.control_system.as(Model::ControlSystem)
+
+      # Start format
+      payload = {
+        ip:             mod.ip,
+        port:           mod.port,
+        udp:            mod.udp,
+        tls:            mod.tls,
+        makebreak:      mod.makebreak,
+        role:           mod.role,
+        settings:       mod.merge_settings,
+        control_system: {
+          id:       mod.control_system.id,
+          name:     cs.name,
+          email:    cs.email,
+          capacity: cs.capacity,
+          features: cs.features,
+          bookable: cs.bookabele,
+        },
+      }.to_json
+
+      mod_id = mod.id.as(String)
+      proc_manager = manager_by_module_id[mod_id]
+      logger.info("starting module protocol manager: module_id=#{mod_id} driver_path=#{proc_manager.driver_path}")
+      proc_manager.start(mod_id, payload)
+    end
+
+    def balance_modules
+      Model::Module.all.each &->balance_module(Model::Module)
+    end
+
+    # Load the module if current node is responsible
+    def balance_module(mod : Model::Module)
+      mod_id = mod.id.as(String)
+      if discovery.own_node?(mod_id)
+        driver = mod.driver.as(Model::Driver)
+        driver_name = driver.name.as(String)
+        driver_commit = driver.commit.as(String)
+
+        # Check if the module is on the current node
+        driver_path = driver_path(driver_name, driver_commit)
+        unless File.exists?(driver_path)
+          logger.error("driver does not exist: driver_name=#{driver_name} driver_commit=#{driver_commit} module_id=#{mod_id}")
+          return
+        end
+
+        # Module already loaded
+        if @@module_proc_managers[mod_id]?
+          logger.info("module already loaded: module_id=#{mod_id} driver_name=#{driver_name} driver_commit=#{driver_commit}")
+          return
+        end
+
+        if (existing_driver_manager = @@driver_proc_managers[driver_path]?)
+          # Use the existing driver protocol manager
+          @@module_proc_managers[mod_id] = existing_driver_manager
+        else
+          # Create a new protocol manager
+          proc_manager = EngineDriver::Protocol::Manangement.new(driver_path, logger)
+          @@driver_proc_managers[driver_path] = proc_manager
+          @@module_proc_managers[mod_id] = proc_manager
+        end
+
+        start_module(mod)
+      elsif (protocol_manager == @@module_proc_managers[mod_id]?)
+        # Not on node, but protocol manager exists
+        logger.info("stopping module protocol manager: module_id=#{mod_id}")
+        protocol_manager.stop(mod_id)
+        @@module_proc_managers.delete(mod_id)
+      end
+    end
   end
 end
