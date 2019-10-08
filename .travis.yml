@@ -1,19 +1,26 @@
 sudo: required
 language: crystal
 
-addons:
-  # Add RethinkDB
-  rethinkdb: '2.3'
-
-services:
-  - redis-server
-
 env:
   # Set spider-gazelle environment
   - SG_ENV=production
+  - TRAVIS_TEST=true
+
+services:
+  - docker
+  - redis-server
+
+before_install:
+  # Add rethinkdb 2.3.6
+  - docker run --net="host" -p29015:29015 -p28015:28015 -d acalabs/rethinkdb:2.3.6
+  # Add etcd 3.3.13
+  - docker run --net="host" -p "2379:2379" -p "2380:2380" -e ALLOW_NONE_AUTHENTICATION=yes -d bitnami/etcd:3.3.13
 
 install:
   - shards install
+
+before_script:
+  - sleep 5
 
 script:
   # Specs
