@@ -24,6 +24,12 @@ require "action-controller/server"
 
 STDOUT.sync = true
 
+# Configure Service discovery
+HoundDog.configure do |settings|
+  settings.etcd_host = ENV["ETCD_HOST"]? || "localhost"
+  settings.etcd_port = (ENV["ETCD_PORT"]? || 2379).to_i
+end
+
 # Add handlers that should run before your application
 ActionController::Server.before(
   HTTP::ErrorHandler.new(ENV["SG_ENV"]? != "production"),
