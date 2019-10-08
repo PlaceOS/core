@@ -2,7 +2,7 @@ require "./application"
 require "hardware"
 require "engine-drivers/helper"
 
-module Engine::Core
+module ACAEngine::Core
   class Status < Application
     base "/api/core/v1/status/"
     id_param :commit_hash
@@ -11,7 +11,7 @@ module Engine::Core
 
     # General statistics related to the process
     def index
-      helper = EngineDrivers::Helper
+      helper = ACAEngine::Drivers::Helper
 
       render json: {
         compiled_drivers:       helper.compiled_drivers,

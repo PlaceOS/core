@@ -9,9 +9,9 @@ end
 
 # For some reason I could not convince Crystal this was not a module without
 # putting it here
-abstract class EngineDriver; end
+abstract class ACAEngine::Driver; end
 
-class EngineDriver::Protocol; end
+class ACAEngine::Driver::Protocol; end
 
 # Application code
 require "engine-driver/protocol/management"
@@ -26,6 +26,7 @@ STDOUT.sync = true
 
 # Configure Service discovery
 HoundDog.configure do |settings|
+  settings.logger = ActionController::Base.settings.logger
   settings.etcd_host = ENV["ETCD_HOST"]? || "localhost"
   settings.etcd_port = (ENV["ETCD_PORT"]? || 2379).to_i
 end

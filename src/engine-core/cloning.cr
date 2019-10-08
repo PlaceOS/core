@@ -9,7 +9,7 @@ module Engine
     def initialize(
       @username : String? = nil,
       @password : String? = nil,
-      @working_dir : String = EngineDrivers::Compiler.repository_dir,
+      @working_dir : String = ACAEngine::Drivers::Compiler.repository_dir,
       @logger : Logger = Logger.new(STDOUT)
     )
       super(@logger)
@@ -19,7 +19,7 @@ module Engine
       repository_name = repository.name.as(String)
       repository_uri = repository.uri.as(String)
 
-      result = EngineDrivers::GitCommands.clone(
+      result = ACAEngine::Drivers::GitCommands.clone(
         repository: repository_name,
         repository_uri: repository_uri,
         username: @username,

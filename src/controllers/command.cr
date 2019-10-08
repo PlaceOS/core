@@ -1,6 +1,6 @@
 require "./application"
 
-module Engine::Core
+module ACAEngine::Core
   class Command < Application
     base "/api/core/v1/command/"
 

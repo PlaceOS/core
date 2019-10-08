@@ -1,13 +1,13 @@
 require "./helper"
 require "uuid"
 
-module Engine::Core
+module ACAEngine::Core
   describe Cloning do
-    it "clones repositories" do
+    it "clones repositories", focus: true do
       # Clear repository table
-      Engine::Model::Repository.clear
+      ACAEngine::Model::Repository.clear
 
-      repo = Engine::Model::Generator.repository(type: Engine::Model::Repository::Type::Driver)
+      repo = ACAEngine::Model::Generator.repository(type: ACAEngine::Model::Repository::Type::Driver)
 
       repo.uri = "https://github.com/example/test/"
       repo.name = "test"

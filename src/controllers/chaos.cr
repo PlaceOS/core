@@ -1,7 +1,7 @@
 require "./application"
 require "../engine-core"
 
-module Engine::Core
+module ACAEngine::Core
   class Chaos < Application
     base "/api/core/v1/chaos/"
 

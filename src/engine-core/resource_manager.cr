@@ -2,7 +2,7 @@ require "./cloning"
 require "./compilation"
 
 # Sequences the acquisition and production of resources
-module Engine::Core
+module ACAEngine::Core
   class ResourceManager
     @cloning : Cloning
     @compilation : Compilation

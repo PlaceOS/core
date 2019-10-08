@@ -3,8 +3,8 @@ require "rethinkdb-orm"
 
 require "engine-drivers/helper"
 
-abstract class Engine::Core::Resource(T)
-  include EngineDrivers::Helper
+abstract class ACAEngine::Core::Resource(T)
+  include ACAEngine::Drivers::Helper
   private getter logger : Logger
   private getter resource_channel : Channel(T)
 

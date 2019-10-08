@@ -1,7 +1,7 @@
 require "uuid"
 require "../engine-core/module_manager"
 
-module Engine::Core
+module ACAEngine::Core
   abstract class Application < ActionController::Base
     before_action :set_request_id
 

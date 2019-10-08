@@ -1,6 +1,6 @@
 require "./helper"
 
-module Engine::Core
+module ACAEngine::Core
   describe ModuleManager do
     describe "startup process" do
       pending "initialises resources"

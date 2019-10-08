@@ -1,6 +1,6 @@
 require "./helper"
 
-module Engine::Core
+module ACAEngine::Core
   describe Resource do
   end
 end

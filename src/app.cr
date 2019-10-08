@@ -55,8 +55,8 @@ Signal::INT.trap &terminate
 Signal::TERM.trap &terminate
 
 # Acquire resources
-resource_manager = Engine::Core::ResourceManager.new # ameba:disable Lint/UselessAssign
-# resource_manager = Engine::Core::ResourceManager.instance # ameba:disable Lint/UselessAssign
+resource_manager = ACAEngine::Core::ResourceManager.new # ameba:disable Lint/UselessAssign
+# resource_manager = ACAEngine::Core::ResourceManager.instance # ameba:disable Lint/UselessAssign
 
 # Start the server
 server.run do

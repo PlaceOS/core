@@ -43,9 +43,9 @@ module Engine
     )
 
     # Mapping from module_id to protocol manager
-    @@module_proc_managers = {} of String => EngineDriver::Protocol::Management
+    @@module_proc_managers = {} of String => ACAEngine::Driver::Protocol::Management
     # Mapping from driver path to protocol manager
-    @@driver_proc_managers = {} of String => EngineDriver::Protocol::Management
+    @@driver_proc_managers = {} of String => ACAEngine::Driver::Protocol::Management
 
     # Once registered, run through all the modules, consistent hashing to determine what modules need to be loaded
     # Start the driver processes as required.
@@ -88,11 +88,11 @@ module Engine
       @@module_proc_managers.size
     end
 
-    def manager_by_module_id(mod_id : String) : EngineDriver::Protocol::Management?
+    def manager_by_module_id(mod_id : String) : ACAEngine::Driver::Protocol::Management?
       @@module_proc_managers[mod_id]?
     end
 
-    def manager_by_driver_path(path : String) : EngineDriver::Protocol::Management?
+    def manager_by_driver_path(path : String) : ACAEngine::Driver::Protocol::Management?
       @@driver_proc_managers[path]?
     end
 
@@ -173,7 +173,7 @@ module Engine
           @@module_proc_managers[mod_id] = existing_driver_manager
         else
           # Create a new protocol manager
-          proc_manager = EngineDriver::Protocol::Manangement.new(driver_path, logger)
+          proc_manager = ACAEngine::Driver::Protocol::Manangement.new(driver_path, logger)
           @@driver_proc_managers[driver_path] = proc_manager
           @@module_proc_managers[mod_id] = proc_manager
         end
