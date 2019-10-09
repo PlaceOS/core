@@ -4,14 +4,14 @@ require "habitat"
 require "engine-driver/protocol/management"
 require "engine-rest-api/models"
 
-module Engine
+module ACAEngine
   class Core::ModuleManager
     getter discovery : HoundDog::Discovery
     getter logger : Logger = settings.logger
 
     Habitat.create do
       setting ip : String = ENV["CORE_HOST"]? || "localhost"
-      setting port : UInt16 = (ENV["CORE_PORT"]? || 3000).to_u16
+      setting port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
       setting logger : Logger = Logger.new(STDOUT)
     end
 
@@ -51,7 +51,7 @@ module Engine
     # Start the driver processes as required.
     # Launch the modules on those processes etc
     # Once all the modules are running. Mark in etcd that load is complete.
-    def initialize(ip : String, port : UInt16, @logger = Logger.new(STDOUT))
+    def initialize(ip : String, port : Int32, @logger = Logger.new(STDOUT))
       @discovery = HoundDog::Discovery.new(service: "core", ip: ip, port: port)
     end
 

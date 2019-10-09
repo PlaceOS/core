@@ -2,7 +2,7 @@ require "engine-rest-api/models"
 
 require "./resource"
 
-module Engine
+module ACAEngine
   class Core::Compilation < Core::Resource(Model::Driver)
     def initialize(@logger = Logger.new(STDOUT), @buffer_size = System.cpu_count)
       super(@logger, @buffer_size)

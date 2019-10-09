@@ -5,6 +5,7 @@ require "engine-drivers/helper"
 
 abstract class ACAEngine::Core::Resource(T)
   include ACAEngine::Drivers::Helper
+
   private getter logger : Logger
   private getter resource_channel : Channel(T)
 
