@@ -1,6 +1,8 @@
-require "./application"
 require "hardware"
 require "engine-drivers/helper"
+
+require "./application"
+require "../engine-core/resource_manager"
 
 module ACAEngine::Core
   class Status < Application
@@ -11,23 +13,19 @@ module ACAEngine::Core
 
     # General statistics related to the process
     def index
-      helper = ACAEngine::Drivers::Helper
+      resource_manager = ResourceManager.instance
+
+      # TODO: Pick off errors from ModuleManager, ResourceManagers e.g.
+      # - [{name:   "private_1", reason: "401 unauthorised while cloning"}]
+      # - [{name:   "Cisco XXX", reason: "failed to compile / failed to run"}]
 
       render json: {
-        compiled_drivers:       helper.compiled_drivers,
-        available_repositories: helper.repositories,
-
-        running_drivers:  module_manager.running_drivers,
-        module_instances: module_manager.running_modules,
-        # TODO: Pick off errors from ModuleManager, ResourceManagers
-        unavailable_repositories: [{
-          name:   "private_1",
-          reason: "401 unauthorised while cloning",
-        }],
-        unavailable_drivers: [{
-          name:   "Cisco XXX",
-          reason: "failed to compile / failed to run",
-        }],
+        compiled_drivers:         ACAEngine::Drivers::Helper.compiled_drivers,
+        available_repositories:   ACAEngine::Drivers::Helper.repositories,
+        running_drivers:          module_manager.running_drivers,
+        module_instances:         module_manager.running_modules,
+        unavailable_repositories: resource_manager.cloning.errors,
+        unavailable_drivers:      resource_manager.compilation.errors,
       }
     end
 

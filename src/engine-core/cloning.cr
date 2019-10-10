@@ -27,7 +27,12 @@ module ACAEngine
         working_dir: @working_dir,
       )
 
-      result[:exit_status] == 0
+      success = result[:exit_status] == 0
+
+      # Add cloning errors
+      errors << {name: repository_name, reason: result[:output]} unless success
+
+      success
     end
   end
 end

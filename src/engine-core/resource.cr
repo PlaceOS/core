@@ -6,6 +6,9 @@ require "engine-drivers/helper"
 abstract class ACAEngine::Core::Resource(T)
   include ACAEngine::Drivers::Helper
 
+  alias Error = NamedTuple(name: String, reason: String)
+  getter errors : Array(Error) = [] of Error
+
   private getter logger : Logger
   private getter resource_channel : Channel(T)
 

@@ -17,7 +17,12 @@ module ACAEngine
       else
         repository = driver.repository.as(Model::Repository).name.as(String)
         result = compile_driver(name, repository)
-        result[:exit_status] == 0
+
+        success = result[:exit_status] == 0
+
+        errors << {name: repository, reason: result[:output]} unless success
+
+        success
       end
     end
   end

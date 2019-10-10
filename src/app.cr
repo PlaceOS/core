@@ -54,9 +54,8 @@ Signal::INT.trap &terminate
 # Docker containers use the term signal
 Signal::TERM.trap &terminate
 
-# Acquire resources
-resource_manager = ACAEngine::Core::ResourceManager.new # ameba:disable Lint/UselessAssign
-# resource_manager = ACAEngine::Core::ResourceManager.instance # ameba:disable Lint/UselessAssign
+# Acquire resources on startup
+RESOURCE_MANAGER = ACAEngine::Core::ResourceManager.instance
 
 # Start the server
 server.run do
