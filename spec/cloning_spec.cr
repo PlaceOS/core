@@ -3,7 +3,7 @@ require "uuid"
 
 module ACAEngine::Core
   describe Cloning do
-    it "clones repositories", focus: true do
+    it "clones repositories" do
       # Clear repository table
       ACAEngine::Model::Repository.clear
 

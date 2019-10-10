@@ -10,11 +10,11 @@ module ACAEngine::Core
     @@instance : ResourceManager? = nil
 
     def initialize
-      print "Cloning repositories..."
+      print "Cloning repositories... "
       @cloning = Cloning.new
       puts "done"
 
-      print "Compiling drivers..."
+      print "Compiling drivers... "
       @compilation = Compilation.new
       puts "done"
     end

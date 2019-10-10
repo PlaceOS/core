@@ -57,6 +57,9 @@ Signal::TERM.trap &terminate
 # Acquire resources on startup
 ACAEngine::Core::ResourceManager.instance
 
+# Start managing modules
+ACAEngine::Core::ModuleManager.instance.start
+
 # Start the server
 server.run do
   puts "Listening on #{server.print_addresses}"
