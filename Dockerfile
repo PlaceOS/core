@@ -16,7 +16,7 @@ RUN shards install --production
 COPY ./src /app/src
 
 # Build application
-RUN crystal build /app/src/app.cr -o engine-core --release --no-debug
+RUN crystal build /app/src/app.cr -o engine-core
 
 # Run the app binding on port 3000
 EXPOSE 3000
