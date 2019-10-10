@@ -14,7 +14,7 @@ abstract class ACAEngine::Core::Resource(T)
 
   abstract def process_resource(resource : T) : Bool
 
-  def initialize(@logger = Logger.new(STDOUT), buffer_size : Int32 = 128)
+  def initialize(@logger = Logger.new(STDOUT), buffer_size : Int32 = 64)
     @resource_channel = Channel(T).new(buffer_size)
 
     # Listen for changes on the resource table

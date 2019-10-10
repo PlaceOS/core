@@ -10,7 +10,7 @@ process_count = 1
 
 # Command line options
 OptionParser.parse(ARGV.dup) do |parser|
-  parser.banner = "Usage: #{APP_NAME} [arguments]"
+  parser.banner = "Usage: #{ACAEngine::Core::APP_NAME} [arguments]"
 
   parser.on("-b HOST", "--bind=HOST", "Specifies the server host") { |h| host = h }
   parser.on("-p PORT", "--port=PORT", "Specifies the server port") { |p| port = p.to_i }
@@ -26,7 +26,7 @@ OptionParser.parse(ARGV.dup) do |parser|
   end
 
   parser.on("-v", "--version", "Display the application version") do
-    puts "#{APP_NAME} v#{VERSION}"
+    puts "#{ACAEngine::Core::APP_NAME} v#{ACAEngine::Core::VERSION}"
     exit 0
   end
 
@@ -37,7 +37,7 @@ OptionParser.parse(ARGV.dup) do |parser|
 end
 
 # Load the routes
-puts "Launching #{APP_NAME} v#{VERSION}"
+puts "Launching #{ACAEngine::Core::APP_NAME} v#{ACAEngine::Core::VERSION}"
 server = ActionController::Server.new(port, host)
 
 # Start clustering
@@ -55,7 +55,7 @@ Signal::INT.trap &terminate
 Signal::TERM.trap &terminate
 
 # Acquire resources on startup
-RESOURCE_MANAGER = ACAEngine::Core::ResourceManager.instance
+ACAEngine::Core::ResourceManager.instance
 
 # Start the server
 server.run do
@@ -63,7 +63,7 @@ server.run do
 end
 
 # Shutdown message
-puts "#{APP_NAME} leaps through the veldt\n"
+puts "#{ACAEngine::Core::APP_NAME} leaps through the veldt\n"
 
 # Engine Core: (startup)
 # 1. Load all the repositories from the database (push into a queue)

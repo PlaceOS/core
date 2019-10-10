@@ -15,6 +15,7 @@ class ACAEngine::Driver::Protocol; end
 
 # Application code
 require "engine-driver/protocol/management"
+require "./constants"
 require "./controllers/application"
 require "./controllers/*"
 require "./engine-core"
@@ -65,6 +66,3 @@ ActionController::Session.configure do |settings|
   # HTTPS only:
   settings.secure = ENV["SG_ENV"]? == "production"
 end
-
-APP_NAME = "engine-core"
-VERSION  = `shards version`
