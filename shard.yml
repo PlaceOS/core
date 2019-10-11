@@ -13,8 +13,8 @@ dependencies:
     github: aca-labs/crystal-engine-drivers
     branch: master
 
-  engine-rest-api: # This should be split into a seperate models library.
-    github: aca-labs/crystal-engine-rest-api
+  engine-models:
+    github: aca-labs/crystal-engine-models
     branch: master
 
   etcd:

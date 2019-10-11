@@ -3,7 +3,7 @@ require "hound-dog"
 require "habitat"
 require "engine-driver/protocol/management"
 require "engine-drivers/helper"
-require "engine-rest-api/models"
+require "engine-models"
 require "rethinkdb-orm"
 
 module ACAEngine

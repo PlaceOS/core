@@ -1,5 +1,5 @@
 require "engine-drivers/compiler"
-require "engine-rest-api/models"
+require "engine-models"
 
 require "./resource"
 

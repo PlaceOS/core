@@ -1,6 +1,6 @@
 require "engine-drivers/compiler"
 require "engine-drivers/git_commands"
-require "engine-rest-api/models"
+require "engine-models"
 
 require "./resource"
 
