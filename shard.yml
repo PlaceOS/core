@@ -19,6 +19,7 @@ dependencies:
 
   etcd:
     github: aca-labs/crystal-etcd
+    branch: master
 
   hardware:
     github: crystal-community/hardware

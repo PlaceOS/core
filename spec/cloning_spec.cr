@@ -16,8 +16,13 @@ module ACAEngine::Core
       temp_dir = "#{Dir.tempdir}/#{UUID.random}"
       path = "#{temp_dir}/#{repo.name}"
 
-      Cloning.new(working_dir: temp_dir)
+      cloner = Cloning.new(working_dir: temp_dir)
 
+      # Check repository has been processed
+      cloner.processed.size.should eq 1
+      cloner.processed.first.id.should eq repo.id
+
+      # Check the cloning took place
       Dir.exists?(path).should be_true
 
       # Remove repo

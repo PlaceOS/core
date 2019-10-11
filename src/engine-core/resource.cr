@@ -8,6 +8,7 @@ abstract class ACAEngine::Core::Resource(T)
 
   alias Error = NamedTuple(name: String, reason: String)
   getter errors : Array(Error) = [] of Error
+  getter processed : Array(T) = [] of T
 
   private getter logger : Logger
   private getter resource_channel : Channel(T)
@@ -24,7 +25,7 @@ abstract class ACAEngine::Core::Resource(T)
     initial_resource_count = load_resources
 
     # TODO: Defer using a form of Promise.all
-    initial_resource_count.times { process_resource(consume_resource) }
+    initial_resource_count.times { _process_resource(consume_resource) }
 
     # Begin background processing
     spawn watch_processing
@@ -43,6 +44,11 @@ abstract class ACAEngine::Core::Resource(T)
     end
 
     count
+  end
+
+  # Consume the resource, pop onto the processed array
+  private def _process_resource(resource : T)
+    processed << resource if process_resource(resource)
   end
 
   # Listen to changes on the resource table
@@ -64,6 +70,6 @@ abstract class ACAEngine::Core::Resource(T)
   def watch_processing
     # Block on the resource channel
     resource = consume_resource
-    spawn process_resource(resource)
+    spawn _process_resource(resource)
   end
 end
