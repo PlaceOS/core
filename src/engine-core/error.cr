@@ -9,4 +9,14 @@ module ACAEngine::Core
 
   class ModuleError < Error
   end
+
+  class ClientError < Error
+    def initialize(@status_code, message = "")
+      super(message)
+    end
+
+    def self.from_response(response : HTTP::Client::Response)
+      new(response.status_code, response.body)
+    end
+  end
 end
