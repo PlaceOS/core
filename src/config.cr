@@ -1,11 +1,13 @@
 # Application dependencies
 require "action-controller"
+PROD = ENV["SG_ENV"]? == "production"
 
 # Allows request IDs to be configured for logging
 # You can extend this with additional properties
-class HTTP::Request
-  property id : String?
-end
+ActionController::Logger.add_tag request_id
+filter_params = ["bearer_token", "password"]
+logger = ActionController::Base.settings.logger
+logger.level = PROD ? Logger::INFO : Logger::DEBUG
 
 # For some reason I could not convince Crystal this was not a module without
 # putting it here
@@ -23,8 +25,6 @@ require "./engine-core"
 # Server required after application controllers
 require "action-controller/server"
 
-STDOUT.sync = true
-
 # Configure Service discovery
 HoundDog.configure do |settings|
   settings.logger = ActionController::Base.settings.logger
@@ -34,15 +34,8 @@ end
 
 # Add handlers that should run before your application
 ActionController::Server.before(
-  HTTP::ErrorHandler.new(ENV["SG_ENV"]? != "production"),
-  ActionController::LogHandler.new(STDOUT) { |context|
-    # Allows for custom tags to be included when logging
-    # For example you might want to include a user id here.
-    {
-      # `context.request.id` is set in `controllers/application`
-      request_id: context.request.id,
-    }.map { |key, value| " #{key}=#{value}" }.join("")
-  },
+  HTTP::ErrorHandler.new(!PROD),
+  ActionController::LogHandler.new(filter_params),
   HTTP::CompressHandler.new
 )
 
@@ -64,5 +57,5 @@ ActionController::Session.configure do |settings|
   settings.key = ENV["COOKIE_SESSION_KEY"]? || "_spider_gazelle_"
   settings.secret = ENV["COOKIE_SESSION_SECRET"]? || "4f74c0b358d5bab4000dd3c75465dc2c"
   # HTTPS only:
-  settings.secure = ENV["SG_ENV"]? == "production"
+  settings.secure = PROD
 end
