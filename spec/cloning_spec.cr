@@ -3,13 +3,10 @@ require "uuid"
 require "./helper"
 
 module ACAEngine::Core
-  describe Cloning, focus: true do
+  describe Cloning do
     context "startup" do
       # Set up a temporary directory
-      temp_dir = "#{Dir.current}/temp-#{UUID.random}"
-      ACAEngine::Drivers::Compiler.bin_dir = "#{temp_dir}/bin"
-      ACAEngine::Drivers::Compiler.drivers_dir = "#{temp_dir}/repositories/drivers"
-      ACAEngine::Drivers::Compiler.repository_dir = "#{temp_dir}/repositories"
+      temp_dir = set_temporary_working_directory
 
       ACAEngine::Model::Repository.clear
       repo = ACAEngine::Model::Generator.repository(type: ACAEngine::Model::Repository::Type::Driver)

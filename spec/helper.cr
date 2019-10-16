@@ -12,7 +12,11 @@ require "engine-models/spec/generator"
 require "../lib/action-controller/spec/curl_context"
 
 # Set up a temporary directory
-temp_dir = "#{Dir.current}/temp-#{UUID.random}"
-ACAEngine::Drivers::Compiler.bin_dir = "#{temp_dir}/bin"
-ACAEngine::Drivers::Compiler.drivers_dir = "#{temp_dir}/repositories/drivers"
-ACAEngine::Drivers::Compiler.repository_dir = "#{temp_dir}/repositories"
+def set_temporary_working_directory : String
+  temp_dir = "#{Dir.current}/temp-#{UUID.random}"
+  ACAEngine::Drivers::Compiler.bin_dir = "#{temp_dir}/bin"
+  ACAEngine::Drivers::Compiler.drivers_dir = "#{temp_dir}/repositories/drivers"
+  ACAEngine::Drivers::Compiler.repository_dir = "#{temp_dir}/repositories"
+
+  temp_dir
+end
