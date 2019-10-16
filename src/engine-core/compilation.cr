@@ -21,16 +21,23 @@ module ACAEngine
     end
 
     def process_resource(driver) : Bool
-      name = driver.name.as(String)
       commit = driver.commit.as(String)
+      file_name = driver.file_name.as(String)
+      name = driver.name.as(String)
+      repository = driver.repository.as(Model::Repository).name.as(String)
+
+      # Check commit here, if it's head then we need to update the commit hash
+      if commit == "head"
+      end
 
       if compiled?(name, commit)
         true
       else
-        repository = driver.repository.try &.name.as(String)
-        result = compile_driver(name, repository)
+        result = compile_driver(file_name, repository)
 
-        # TODO: Remove when all build failure caught
+        # TODO: Remove when all build failures caught
+        puts result[:output]
+
         pp! result
 
         success = result[:exit_status] == 0
