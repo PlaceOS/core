@@ -46,11 +46,14 @@ module ACAEngine
 
         commit = ACAEngine::Drivers::Compiler.normalize_commit(commit, file_name, repository_name)
 
-        # Only update the commit on the driver model if it maps to the current node
+        # Only update the commit on the driver model if it maps to the current node through consistent hashing
         update_commit = ModuleManager.instance.discovery.own_node?(driver.id.as(String))
 
-        # There's a potential for multiple writers on start up, however this is an eventually consistent operation.
-        logger.warn("updating commit on driver during startup: name=#{name} driver_id=#{driver.id}") if update_commit && startup
+        # There's a potential for multiple writers on startup,
+        # However this is an eventually consistent operation.
+        if update_commit && startup
+          logger.warn("updating commit on driver during startup: name=#{name} driver_id=#{driver.id}")
+        end
       elsif compiled?(name, commit)
         return true
       end

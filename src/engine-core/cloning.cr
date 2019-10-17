@@ -1,11 +1,14 @@
 require "engine-drivers/compiler"
 require "engine-drivers/git_commands"
 require "engine-models"
+require "logger"
 
 require "./resource"
 
 module ACAEngine
   class Core::Cloning < Core::Resource(Model::Repository)
+    @startup : Bool = true
+
     def initialize(
       @username : String? = nil,
       @password : String? = nil,
@@ -13,6 +16,7 @@ module ACAEngine
       @logger : Logger = Logger.new(STDOUT)
     )
       super(@logger)
+      @startup = false
     end
 
     def process_resource(repository) : Bool
@@ -20,7 +24,9 @@ module ACAEngine
         repository: repository,
         username: @username,
         password: @password,
-        working_dir: @working_dir
+        working_dir: @working_dir,
+        startup: @startup,
+        logger: logger,
       )
 
       true
@@ -35,7 +41,9 @@ module ACAEngine
       repository : Model::Repository,
       working_dir : String = ACAEngine::Drivers::Compiler.repository_dir,
       username : String? = nil,
-      password : String? = nil
+      password : String? = nil,
+      startup : Bool = false,
+      logger : Logger = Logger.new(STDOUT)
     )
       repository_name = repository.name.as(String)
       repository_uri = repository.uri.as(String)
@@ -49,9 +57,15 @@ module ACAEngine
         working_dir: working_dir,
       )
 
-      # Refresh the repository model commit hash
+      # Update commit hash if repository id maps to current node, or during startup
       current_commit = ACAEngine::Drivers::Helper.repository_commit_hash(repository_name)
-      unless current_commit == repository_commit
+      own_node = ModuleManager.instance.discovery.own_node?(repository.id.as(String))
+      if current_commit != repository_commit && (own_node || startup)
+        if startup
+          logger.warn("updating commit on repository during startup: name=#{repository_name}")
+        end
+
+        # Refresh the repository model commit hash
         repository.update_fields(commit_hash: current_commit)
       end
     end
