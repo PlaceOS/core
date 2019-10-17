@@ -2,6 +2,7 @@ require "engine-drivers/compiler"
 require "engine-models"
 
 require "./resource"
+require "./cloning"
 
 module ACAEngine
   class Core::Compilation < Core::Resource(Model::Driver)
@@ -24,28 +25,30 @@ module ACAEngine
       commit = driver.commit.as(String)
       file_name = driver.file_name.as(String)
       name = driver.name.as(String)
-      repository = driver.repository.as(Model::Repository).name.as(String)
+      repository = driver.repository.as(Model::Repository)
+      repository_name = repository.name.as(String)
 
-      # Check commit here, if it's head then we need to update the commit hash
+      # If the commit is `head` then the driver must be recompiled.
       if commit == "head"
+        begin
+          Cloning.clone_and_install(repository)
+        rescue e
+          errors << {name: name, reason: "failed to pull and install #{repository_name}: #{e.try &.message}"}
+          return false
+        end
+
+        commit = ACAEngine::Drivers::Compiler.normalize_commit(commit, file_name, repository_name)
+        driver.update_fields(commit: commit)
+      elsif compiled?(name, commit)
+        return true
       end
 
-      if compiled?(name, commit)
-        true
-      else
-        result = compile_driver(file_name, repository)
+      result = compile_driver(file_name, repository_name)
+      logger.info("compiled driver: name=#{file_name} repository_name=#{repository_name} output=#{result[:output]}")
+      success = result[:exit_status] == 0
+      errors << {name: name, reason: result[:output]} unless success
 
-        # TODO: Remove when all build failures caught
-        puts result[:output]
-
-        pp! result
-
-        success = result[:exit_status] == 0
-
-        errors << {name: name, reason: result[:output]} unless success
-
-        success
-      end
+      success
     end
   end
 end
