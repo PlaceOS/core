@@ -1,5 +1,6 @@
 require "engine-drivers/compiler"
 require "engine-models"
+require "logger"
 
 require "./cloning"
 require "./module_manager"
@@ -12,24 +13,29 @@ module ACAEngine
     def initialize(
       @logger = Logger.new(STDOUT),
       # NOTE: Mainly for testing purposes
-      repository_dir = ACAEngine::Drivers::Compiler.repository_dir,
+      bin_dir = ACAEngine::Drivers::Compiler.bin_dir,
       drivers_dir = ACAEngine::Drivers::Compiler.drivers_dir,
-      bin_dir = ACAEngine::Drivers::Compiler.bin_dir
+      repository_dir = ACAEngine::Drivers::Compiler.repository_dir
     )
       buffer_size = System.cpu_count.to_i
-      ACAEngine::Drivers::Compiler.repository_dir = repository_dir
-      ACAEngine::Drivers::Compiler.drivers_dir = drivers_dir
       ACAEngine::Drivers::Compiler.bin_dir = bin_dir
+      ACAEngine::Drivers::Compiler.drivers_dir = drivers_dir
+      ACAEngine::Drivers::Compiler.repository_dir = repository_dir
 
       super(@logger, buffer_size)
 
       @startup = false
     end
 
-    def process_resource(driver) : Bool
+    def self.compile_driver(
+      driver : Model::Driver,
+      startup : Bool = false,
+      logger : Logger = Logger.new(STDOUT)
+    ) : NamedTuple(exit_status: Int32, output: String)
       commit = driver.commit.as(String)
       file_name = driver.file_name.as(String)
       name = driver.name.as(String)
+
       repository = driver.repository.as(Model::Repository)
       repository_name = repository.name.as(String)
 
@@ -40,8 +46,7 @@ module ACAEngine
         begin
           Cloning.clone_and_install(repository)
         rescue e
-          errors << {name: name, reason: "failed to pull and install #{repository_name}: #{e.try &.message}"}
-          return false
+          return {exit_status: 1, output: "failed to pull and install #{repository_name}: #{e.try &.message}"}
         end
 
         commit = ACAEngine::Drivers::Compiler.normalize_commit(commit, file_name, repository_name)
@@ -54,16 +59,24 @@ module ACAEngine
         if update_commit && startup
           logger.warn("updating commit on driver during startup: name=#{name} driver_id=#{driver.id}")
         end
-      elsif compiled?(name, commit)
-        return true
+      elsif ACAEngine::Drivers::Helper.compiled?(name, commit)
+        return {exit_status: 0, output: ""}
       end
 
-      result = compile_driver(file_name, repository_name)
+      result = ACAEngine::Drivers::Helper.compile_driver(file_name, repository_name)
       logger.info("compiled driver: name=#{file_name} repository_name=#{repository_name} output=#{result[:output]}")
-      success = result[:exit_status] == 0
-      errors << {name: name, reason: result[:output]} unless success
-      driver.update_fields(commit: commit) if update_commit
 
+      if update_commit && result[:exit_status] == 0
+        driver.update_fields(commit: commit)
+      end
+
+      {exit_status: result[:exit_status], output: result[:output]}
+    end
+
+    def process_resource(driver) : Bool
+      result = Compilation.compile_driver(driver, startup, logger)
+      success = result[:exit_status] == 0
+      errors << {name: driver.name.as(String), reason: result[:output]} unless success
       success
     end
   end
