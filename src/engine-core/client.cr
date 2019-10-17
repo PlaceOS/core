@@ -2,7 +2,7 @@ require "http"
 require "uri"
 require "json"
 
-module Engine::Core
+module ACAEngine::Core
   class Client
     # Core base
     BASE_PATH = "/api/core"
