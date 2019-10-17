@@ -7,7 +7,7 @@ require "rethinkdb-orm"
 require "./helper"
 
 module ACAEngine::Core
-  pending Compilation do
+  describe Compilation do
     context "startup" do
       # Set up a temporary directory
       temp_dir = set_temporary_working_directory
@@ -54,7 +54,9 @@ module ACAEngine::Core
       it "compiles drivers" do
         compiler.processed.size.should eq 1
         compiler.processed.first.id.should eq driver.id
-        pp! repository_commit_hash
+
+        # Ensure working directory is set to the original temporary directory
+        set_temporary_working_directory(temp_dir)
         ACAEngine::Drivers::Helper.compiled?(driver.file_name.as(String), repository_commit_hash).should be_true
       end
 

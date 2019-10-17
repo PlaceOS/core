@@ -27,6 +27,9 @@ module ACAEngine::Core
         cloner.processed.size.should eq 1
         cloner.processed.first.id.should eq repo.id
 
+        # Ensure working directory is set to the original temporary directory
+        set_temporary_working_directory(temp_dir)
+
         # Check the cloning took place
         Dir.exists?(ACAEngine::Drivers::Compiler.drivers_dir).should be_true
       end
