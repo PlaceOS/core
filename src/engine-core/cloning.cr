@@ -1,7 +1,7 @@
+require "action-controller/logger"
 require "engine-drivers/compiler"
 require "engine-drivers/git_commands"
 require "engine-models"
-require "logger"
 
 require "./resource"
 
@@ -13,7 +13,7 @@ module ACAEngine
       @username : String? = nil,
       @password : String? = nil,
       @working_dir : String = ACAEngine::Drivers::Compiler.repository_dir,
-      @logger : Logger = Logger.new(STDOUT)
+      @logger : Logger = ActionController::Logger.new
     )
       super(@logger)
       @startup = false
@@ -43,7 +43,7 @@ module ACAEngine
       username : String? = nil,
       password : String? = nil,
       startup : Bool = false,
-      logger : Logger = Logger.new(STDOUT)
+      logger : Logger = ActionController::Logger.new
     )
       repository_name = repository.name.as(String)
       repository_uri = repository.uri.as(String)

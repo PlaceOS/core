@@ -1,6 +1,6 @@
 require "engine-drivers/compiler"
 require "engine-models"
-require "logger"
+require "action-controller/logger"
 
 require "./cloning"
 require "./module_manager"
@@ -11,7 +11,7 @@ module ACAEngine
     private property startup : Bool = true
 
     def initialize(
-      @logger = Logger.new(STDOUT),
+      @logger = ActionController::Logger.new,
       # NOTE: Mainly for testing purposes
       bin_dir = ACAEngine::Drivers::Compiler.bin_dir,
       drivers_dir = ACAEngine::Drivers::Compiler.drivers_dir,
@@ -30,7 +30,7 @@ module ACAEngine
     def self.compile_driver(
       driver : Model::Driver,
       startup : Bool = false,
-      logger : Logger = Logger.new(STDOUT)
+      logger : Logger = ActionController::Logger
     ) : NamedTuple(exit_status: Int32, output: String)
       commit = driver.commit.as(String)
       driver_id = driver.id.as(String)

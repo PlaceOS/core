@@ -1,7 +1,6 @@
-require "logger"
-require "rethinkdb-orm"
-
+require "action-controller/logger"
 require "engine-drivers/helper"
+require "rethinkdb-orm"
 
 abstract class ACAEngine::Core::Resource(T)
   include ACAEngine::Drivers::Helper
@@ -15,7 +14,7 @@ abstract class ACAEngine::Core::Resource(T)
 
   abstract def process_resource(resource : T) : Bool
 
-  def initialize(@logger = Logger.new(STDOUT), buffer_size : Int32 = 64)
+  def initialize(@logger = ActionController::Logger.new, buffer_size : Int32 = 64)
     @resource_channel = Channel(T).new(buffer_size)
 
     # Listen for changes on the resource table

@@ -1,25 +1,26 @@
+require "action-controller/logger"
+
 require "./cloning"
 require "./compilation"
 
 # Sequences the acquisition and production of resources
 module ACAEngine::Core
   class ResourceManager
+    getter logger : Logger
     getter cloning : Cloning
     getter compilation : Compilation
 
     @@instance : ResourceManager? = nil
 
-    def initialize
-      print "Cloning repositories... "
+    def initialize(@logger = ActionController::Logger.new)
+      logger.info("cloning repositories")
       @cloning = Cloning.new
-      puts "done"
 
-      print "Compiling drivers... "
+      logger.info("compiling drivers")
       @compilation = Compilation.new
-      puts "done"
     end
 
-    def self.instance
+    def self.instance : ResourceManager
       (@@instance || ResourceManager.new).as(ResourceManager)
     end
   end

@@ -1,9 +1,9 @@
-require "logger"
-require "hound-dog"
-require "habitat"
+require "action-controller"
 require "engine-driver/protocol/management"
 require "engine-drivers/helper"
 require "engine-models"
+require "habitat"
+require "hound-dog"
 require "rethinkdb-orm"
 
 module ACAEngine
@@ -16,7 +16,7 @@ module ACAEngine
     Habitat.create do
       setting ip : String = ENV["CORE_HOST"]? || "localhost"
       setting port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
-      setting logger : Logger = Logger.new(STDOUT)
+      setting logger : Logger = ActionController::Logger.new
     end
 
     # # Ready-state logic sketch
@@ -42,8 +42,7 @@ module ACAEngine
     # From environment
     @@instance = new(
       ip: settings.ip,
-      port: settings.port,
-      logger: settings.logger,
+      port: settings.port
     )
 
     # Mapping from module_id to protocol manager
@@ -55,7 +54,7 @@ module ACAEngine
     # Start the driver processes as required.
     # Launch the modules on those processes etc
     # Once all the modules are running. Mark in etcd that load is complete.
-    def initialize(ip : String, port : Int32, @logger = Logger.new(STDOUT))
+    def initialize(ip : String, port : Int32)
       @discovery = HoundDog::Discovery.new(service: "core", ip: ip, port: port)
     end
 
@@ -101,7 +100,7 @@ module ACAEngine
     end
 
     def start
-      print "Loading modules... "
+      logger.debug("loading modules")
 
       # Self-register
       discovery.register { balance_modules }
@@ -111,7 +110,8 @@ module ACAEngine
 
       balance_modules
 
-      puts "done"
+      logger.info("loaded modules: running_drivers=#{running_drivers} running_modules=#{running_modules}")
+      self
     end
 
     def start_module(mod : Model::Module)
