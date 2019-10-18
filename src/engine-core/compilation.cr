@@ -33,6 +33,7 @@ module ACAEngine
       logger : Logger = Logger.new(STDOUT)
     ) : NamedTuple(exit_status: Int32, output: String)
       commit = driver.commit.as(String)
+      driver_id = driver.id.as(String)
       file_name = driver.file_name.as(String)
       name = driver.name.as(String)
 
@@ -40,33 +41,36 @@ module ACAEngine
       repository_name = repository.name.as(String)
 
       update_commit = false
-
       # If the commit is `head` then the driver must be recompiled.
       if commit == "head"
         begin
           Cloning.clone_and_install(repository)
+          update_commit = ModuleManager.instance.discovery.own_node?(driver_id) || startup
         rescue e
           return {exit_status: 1, output: "failed to pull and install #{repository_name}: #{e.try &.message}"}
-        end
-
-        commit = ACAEngine::Drivers::Compiler.normalize_commit(commit, file_name, repository_name)
-
-        # Only update the commit on the driver model if it maps to the current node through consistent hashing
-        update_commit = ModuleManager.instance.discovery.own_node?(driver.id.as(String))
-
-        # There's a potential for multiple writers on startup,
-        # However this is an eventually consistent operation.
-        if update_commit && startup
-          logger.warn("updating commit on driver during startup: name=#{name} driver_id=#{driver.id}")
         end
       elsif ACAEngine::Drivers::Helper.compiled?(name, commit)
         return {exit_status: 0, output: ""}
       end
 
       result = ACAEngine::Drivers::Helper.compile_driver(file_name, repository_name)
-      logger.info("compiled driver: name=#{file_name} repository_name=#{repository_name} output=#{result[:output]}")
+      success = result[:exit_status] == 0
 
-      if update_commit && result[:exit_status] == 0
+      if success
+        logger.info("compiled driver: name=#{file_name} repository_name=#{repository_name} output=#{result[:output]}")
+      else
+        logger.error("failed to compile driver: name=#{file_name} repository_name=#{repository_name} output=#{result[:output]}")
+      end
+
+      if update_commit && success
+        commit = result[:version]
+
+        if startup
+          # There's a potential for multiple writers on startup,
+          # However this is an eventually consistent operation.
+          logger.warn("updating commit on driver during startup: name=#{name} id=#{driver.id} commit=#{commit}")
+        end
+
         driver.update_fields(commit: commit)
       end
 
