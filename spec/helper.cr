@@ -18,7 +18,6 @@ end
 # To reduce the run-time of the very setup heavy specs.
 # - Use teardown if you need to clear a temporary repository
 # - Use setup(fresh: true) if you require a clean working directory
-
 TEMP_DIR = get_temp
 
 # Remove the shared test directory

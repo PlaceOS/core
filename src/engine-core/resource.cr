@@ -1,21 +1,35 @@
 require "action-controller/logger"
-require "engine-drivers/helper"
+require "deque"
 require "rethinkdb-orm"
+
+require "engine-drivers/helper"
 
 abstract class ACAEngine::Core::Resource(T)
   include ACAEngine::Drivers::Helper
 
   alias Error = NamedTuple(name: String, reason: String)
+
+  # Errors generated while processing resources
+  # NOTE: rw lock?
   getter errors : Array(Error) = [] of Error
-  getter processed : Array(T) = [] of T
+
+  # Buffer of recently processed elements
+  # NOTE: rw lock?
+  getter processed : Deque(T)
+
+  private getter resource_channel : Channel(T)
 
   private getter logger : Logger
-  private getter resource_channel : Channel(T)
 
   abstract def process_resource(resource : T) : Bool
 
-  def initialize(@logger = ActionController::Logger.new, buffer_size : Int32 = 64)
-    @resource_channel = Channel(T).new(buffer_size)
+  def initialize(
+    @logger = ActionController::Logger.new,
+    @processed_buffer_size : Int32 = 64,
+    channel_buffer_size : Int32 = 64
+  )
+    @resource_channel = Channel(T).new(channel_buffer_size)
+    @processed = Deque(T).new(processed_buffer_size)
 
     # Listen for changes on the resource table
     spawn watch_resources
@@ -45,9 +59,12 @@ abstract class ACAEngine::Core::Resource(T)
     count
   end
 
-  # Consume the resource, pop onto the processed array
+  # Consume the resource, pop onto the processed buffer
   private def _process_resource(resource : T)
-    processed << resource if process_resource(resource)
+    if process_resource(resource)
+      processed.push(resource)
+      processed.shift if processed.size > @processed_buffer_size
+    end
   end
 
   # Listen to changes on the resource table
