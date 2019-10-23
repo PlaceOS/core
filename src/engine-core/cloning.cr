@@ -45,6 +45,7 @@ module ACAEngine
       startup : Bool = false,
       logger : Logger = ActionController::Logger.new
     )
+      repository_id = repository.id.as(String)
       repository_name = repository.name.as(String)
       repository_uri = repository.uri.as(String)
       repository_commit = repository.commit_hash.as(String)
@@ -59,8 +60,8 @@ module ACAEngine
 
       # Update commit hash if repository id maps to current node, or during startup
       current_commit = ACAEngine::Drivers::Helper.repository_commit_hash(repository_name)
-      own_node = ModuleManager.instance.discovery.own_node?(repository.id.as(String))
-      if current_commit != repository_commit && (own_node || startup)
+      own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
+      if current_commit != repository_commit && own_node
         if startup
           logger.warn("updating commit on repository during startup: name=#{repository_name}")
         end

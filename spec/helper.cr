@@ -12,7 +12,7 @@ require "engine-models/spec/generator"
 require "../lib/action-controller/spec/curl_context"
 
 def get_temp
-  "#{Dir.tempdir}/core-spec-#{UUID.random}"
+  File.expand_path("#{Dir.current}/../core-spec")
 end
 
 # To reduce the run-time of the very setup heavy specs.
@@ -34,7 +34,7 @@ def set_temporary_working_directory(fresh : Bool = false) : String
 end
 
 def teardown(temp_dir = TEMP_DIR)
-  `rm -rf #{temp_dir}`
+  # `rm -rf #{temp_dir}`
 end
 
 def setup(fresh : Bool = false)

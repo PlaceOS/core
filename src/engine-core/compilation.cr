@@ -49,7 +49,8 @@ module ACAEngine
         rescue e
           return {exit_status: 1, output: "failed to pull and install #{repository_name}: #{e.try &.message}"}
         end
-      elsif ACAEngine::Drivers::Helper.compiled?(name, commit)
+      elsif ACAEngine::Drivers::Helper.compiled?(file_name, commit)
+        logger.info("driver already compiled: name=#{name} repository_name=#{repository_name} commit=#{commit}")
         return {exit_status: 0, output: ""}
       end
 
@@ -57,9 +58,9 @@ module ACAEngine
       success = result[:exit_status] == 0
 
       if success
-        logger.info("compiled driver: name=#{file_name} repository_name=#{repository_name} output=#{result[:output]}")
+        logger.info("compiled driver: name=#{name} repository_name=#{repository_name} output=#{result[:output]}")
       else
-        logger.error("failed to compile driver: name=#{file_name} repository_name=#{repository_name} output=#{result[:output]}")
+        logger.error("failed to compile driver: name=#{name} repository_name=#{repository_name} output=#{result[:output]}")
       end
 
       if update_commit && success

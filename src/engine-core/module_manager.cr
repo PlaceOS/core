@@ -1,5 +1,6 @@
 require "action-controller"
 require "engine-driver/protocol/management"
+require "engine-drivers/compiler"
 require "engine-drivers/helper"
 require "engine-models"
 require "habitat"
@@ -45,22 +46,26 @@ module ACAEngine
       port: settings.port
     )
 
+    # Class to be used as a singleton
+    def self.instance : ModuleManager
+      @@instance
+    end
+
     # Mapping from module_id to protocol manager
-    @@module_proc_managers = {} of String => Driver::Protocol::Management
+    @module_proc_managers = {} of String => Driver::Protocol::Management
     # Mapping from driver path to protocol manager
-    @@driver_proc_managers = {} of String => Driver::Protocol::Management
+    @driver_proc_managers = {} of String => Driver::Protocol::Management
 
     # Once registered, run through all the modules, consistent hashing to determine what modules need to be loaded
     # Start the driver processes as required.
     # Launch the modules on those processes etc
     # Once all the modules are running. Mark in etcd that load is complete.
-    def initialize(ip : String, port : Int32)
-      @discovery = HoundDog::Discovery.new(service: "core", ip: ip, port: port)
-    end
-
-    # Class to be used as a singleton
-    def self.instance : ModuleManager
-      @@instance
+    def initialize(
+      ip : String,
+      port : Int32,
+      discovery : HoundDog::Discovery? = HoundDog::Discovery.new(service: "core")
+    )
+      @discovery = discovery || HoundDog::Discovery.new(service: "core", ip: ip, port: port)
     end
 
     def watch_modules
@@ -83,20 +88,20 @@ module ACAEngine
 
     # The number of drivers loaded on current node
     def running_drivers
-      @@driver_proc_managers.size
+      @driver_proc_managers.size
     end
 
     # The number of module processes on current node
     def running_modules
-      @@module_proc_managers.size
+      @module_proc_managers.size
     end
 
     def manager_by_module_id(mod_id : String) : Driver::Protocol::Management?
-      @@module_proc_managers[mod_id]?
+      @module_proc_managers[mod_id]?
     end
 
     def manager_by_driver_path(path : String) : Driver::Protocol::Management?
-      @@driver_proc_managers[path]?
+      @driver_proc_managers[path]?
     end
 
     def start
@@ -119,22 +124,32 @@ module ACAEngine
 
       # Start format
       payload = {
-        ip:             mod.ip,
-        port:           mod.port,
-        udp:            mod.udp,
-        tls:            mod.tls,
+        ip:   mod.ip,
+        port: mod.port,
+        # TODO: remove '|| false' after Module has updated defaults
+        udp:            mod.udp || false,
+        tls:            mod.tls || false,
         makebreak:      mod.makebreak,
         role:           mod.role,
         settings:       mod.merge_settings,
         control_system: {
-          id:       cs.id,
-          name:     cs.name,
-          email:    cs.email,
+          id:   cs.id,
+          name: cs.name,
+          # TODO: remove '|| ""' after ControlSystem has updated defaults
+          email:    cs.email || "",
+          features: cs.features || "",
           capacity: cs.capacity,
-          features: cs.features,
           bookable: cs.bookable,
         },
       }.to_json
+
+      # NOTE: The settings object needs to be unescaped
+      # OPTIMIZE: Might be better if the driver parses the setttings as a seperate JSON chunk
+      payload = payload.gsub(/"settings":"{(.*)}",/) do |m1|
+        m1.gsub(/"{(.*)}"/) do |m2|
+          m2.strip('"')
+        end
+      end
 
       mod_id = mod.id.as(String)
       proc_manager = manager_by_module_id(mod_id)
@@ -155,7 +170,7 @@ module ACAEngine
     def remove_module(mod : Model::Module)
       mod_id = mod.id.as(String)
       manager_by_module_id(mod_id).try &.stop(mod_id)
-      @@module_proc_managers.delete(mod_id)
+      @module_proc_managers.delete(mod_id)
     end
 
     def balance_modules
@@ -168,11 +183,11 @@ module ACAEngine
       if discovery.own_node?(mod_id)
         driver = mod.driver.as(Model::Driver)
         driver_name = driver.name.as(String)
+        driver_file_name = driver.file_name.as(String)
         driver_commit = driver.commit.as(String)
 
         # Check if the module is on the current node
-        driver_path = driver_path(driver_name, driver_commit)
-        unless File.exists?(driver_path)
+        unless (driver_path = ACAEngine::Drivers::Compiler.is_built?(driver_file_name, driver_commit))
           logger.error("driver does not exist: driver_name=#{driver_name} driver_commit=#{driver_commit} module_id=#{mod_id}")
           return
         end
@@ -182,13 +197,13 @@ module ACAEngine
           logger.info("module already loaded: module_id=#{mod_id} driver_name=#{driver_name} driver_commit=#{driver_commit}")
         elsif (existing_driver_manager = manager_by_driver_path(driver_path))
           # Use the existing driver protocol manager
-          @@module_proc_managers[mod_id] = existing_driver_manager
+          @module_proc_managers[mod_id] = existing_driver_manager
         else
           # Create a new protocol manager
           proc_manager = Driver::Protocol::Management.new(driver_path, logger)
 
-          @@driver_proc_managers[driver_path] = proc_manager
-          @@module_proc_managers[mod_id] = proc_manager
+          @driver_proc_managers[driver_path] = proc_manager
+          @module_proc_managers[mod_id] = proc_manager
         end
 
         start_module(mod)
