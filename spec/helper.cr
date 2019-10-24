@@ -2,7 +2,6 @@ require "spec"
 
 # Application config
 require "../src/config"
-
 require "../src/engine-core"
 require "../src/engine-core/*"
 
@@ -12,13 +11,17 @@ require "engine-models/spec/generator"
 require "../lib/action-controller/spec/curl_context"
 
 def get_temp
-  File.expand_path("#{Dir.current}/../core-spec")
+  "#{Dir.tempdir}/core-spec-#{UUID.random}"
 end
 
 # To reduce the run-time of the very setup heavy specs.
 # - Use teardown if you need to clear a temporary repository
 # - Use setup(fresh: true) if you require a clean working directory
 TEMP_DIR = get_temp
+
+def teardown(temp_dir = TEMP_DIR)
+  `rm -rf #{temp_dir}`
+end
 
 # Remove the shared test directory
 Spec.after_suite &->teardown
@@ -31,10 +34,6 @@ def set_temporary_working_directory(fresh : Bool = false) : String
   ACAEngine::Drivers::Compiler.repository_dir = "#{temp_dir}/repositories"
 
   temp_dir
-end
-
-def teardown(temp_dir = TEMP_DIR)
-  # `rm -rf #{temp_dir}`
 end
 
 def setup(fresh : Bool = false)

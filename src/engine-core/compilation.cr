@@ -12,7 +12,7 @@ module ACAEngine
 
     def initialize(
       @logger = ActionController::Logger.new,
-      # NOTE: Mainly for testing purposes
+      @startup = true,
       bin_dir = ACAEngine::Drivers::Compiler.bin_dir,
       drivers_dir = ACAEngine::Drivers::Compiler.drivers_dir,
       repository_dir = ACAEngine::Drivers::Compiler.repository_dir

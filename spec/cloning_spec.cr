@@ -6,8 +6,7 @@ module ACAEngine::Core
   describe Cloning do
     describe "startup" do
       it "clones repositories" do
-        # Set up a temporary directory
-        temp_dir = set_temporary_working_directory(fresh: true)
+        set_temporary_working_directory
 
         ACAEngine::Model::Repository.clear
         repo = ACAEngine::Model::Generator.repository(type: ACAEngine::Model::Repository::Type::Driver)
@@ -22,12 +21,12 @@ module ACAEngine::Core
         # Check repository has been processed
         cloner.processed.size.should eq 1
         cloner.processed.first.id.should eq repo.id
+
         # Check the cloning took place
         Dir.exists?(ACAEngine::Drivers::Compiler.drivers_dir).should be_true
 
         commit_hash = ACAEngine::Drivers::Helper.repository_commit_hash(repo.name.as(String))
         ACAEngine::Model::Repository.find!(repo.id).commit_hash.should eq commit_hash
-        teardown(temp_dir)
       end
     end
   end

@@ -12,12 +12,16 @@ module ACAEngine::Core
 
     @@instance : ResourceManager? = nil
 
-    def initialize(@logger = ActionController::Logger.new)
+    def initialize(
+      cloning : Cloning? = nil,
+      compilation : Compilation? = nil,
+      @logger = ActionController::Logger.new
+    )
       logger.info("cloning repositories")
-      @cloning = Cloning.new
+      @cloning = cloning || Cloning.new
 
       logger.info("compiling drivers")
-      @compilation = Compilation.new
+      @compilation = compilation || Compilation.new
     end
 
     def self.instance : ResourceManager
