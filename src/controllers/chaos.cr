@@ -1,23 +1,36 @@
 require "./application"
 require "../engine-core"
 
-module ACAEngine::Core
+module ACAEngine::Core::Api
   class Chaos < Application
     base "/api/core/v1/chaos/"
 
-    @manager = ModuleManager.instance
+    getter module_manager : ModuleManager = ModuleManager.instance
 
     # terminate a process
     post "/terminate" do
       driver = params["path"]
-      manager = @manager.manager_by_driver_path(driver)
-      head :not_found unless manager
-      head :ok unless manager.running?
+      protocol_manager = module_manager.manager_by_driver_path(driver)
+      head :not_found unless protocol_manager
+      head :ok unless protocol_manager.running?
 
-      pid = manager.pid
+      pid = protocol_manager.pid
       Process.run("kill", {"-9", pid.to_s})
 
       head :ok
+    end
+
+    def initialize(@context, @action_name = :index, @__head_request__ = false)
+      super(@context, @action_name, @__head_request__)
+    end
+
+    # Override initializer for specs
+    def initialize(
+      context : HTTP::Server::Context,
+      action_name = :index,
+      @module_manager : ModuleManager = ModuleManager.instance
+    )
+      super(context, action_name)
     end
   end
 end

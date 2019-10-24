@@ -4,7 +4,7 @@ require "engine-drivers/helper"
 require "./application"
 require "../engine-core/resource_manager"
 
-module ACAEngine::Core
+module ACAEngine::Core::Api
   class Status < Application
     base "/api/core/v1/status/"
     id_param :commit_hash

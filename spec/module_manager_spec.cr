@@ -22,8 +22,9 @@ module ACAEngine::Core
         pp! e
       end
 
+      cloning = Cloning.new(testing: true)
       # Clone, compile
-      ResourceManager.new
+      ResourceManager.new(cloning: cloning)
 
       mod_id = mod.id.as(String)
       driver_file_name = driver.file_name.as(String)
@@ -65,8 +66,9 @@ module ACAEngine::Core
         # Prepare models, set working dir
         setup
 
+        cloning = Cloning.new(testing: true)
         # Clone, compile
-        ResourceManager.new
+        ResourceManager.new(cloning: cloning)
 
         # Start module manager
         module_manager = ModuleManager.new("localhost", 4200).start

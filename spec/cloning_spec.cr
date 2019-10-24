@@ -16,7 +16,7 @@ module ACAEngine::Core
         repo.commit_hash = "head"
         repo.save!
 
-        cloner = Cloning.new
+        cloner = Cloning.new(testing: true)
 
         # Check repository has been processed
         cloner.processed.size.should eq 1

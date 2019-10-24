@@ -1,7 +1,7 @@
 require "./application"
 require "engine-drivers/helper"
 
-module ACAEngine::Core
+module ACAEngine::Core::Api
   class Drivers < Application
     base "/api/core/v1/drivers/"
 

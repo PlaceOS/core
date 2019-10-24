@@ -8,12 +8,15 @@ require "./resource"
 module ACAEngine
   class Core::Cloning < Core::Resource(Model::Repository)
     @startup : Bool = true
+    @testing : Bool = false # Prevent redundant pulls/installs
 
     def initialize(
       @username : String? = nil,
       @password : String? = nil,
       @working_dir : String = ACAEngine::Drivers::Compiler.repository_dir,
-      @logger : Logger = ActionController::Logger.new
+      @logger : Logger = ActionController::Logger.new,
+      @startup : Bool = false,
+      @testing : Bool = false
     )
       super(@logger)
       @startup = false
@@ -25,8 +28,9 @@ module ACAEngine
         username: @username,
         password: @password,
         working_dir: @working_dir,
+        logger: @logger,
         startup: @startup,
-        logger: logger,
+        testing: @testing,
       )
 
       true
@@ -43,6 +47,7 @@ module ACAEngine
       username : String? = nil,
       password : String? = nil,
       startup : Bool = false,
+      testing : Bool = false,
       logger : Logger = ActionController::Logger.new
     )
       repository_id = repository.id.as(String)
@@ -56,6 +61,7 @@ module ACAEngine
         username: username || repository.username,
         password: password || repository.password,
         working_dir: working_dir,
+        pull_if_exists: !testing,
       )
 
       # Update commit hash if repository id maps to current node, or during startup

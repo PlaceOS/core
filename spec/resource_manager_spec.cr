@@ -6,7 +6,9 @@ module ACAEngine::Core
     it "clones and compiles" do
       setup
 
-      resource_manager = ResourceManager.new
+      # Clone, compile
+      cloning = Cloning.new(testing: true)
+      resource_manager = ResourceManager.new(cloning: cloning)
 
       # Commit hash is updated, so model will be received again during startup
       resource_manager.cloning.processed.size.should eq 2

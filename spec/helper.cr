@@ -20,7 +20,7 @@ end
 TEMP_DIR = get_temp
 
 def teardown(temp_dir = TEMP_DIR)
-  `rm -rf #{temp_dir}`
+  # `rm -rf #{temp_dir}`
 end
 
 # Remove the shared test directory
@@ -70,4 +70,10 @@ def setup(fresh : Bool = false)
   mod = ACAEngine::Model::Generator.module(driver: driver).save!
 
   {temp_dir, repository, driver, mod}
+end
+
+class DiscoveryMock < HoundDog::Discovery
+  def own_node?(key : String) : Bool
+    true
+  end
 end
