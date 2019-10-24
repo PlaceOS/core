@@ -1,14 +1,14 @@
+dist: xenial
 sudo: required
 language: crystal
+services:
+  - docker
+  - redis-server
 
 env:
   # Set spider-gazelle environment
   - SG_ENV=production
   - TRAVIS_TEST=true
-
-services:
-  - docker
-  - redis-server
 
 before_install:
   # Add rethinkdb 2.3.6
@@ -17,6 +17,19 @@ before_install:
   - docker run --net="host" -p "2379:2379" -p "2380:2380" -e ALLOW_NONE_AUTHENTICATION=yes -d bitnami/etcd:3.3.13
 
 install:
+  # Install the latest version of LibSSH2
+  - wget https://launchpad.net/ubuntu/+source/libgpg-error/1.32-1/+build/15118612/+files/libgpg-error0_1.32-1_amd64.deb
+  - sudo dpkg -i libgpg-error0_1.32-1_amd64.deb
+  - wget https://launchpad.net/ubuntu/+source/libgcrypt20/1.8.3-1ubuntu1/+build/15106861/+files/libgcrypt20_1.8.3-1ubuntu1_amd64.deb
+  - sudo dpkg -i libgcrypt20_1.8.3-1ubuntu1_amd64.deb
+  - wget https://launchpad.net/ubuntu/+source/libssh2/1.8.0-2/+build/15151524/+files/libssh2-1_1.8.0-2_amd64.deb
+  - sudo dpkg -i libssh2-1_1.8.0-2_amd64.deb
+  - wget https://launchpad.net/ubuntu/+source/libgpg-error/1.32-1/+build/15118612/+files/libgpg-error-dev_1.32-1_amd64.deb
+  - sudo dpkg -i libgpg-error-dev_1.32-1_amd64.deb
+  - wget https://launchpad.net/ubuntu/+source/libgcrypt20/1.8.3-1ubuntu1/+build/15106861/+files/libgcrypt20-dev_1.8.3-1ubuntu1_amd64.deb
+  - sudo dpkg -i libgcrypt20-dev_1.8.3-1ubuntu1_amd64.deb
+  - wget https://launchpad.net/ubuntu/+source/libssh2/1.8.0-2/+build/15151524/+files/libssh2-1-dev_1.8.0-2_amd64.deb
+  - sudo dpkg -i libssh2-1-dev_1.8.0-2_amd64.deb
   - shards install
 
 before_script:
