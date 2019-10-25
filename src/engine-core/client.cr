@@ -74,9 +74,12 @@ module ACAEngine::Core
     ###########################################################################
 
     # Returns the JSON response of executing a method on module
-    # TODO: Better typing on arguments
-    def execute(module_id : String, body : Hash | NamedTuple)
-      post("/command/#{module_id}/execute", body).body
+    def execute(module_id : String, function_name : String | Symbol, arguments : NamedTuple | Array | Hash)
+      payload = {
+        :__exec__     => function_name,
+        function_name => arguments,
+      }.to_json
+      post("/command/#{module_id}/execute", payload).body
     end
 
     # Grab the STDOUT of a module process
