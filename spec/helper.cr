@@ -10,8 +10,10 @@ require "engine-models/spec/generator"
 # Helper methods for testing controllers (curl, with_server, context)
 require "../lib/action-controller/spec/curl_context"
 
+SPEC_DRIVER = "drivers/aca/private_helper.cr"
+
 def get_temp
-  "#{Dir.tempdir}/core-spec-#{UUID.random}"
+  "#{Dir.tempdir}/core-spec"
 end
 
 # To reduce the run-time of the very setup heavy specs.
@@ -20,7 +22,7 @@ end
 TEMP_DIR = get_temp
 
 def teardown(temp_dir = TEMP_DIR)
-  # `rm -rf #{temp_dir}`
+  `rm -rf #{temp_dir}`
 end
 
 # Remove the shared test directory
@@ -70,6 +72,18 @@ def setup(fresh : Bool = false)
   mod = ACAEngine::Model::Generator.module(driver: driver).save!
 
   {temp_dir, repository, driver, mod}
+end
+
+def create_resources
+  # Prepare models, set working dir
+  _, repository, driver, mod = setup
+
+  cloning = ACAEngine::Core::Cloning.new(testing: true)
+
+  # Clone, compile
+  ACAEngine::Core::ResourceManager.new(cloning: cloning)
+
+  {repository, driver, mod}
 end
 
 class DiscoveryMock < HoundDog::Discovery

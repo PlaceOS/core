@@ -63,12 +63,7 @@ module ACAEngine::Core
       end
 
       it "loads relevant modules" do
-        # Prepare models, set working dir
-        setup
-
-        cloning = Cloning.new(testing: true)
-        # Clone, compile
-        ResourceManager.new(cloning: cloning)
+        create_resources
 
         # Start module manager
         module_manager = ModuleManager.new("localhost", 4200).start
