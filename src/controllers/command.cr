@@ -7,22 +7,22 @@ module ACAEngine::Core::Api
     getter module_manager = ModuleManager.instance
 
     # Executes a command against a module
-    post "/:module_id/execute" do
+    post "/:module_id/execute", :execute do
       module_id = params["module_id"]
       protocol_manager = module_manager.manager_by_module_id(module_id)
+
       head :not_found unless protocol_manager
 
       body = request.body
       head :not_acceptable unless body
 
       # We don't parse the request here or parse the response, just proxy it.
-      response.content_type = "application/json"
-      response << protocol_manager.execute(module_id, body.gets_to_end)
+      render json: protocol_manager.execute(module_id, body.gets_to_end)
     end
 
     # For now a one-to-one debug session to websocket should be fine as it's not
     # a common operation and limited to system administrators
-    ws "/:module_id/debugger" do |socket|
+    ws "/:module_id/debugger", :module_debugger do |socket|
       module_id = params["module_id"]
       protocol_manager = module_manager.manager_by_module_id(module_id)
       raise "module not loaded" unless protocol_manager
@@ -37,7 +37,7 @@ module ACAEngine::Core::Api
 
     # In the long term we should move to a single websocket between API instances
     # and core instances, then we multiplex the debugging signals accross.
-    ws "/debugger" do |_socket|
+    ws "/debugger", :debugger do |_socket|
       raise "not implemented"
     end
 

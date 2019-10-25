@@ -31,7 +31,7 @@ module ACAEngine::Core::Api
 
     # details related to a process (+ anything else we can think of)
     # /api/core/v1/status/driver?path=/path/to/compiled_driver
-    get "/driver" do
+    get "/driver", :driver do
       driver = params["path"]
       manager = module_manager.manager_by_driver_path(driver)
       head :not_found unless manager
@@ -61,7 +61,7 @@ module ACAEngine::Core::Api
     end
 
     # details about the overall machine load
-    get "/load" do
+    get "/load", :load do
       process = Hardware::PID.new
       memory = Hardware::Memory.new
       cpu = Hardware::CPU.new
@@ -80,6 +80,19 @@ module ACAEngine::Core::Api
         memory_usage: memory.used,
         core_memory:  memory.used,
       }
+    end
+
+    def initialize(@context, @action_name = :index, @__head_request__ = false)
+      super(@context, @action_name, @__head_request__)
+    end
+
+    # Override initializer for specs
+    def initialize(
+      context : HTTP::Server::Context,
+      action_name = :index,
+      @module_manager : ModuleManager = ModuleManager.instance
+    )
+      super(context, action_name)
     end
   end
 end
