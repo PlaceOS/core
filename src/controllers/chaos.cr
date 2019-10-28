@@ -8,7 +8,7 @@ module ACAEngine::Core::Api
     getter module_manager : ModuleManager = ModuleManager.instance
 
     # terminate a process
-    post "/terminate" do
+    post "/terminate", :terminate do
       driver = params["path"]
       protocol_manager = module_manager.manager_by_driver_path(driver)
       head :not_found unless protocol_manager
