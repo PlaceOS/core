@@ -17,4 +17,4 @@ Compilation of drivers occurs across each core node on startup.
 
 ### Module Management
 
-Modules are instantiations of drivers which are started depending on whether the module id maps the current node through [https://github.com/aca-labs/hound-dog](rendezvous hashing).
+Modules are instantiations of drivers which are started depending on whether the module id maps the current node through [rendezvous hashing](https://github.com/aca-labs/hound-dog).
