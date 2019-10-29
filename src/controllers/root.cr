@@ -3,10 +3,10 @@ require "./application"
 # TODO: Remove root controller once radix routing bug fixed
 module ACAEngine::Core::Api
   class Root < Application
-    base "/"
+    base "/api/core/v1/"
 
     def index
-      head :not_found
+      head :ok
     end
   end
 end
