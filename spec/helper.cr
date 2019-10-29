@@ -16,12 +16,11 @@ SPEC_DRIVER = "drivers/aca/private_helper.cr"
 TEMP_DIR = get_temp
 
 def get_temp
-  # "#{Dir.tempdir}/core-spec"
-  Path["#{Dir.current}/../core-spec"].expand.to_s
+  "#{Dir.tempdir}/core-spec"
 end
 
 def teardown(temp_dir = TEMP_DIR)
-  # `rm -rf #{temp_dir}`
+  `rm -rf #{temp_dir}`
 end
 
 # Remove the shared test directory
