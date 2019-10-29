@@ -4,8 +4,9 @@ WORKDIR /app
 
 # Add
 # - ping (not in base xenial image the crystal image is based off)
+# - libssh2
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y iputils-ping=3:20121221-5ubuntu2 && \
+    apt-get install --no-install-recommends -y iputils-ping=3:20121221-5ubuntu2 libssh2-1-dev=1.5.0-2ubuntu0.1&& \
     rm -rf /var/lib/apt/lists/*
 
 # Install shards for caching
