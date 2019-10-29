@@ -1,5 +1,4 @@
 *.dwarf
-*.lock
 .DS_Store
 .crystal
 .shards
