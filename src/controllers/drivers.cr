@@ -1,5 +1,6 @@
-require "./application"
 require "engine-drivers/helper"
+
+require "./application"
 
 module ACAEngine::Core::Api
   class Drivers < Application
@@ -7,13 +8,14 @@ module ACAEngine::Core::Api
 
     # The drivers available, returns Array(String)
     def index
-      render json: ACAEngine::Drivers::Helper.drivers(params["repository"]?)
+      repository = params["repository"]? || "drivers"
+      render json: ACAEngine::Drivers::Helper.drivers(repository)
     end
 
     # Returns the list of commits for a particular driver
     def show
       driver = URI.decode(params["id"])
-      repository = params["repository"]?
+      repository = params["repository"]? || "drivers"
       count = (params["count"]? || 50).to_i
 
       render json: ACAEngine::Drivers::Helper.commits(driver, repository, count)

@@ -20,6 +20,9 @@ module ACAEngine::Core::Api
       head :ok
     end
 
+    # Overriding initializers for dependency injection
+    ###########################################################################
+
     def initialize(@context, @action_name = :index, @__head_request__ = false)
       super(@context, @action_name, @__head_request__)
     end

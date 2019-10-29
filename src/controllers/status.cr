@@ -15,10 +15,6 @@ module ACAEngine::Core::Api
     def index
       resource_manager = ResourceManager.instance
 
-      # TODO: Pick off errors from ModuleManager, ResourceManagers e.g.
-      # - [{name:   "private_1", reason: "401 unauthorised while cloning"}]
-      # - [{name:   "Cisco XXX", reason: "failed to compile / failed to run"}]
-
       render json: {
         compiled_drivers:         ACAEngine::Drivers::Helper.compiled_drivers,
         available_repositories:   ACAEngine::Drivers::Helper.repositories,
@@ -32,8 +28,10 @@ module ACAEngine::Core::Api
     # details related to a process (+ anything else we can think of)
     # /api/core/v1/status/driver?path=/path/to/compiled_driver
     get "/driver", :driver do
-      driver = params["path"]
-      manager = module_manager.manager_by_driver_path(driver)
+      driver_path = params["path"]?
+      head :unprocessable_entity unless driver_path
+
+      manager = module_manager.manager_by_driver_path(driver_path)
       head :not_found unless manager
 
       response = {
@@ -82,11 +80,13 @@ module ACAEngine::Core::Api
       }
     end
 
+    # Overriding initializers for dependency injection
+    ###########################################################################
+
     def initialize(@context, @action_name = :index, @__head_request__ = false)
       super(@context, @action_name, @__head_request__)
     end
 
-    # Override initializer for specs
     def initialize(
       context : HTTP::Server::Context,
       action_name = :index,

@@ -7,6 +7,6 @@ require "../helper"
 
 module ACAEngine::Core
   describe Api::Chaos do
-    pending "/terminate"
+    pending "chaos/terminate"
   end
 end

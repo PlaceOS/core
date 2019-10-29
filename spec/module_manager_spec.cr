@@ -1,22 +1,18 @@
 require "./helper"
 
-class DiscoveryMock < HoundDog::Discovery
-  def own_node?(key : String) : Bool
-    true
-  end
-end
-
 module ACAEngine::Core
   describe ModuleManager do
     it "load_module" do
       _, repo, driver, mod = setup
 
       repo_folder = repo.folder_name.as(String)
+      driver_file_name = driver.file_name.as(String)
 
       begin
-        commit_hash = ACAEngine::Drivers::Helper.repository_commit_hash(repo_folder)
-        driver.update_fields(commit: commit_hash)
-        repo.update_fields(commit_hash: commit_hash)
+        repo_commit_hash = ACAEngine::Drivers::Helper.repository_commit_hash(repo_folder)
+        driver_commit_hash = ACAEngine::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
+        driver.update_fields(commit: driver_commit_hash)
+        repo.update_fields(commit_hash: repo_commit_hash)
         sleep 0.2
       rescue e
         pp! e
@@ -27,9 +23,8 @@ module ACAEngine::Core
       ResourceManager.new(cloning: cloning)
 
       mod_id = mod.id.as(String)
-      driver_file_name = driver.file_name.as(String)
-      driver_commit = ACAEngine::Drivers::Helper.repository_commit_hash(repo_folder)
-      driver_path = ACAEngine::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit)
+      driver_commit_hash = ACAEngine::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
+      driver_path = ACAEngine::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit_hash)
 
       module_manager = ModuleManager.new("localhost", 4200, DiscoveryMock.new("core"))
 

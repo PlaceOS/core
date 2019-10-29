@@ -41,11 +41,13 @@ module ACAEngine::Core::Api
       raise "not implemented"
     end
 
+    # Overriding initializers for dependency injection
+    ###########################################################################
+
     def initialize(@context, @action_name = :index, @__head_request__ = false)
       super(@context, @action_name, @__head_request__)
     end
 
-    # Override initializer for specs
     def initialize(
       context : HTTP::Server::Context,
       action_name = :index,

@@ -116,6 +116,9 @@ module ACAEngine
       balance_modules
 
       logger.info("loaded modules: running_drivers=#{running_drivers} running_modules=#{running_modules}")
+
+      Fiber.yield
+
       self
     end
 

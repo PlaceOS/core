@@ -29,6 +29,11 @@ HoundDog.configure do |settings|
   settings.etcd_port = (ENV["ETCD_PORT"]? || 2379).to_i
 end
 
+# Path to driver repositories
+ACAEngine::Drivers::Compiler.repository_dir = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
+# Path to default drivers repository
+ACAEngine::Drivers::Compiler.drivers_dir = ENV["ENGINE_DRIVERS"]? || File.join(ACAEngine::Drivers::Compiler.repository_dir, "drivers")
+
 # Filter out sensitive params that shouldn't be logged
 filter_params = ["password", "bearer_token"]
 

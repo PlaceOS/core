@@ -75,6 +75,8 @@ module ACAEngine
         # Refresh the repository model commit hash
         repository.update_fields(commit_hash: current_commit)
       end
+
+      logger.info("cloned repository: repository=#{repository_name} uri=#{repository_uri}")
     end
   end
 end

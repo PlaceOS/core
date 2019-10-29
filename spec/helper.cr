@@ -1,4 +1,5 @@
 require "spec"
+require "../lib/action-controller/spec/curl_context"
 
 # Application config
 require "../src/config"
@@ -7,22 +8,20 @@ require "../src/engine-core/*"
 
 require "engine-models/spec/generator"
 
-# Helper methods for testing controllers (curl, with_server, context)
-require "../lib/action-controller/spec/curl_context"
-
 SPEC_DRIVER = "drivers/aca/private_helper.cr"
-
-def get_temp
-  "#{Dir.tempdir}/core-spec"
-end
 
 # To reduce the run-time of the very setup heavy specs.
 # - Use teardown if you need to clear a temporary repository
 # - Use setup(fresh: true) if you require a clean working directory
 TEMP_DIR = get_temp
 
+def get_temp
+  # "#{Dir.tempdir}/core-spec"
+  Path["#{Dir.current}/../core-spec"].expand.to_s
+end
+
 def teardown(temp_dir = TEMP_DIR)
-  `rm -rf #{temp_dir}`
+  # `rm -rf #{temp_dir}`
 end
 
 # Remove the shared test directory
