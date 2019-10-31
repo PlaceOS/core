@@ -10,7 +10,11 @@ module ACAEngine::Core
     getter cloning : Cloning
     getter compilation : Compilation
 
-    @@instance : ResourceManager? = nil
+    @@instance : ResourceManager?
+
+    def self.instance : ResourceManager
+      (@@instance ||= ResourceManager.new).as(ResourceManager)
+    end
 
     def initialize(
       cloning : Cloning? = nil,
@@ -22,10 +26,6 @@ module ACAEngine::Core
 
       logger.info("compiling drivers")
       @compilation = compilation || Compilation.new
-    end
-
-    def self.instance : ResourceManager
-      (@@instance || ResourceManager.new).as(ResourceManager)
     end
   end
 end

@@ -41,14 +41,11 @@ module ACAEngine
     # # - Flow is blocked by the watch feed
 
     # From environment
-    @@instance = new(
-      ip: settings.ip,
-      port: settings.port
-    )
+    @@instance : ModuleManager?
 
     # Class to be used as a singleton
     def self.instance : ModuleManager
-      @@instance
+      (@@instance ||= ModuleManager.new(ip: settings.ip, port: settings.port)).as(ModuleManager)
     end
 
     # Mapping from module_id to protocol manager

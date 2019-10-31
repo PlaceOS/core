@@ -36,11 +36,14 @@ def set_temporary_working_directory(fresh : Bool = false) : String
   temp_dir
 end
 
+# Create models for a test
 def setup(fresh : Bool = false)
   # Set up a temporary directory
   temp_dir = set_temporary_working_directory(fresh)
 
-  # Create models
+  # TODO: first check for repo with same url, driver with same file_name, module with driver
+
+  # Clear tables
   ACAEngine::Model::Repository.clear
   ACAEngine::Model::Driver.clear
   ACAEngine::Model::Module.clear
