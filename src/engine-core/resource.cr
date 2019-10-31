@@ -32,7 +32,7 @@ abstract class ACAEngine::Core::Resource(T)
     @processed = Deque(T).new(processed_buffer_size)
 
     # Listen for changes on the resource table
-    spawn watch_resources
+    spawn(same_thread: true) { watch_resources }
 
     # Load all the resources into a channel
     initial_resource_count = load_resources
@@ -41,7 +41,7 @@ abstract class ACAEngine::Core::Resource(T)
     initial_resource_count.times { _process_resource(consume_resource) }
 
     # Begin background processing
-    spawn watch_processing
+    spawn(same_thread: true) { watch_processing }
   end
 
   def consume_resource : T
@@ -86,6 +86,6 @@ abstract class ACAEngine::Core::Resource(T)
   def watch_processing
     # Block on the resource channel
     resource = consume_resource
-    spawn _process_resource(resource)
+    spawn(same_thread: true) { _process_resource(resource) }
   end
 end

@@ -108,7 +108,7 @@ module ACAEngine
       discovery.register { balance_modules }
 
       # Listen for incoming module changes
-      spawn watch_modules
+      spawn(same_thread: true) { watch_modules }
 
       balance_modules
 
