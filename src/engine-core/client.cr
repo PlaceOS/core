@@ -1,6 +1,8 @@
 require "http"
-require "uri"
 require "json"
+require "uri"
+
+require "./error"
 
 module ACAEngine::Core
   class Client
@@ -106,8 +108,8 @@ module ACAEngine::Core
 
       getter compiled_drivers : Array(String)
       getter available_repositories : Array(String)
-      getter running_drivers : Array(String)
-      getter module_instances : Array(String)
+      getter running_drivers : Int32
+      getter module_instances : Int32
       getter unavailable_repositories : Array(Error)
       getter unavailable_drivers : Array(Error)
     end
@@ -169,9 +171,9 @@ module ACAEngine::Core
       # unsuccessful.
       # ```
       private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType? = nil)
-        path = "#{BASE_PATH}/#{core_version}/#{path}"
+        path = File.join(BASE_PATH, core_version, path)
         response = connection.{{method.id}}(path, headers, body)
-        raise Core::ClientErrror.from_response(response) unless response.success?
+        raise Core::ClientError.from_response(response) unless response.success?
 
         response
       end

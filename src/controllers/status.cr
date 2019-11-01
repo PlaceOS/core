@@ -10,11 +10,10 @@ module ACAEngine::Core::Api
     id_param :commit_hash
 
     getter module_manager = ModuleManager.instance
+    getter resource_manager = ResourceManager.instance
 
     # General statistics related to the process
     def index
-      resource_manager = ResourceManager.instance
-
       render json: {
         compiled_drivers:         ACAEngine::Drivers::Helper.compiled_drivers,
         available_repositories:   ACAEngine::Drivers::Helper.repositories,
@@ -90,7 +89,8 @@ module ACAEngine::Core::Api
     def initialize(
       context : HTTP::Server::Context,
       action_name = :index,
-      @module_manager : ModuleManager = ModuleManager.instance
+      @module_manager : ModuleManager = ModuleManager.instance,
+      @resource_manager : ResourceManager = ResourceManager.instance
     )
       super(context, action_name)
     end

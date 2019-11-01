@@ -40,22 +40,19 @@ module ACAEngine::Core
         _, _, mod = create_resources
         mod_id = mod.id.as(String)
 
-        coord_channel = Channel(Nil).new
-        messages = [] of String
-        ws = HTTP::WebSocket.new("localhost", "/api/core/v1/command/#{mod_id}/debugger", 6000)
-        ws.on_message do |message|
-          messages << message
-          coord_channel.send nil
+        message_channel = Channel(String).new
+        spawn do
+          with_server do
+            client = Client.new("localhost", 6000)
+            client.debug(mod_id) do |message|
+              message_channel << message
+            end
+          end
         end
 
-        with_server do
-          ws.run
-          response = curl("POST", "/api/core/v1/command/#{mod_id}/execute", HTTP::Headers{"Content-Type" => "application/json"}, EXEC_PAYLOAD)
-          response.success?.should be_true
-          coord_channel.receive
-        end
-
-        (messages.size > 0).should be_true
+        message = message_channel.receive
+        message.should be_a String
+        message.empty?.should_not be_true
       end
     end
 
