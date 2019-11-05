@@ -19,26 +19,6 @@ module ACAEngine
       @testing : Bool = false
     )
       super(@logger)
-      @startup = false
-    end
-
-    def process_resource(repository) : Bool
-      Cloning.clone_and_install(
-        repository: repository,
-        username: @username,
-        password: @password,
-        working_dir: @working_dir,
-        logger: @logger,
-        startup: @startup,
-        testing: @testing,
-      )
-
-      true
-    rescue e
-      # Add cloning errors
-      errors << {name: repository.name.as(String), reason: e.try &.message || ""}
-
-      false
     end
 
     def self.clone_and_install(
@@ -77,6 +57,31 @@ module ACAEngine
       end
 
       logger.info("cloned repository: repository=#{repository_name} uri=#{repository_uri}")
+    end
+
+    def process_resource(repository) : Resource::Result
+      Cloning.clone_and_install(
+        repository: repository,
+        username: @username,
+        password: @password,
+        working_dir: @working_dir,
+        logger: @logger,
+        startup: @startup,
+        testing: @testing,
+      )
+
+      Resource::Result::Success
+    rescue e
+      # Add cloning errors
+      errors << {name: repository.name.as(String), reason: e.try &.message || ""}
+
+      Resource::Result::Error
+    end
+
+    def start
+      super
+      @startup = false
+      self
     end
   end
 end

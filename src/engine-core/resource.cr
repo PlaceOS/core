@@ -21,7 +21,13 @@ abstract class ACAEngine::Core::Resource(T)
 
   private getter logger : Logger
 
-  abstract def process_resource(resource : T) : Bool
+  enum Result
+    Success
+    Error
+    Skipped
+  end
+
+  abstract def process_resource(resource : T) : Result
 
   def initialize(
     @logger = ActionController::Logger.new,
@@ -30,7 +36,9 @@ abstract class ACAEngine::Core::Resource(T)
   )
     @resource_channel = Channel(T).new(channel_buffer_size)
     @processed = Deque(T).new(processed_buffer_size)
+  end
 
+  def start : self
     # Listen for changes on the resource table
     spawn(same_thread: true) { watch_resources }
 
@@ -42,6 +50,8 @@ abstract class ACAEngine::Core::Resource(T)
 
     # Begin background processing
     spawn(same_thread: true) { watch_processing }
+
+    self
   end
 
   def consume_resource : T
@@ -61,7 +71,7 @@ abstract class ACAEngine::Core::Resource(T)
 
   # Consume the resource, pop onto the processed buffer
   private def _process_resource(resource : T)
-    if process_resource(resource)
+    if process_resource(resource) == Result::Success
       processed.push(resource)
       processed.shift if processed.size > @processed_buffer_size
     end

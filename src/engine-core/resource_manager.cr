@@ -2,13 +2,16 @@ require "action-controller/logger"
 
 require "./cloning"
 require "./compilation"
+require "./mappings"
 
 # Sequences the acquisition and production of resources
 module ACAEngine::Core
   class ResourceManager
     getter logger : Logger
+
     getter cloning : Cloning
     getter compilation : Compilation
+    getter mappings : Mappings
 
     @@instance : ResourceManager?
 
@@ -19,14 +22,27 @@ module ACAEngine::Core
     def initialize(
       cloning : Cloning? = nil,
       compilation : Compilation? = nil,
-      @logger = ActionController::Logger.new,
-      testing = false
+      mappings : Mappings? = nil,
+      @logger : Logger = ActionController::Logger.new,
+      testing : Bool = false
     )
-      logger.info("cloning repositories")
       @cloning = cloning || Cloning.new(testing: testing)
+      @compilation = compilation || Compilation.new
+      @mappings = mappings || Mappings.new
+    end
+
+    def start
+      logger.info("cloning repositories")
+      @cloning.start
 
       logger.info("compiling drivers")
-      @compilation = compilation || Compilation.new
+      @compilation.start
+
+      # Run the on-load processes
+      yield
+
+      logger.info("maintaining mappings")
+      @mappings.start
     end
   end
 end

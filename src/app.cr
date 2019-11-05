@@ -68,10 +68,10 @@ Signal::USR1.trap &logging
 Signal::USR2.trap &logging
 
 # Acquire resources on startup
-ACAEngine::Core::ResourceManager.instance
-
-# Start managing modules
-ACAEngine::Core::ModuleManager.instance.start
+ACAEngine::Core::ResourceManager.instance.start do
+  # Start managing modules once relevant resources present
+  ACAEngine::Core::ModuleManager.instance.start
+end
 
 # Start the server
 server.run do

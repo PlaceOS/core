@@ -21,7 +21,7 @@ module ACAEngine::Core
         )
 
         # Commence compilation
-        compiler = Compilation.new
+        compiler = Compilation.new.start
         compiler.processed.size.should eq 1
         compiler.processed.first.id.should eq driver.id
 
