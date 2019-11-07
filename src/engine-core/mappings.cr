@@ -26,8 +26,10 @@ module ACAEngine
       module_ids = system.modules.as(Array(String))
 
       destroyed = system.destroyed?
+
+      # Always load mappings during startup
       relevant_node = startup || ModuleManager.instance.discovery.own_node?(system_id)
-      needs_update = destroyed || system.modules_changed?
+      needs_update = startup || destroyed || system.modules_changed?
 
       if relevant_node && needs_update
         storage = Driver::Storage.new(system_id, "system")
@@ -56,7 +58,7 @@ module ACAEngine
     def process_resource(system) : Resource::Result
       Mappings.update_mapping(system, startup, logger)
     rescue e
-      message = e.try &.message || ""
+      message = e.try(&.message) || ""
       logger.error("while updating mapping for system: message=#{message}")
       errors << {name: system.name.as(String), reason: message}
 

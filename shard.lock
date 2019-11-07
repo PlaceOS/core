@@ -34,7 +34,7 @@ shards:
 
   engine-driver:
     github: aca-labs/crystal-engine-driver
-    commit: 604db3ab60a0a8d8ef386f59a46d30422a3078b5
+    commit: 61dec70f5549a04a19ddaaa5f1d603c9cdcfbab8
 
   engine-drivers:
     github: aca-labs/crystal-engine-drivers
@@ -42,7 +42,7 @@ shards:
 
   engine-models:
     github: aca-labs/crystal-engine-models
-    commit: 3e2463582823a852b52eba7d08565ad75e9d57b3
+    commit: 81dc00e306e9d7c124c455fda7fe8606e3792f74
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -66,7 +66,7 @@ shards:
 
   hound-dog:
     github: aca-labs/hound-dog
-    commit: 482790d0005ae3b87a6272b515aa6deb643a3b0a
+    commit: e6a5590ab2c71cd8f3569b43768d8035d9314ba4
 
   ipaddress:
     github: Sija/ipaddress.cr

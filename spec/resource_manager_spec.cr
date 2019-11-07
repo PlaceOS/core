@@ -3,18 +3,24 @@ require "engine-drivers/helper"
 
 module ACAEngine::Core
   describe ResourceManager do
-    it "clones and compiles" do
+    it "loads relevant resources" do
       setup
 
       # Clone, compile
       cloning = Cloning.new(testing: true)
-      resource_manager = ResourceManager.new(cloning: cloning)
+      mappings = Mappings.new(startup: false)
+      resource_manager = ResourceManager.new(cloning: cloning, mappings: mappings)
 
-      resource_manager.start { }
+      called = false
+      resource_manager.start { called = true }
 
-      # Commit hash is updated, so model will be received again during startup
-      resource_manager.cloning.processed.size.should eq 2
-      resource_manager.compilation.processed.size.should eq 1
+      called.should be_true
+
+      # 1 if test model already present in db, 2 if not
+      # Commit hash is updated, so model might be received again during startup
+      {1, 2}.any?(resource_manager.cloning.processed.size).should be_true
+      {1, 2}.any?(resource_manager.compilation.processed.size).should be_true
+
       resource_manager.mappings.processed.size.should eq 0
     end
   end

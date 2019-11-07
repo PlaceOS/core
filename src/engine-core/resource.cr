@@ -41,13 +41,10 @@ abstract class ACAEngine::Core::Resource(T)
   def start : self
     # Listen for changes on the resource table
     spawn(same_thread: true) { watch_resources }
-
     # Load all the resources into a channel
     initial_resource_count = load_resources
-
     # TODO: Defer using a form of Promise.all
     initial_resource_count.times { _process_resource(consume_resource) }
-
     # Begin background processing
     spawn(same_thread: true) { watch_processing }
 

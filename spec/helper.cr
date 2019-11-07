@@ -23,21 +23,32 @@ def teardown(temp_dir = TEMP_DIR)
   `rm -rf #{temp_dir}`
 end
 
-# Remove the shared test directory
-Spec.after_suite &->teardown
-
-Spec.before_suite do
-  # Clear tables
+def clear_tables
+  ACAEngine::Model::ControlSystem.clear
   ACAEngine::Model::Repository.clear
   ACAEngine::Model::Driver.clear
   ACAEngine::Model::Module.clear
 end
 
+# Remove the shared test directory
+Spec.after_suite &->teardown
+
+macro around_suite(block)
+  Spec.before_suite do
+    {{ block }}.call
+  end
+  Spec.after_suite do
+    {{ block }}.call
+  end
+end
+
+around_suite ->{
+  clear_tables
+  HoundDog::Service.clear_namespace
+}
+
 Spec.after_suite do
-  # Clear tables
-  ACAEngine::Model::Repository.clear
-  ACAEngine::Model::Driver.clear
-  ACAEngine::Model::Module.clear
+  `pkill -f "core-spec"`
 end
 
 # Set up a temporary directory
@@ -46,6 +57,12 @@ def set_temporary_working_directory(fresh : Bool = false) : String
   ACAEngine::Drivers::Compiler.bin_dir = "#{temp_dir}/bin"
   ACAEngine::Drivers::Compiler.drivers_dir = "#{temp_dir}/repositories/drivers"
   ACAEngine::Drivers::Compiler.repository_dir = "#{temp_dir}/repositories"
+
+  parallel(
+    Dir.mkdir_p(ACAEngine::Drivers::Compiler.bin_dir),
+    Dir.mkdir_p(ACAEngine::Drivers::Compiler.drivers_dir),
+    Dir.mkdir_p(ACAEngine::Drivers::Compiler.repository_dir),
+  )
 
   temp_dir
 end

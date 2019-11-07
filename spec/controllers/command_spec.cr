@@ -12,6 +12,8 @@ module ACAEngine::Core
   }.to_json
 
   describe Api::Command do
+    namespace = Api::Command::NAMESPACE[0]
+
     describe "command/:module_id/execute" do
       it "executes a command on a running module" do
         _, _, mod = create_resources
@@ -19,7 +21,7 @@ module ACAEngine::Core
         module_manager = ModuleManager.new("localhost", 4200, DiscoveryMock.new("core"))
         module_manager.load_module(mod)
 
-        route = "/api/core/v1/command/#{mod_id}/execute"
+        route = File.join(namespace, mod_id, "execute")
         headers = HTTP::Headers{
           "Content-Type" => "application/json",
         }

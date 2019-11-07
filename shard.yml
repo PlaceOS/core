@@ -29,6 +29,7 @@ dependencies:
 
   hound-dog:
     github: aca-labs/hound-dog
+    branch: master
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
