@@ -11,6 +11,8 @@ module ACAEngine::Core
   end
 
   class ClientError < Error
+    getter status_code
+
     def initialize(@status_code : Int32, message = "")
       super(message)
     end

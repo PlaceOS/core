@@ -39,22 +39,37 @@ module ACAEngine::Core
 
     pending "command/:module_id/debugger" do
       it "pipes debug output of a module" do
-        _, _, mod = create_resources
-        mod_id = mod.id.as(String)
+        with_server do
+          _, _, mod = create_resources
+          mod_id = mod.id.as(String)
 
-        message_channel = Channel(String).new
-        spawn do
-          with_server do
-            client = Client.new("localhost", 6000)
+          client = Client.new("localhost", 6000)
+          message_channel = Channel(String).new
+
+          client.execute(mod_id, :used_for_aca_testing)
+
+          spawn do
             client.debug(mod_id) do |message|
-              message_channel << message
+              message_channel.send message
             end
+          rescue e
+            pp! e
+            raise e
           end
-        end
 
-        message = message_channel.receive
-        message.should be_a String
-        message.empty?.should_not be_true
+          Fiber.yield
+
+          begin
+            client.execute(mod_id, :used_for_aca_testing)
+          rescue e : Core::ClientError
+            pp! e.status_code
+            raise e
+          end
+
+          message = message_channel.receive
+          message.should be_a String
+          message.empty?.should_not be_true
+        end
       end
     end
 

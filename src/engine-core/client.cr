@@ -12,11 +12,8 @@ module ACAEngine::Core
 
     # Set the request_id on the client
     property request_id : String? = nil
-
-    Habitat.create do
-      setting host : String = ENV["CORE_HOST"]? || "localhost"
-      setting port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
-    end
+    getter host : String = ENV["CORE_HOST"]? || "localhost"
+    getter port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
 
     # Base struct for `Engine::Core` responses
     private abstract struct BaseResponse
@@ -30,17 +27,19 @@ module ACAEngine::Core
       @request_id : String? = nil,
       @core_version : String = "v1"
     )
-      self.setting.host = uri.host
-      self.setting.port = uri.port || 3000
+      @host = uri.host
+      @port = uri.port || 3000
       @connection = HTTP::Client.new(uri)
     end
 
     def initialize(
-      host : String = self.settings.host,
-      port : Int32 = self.settings.port,
+      host : String? = nil,
+      port : Int32? = nil,
       @request_id : String? = nil,
       @core_version : String = "v1"
     )
+      @host = host if host
+      @port = port if port
       @connection = HTTP::Client.new(host: host, port: port)
     end
 
@@ -76,27 +75,29 @@ module ACAEngine::Core
     ###########################################################################
 
     # Returns the JSON response of executing a method on module
-    def execute(module_id : String, function_name : String | Symbol, arguments : NamedTuple | Array | Hash)
+    def execute(module_id : String, function_name : String | Symbol, arguments : NamedTuple | Array | Hash = [] of Nil)
       payload = {
         :__exec__     => function_name,
         function_name => arguments,
       }.to_json
-      post("/command/#{module_id}/execute", payload).body
+      post("/command/#{module_id}/execute", body: payload).body
     end
 
     # Grab the STDOUT of a module process
     #
     # Sets up a websocket connection with core, and forwards messages to captured block
-    def debug(module_id : String, & : String ->)
-      headers = HTTP::Headers.new({"X-Request-ID" => request_id}.compact)
+    def debug(module_id : String, &block : String ->)
+      headers = HTTP::Headers.new
+      headers["X-Request-ID"] = request_id.as(String) if request_id
 
       socket = HTTP::WebSocket.new(
-        host: self.setting.host,
+        host: host,
         path: "#{BASE_PATH}/#{core_version}/command/#{module_id}/debugger",
-        port: self.setting.port,
+        port: port,
         headers: headers,
       )
-      socket.on_message { |message| yield message }
+
+      socket.on_message(&block)
       socket.run
     end
 
