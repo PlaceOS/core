@@ -25,8 +25,6 @@ module ACAEngine::Core::Api
         render :non_authoritative_information, json: {
           message: error.message,
           backtrace: error.backtrace?,
-          module_id: module_id,
-          request_body: exec_request
         }
       end
     end
