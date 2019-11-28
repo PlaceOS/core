@@ -17,7 +17,18 @@ module ACAEngine::Core::Api
       head :not_acceptable unless body
 
       # We don't parse the request here or parse the response, just proxy it.
-      render json: protocol_manager.execute(module_id, body.gets_to_end)
+      exec_request = body.gets_to_end
+
+      begin
+        render json: protocol_manager.execute(module_id, exec_request)
+      rescue error : ACAEngine::Driver::RemoteException
+        render :non_authoritative_information, json: {
+          message: error.message,
+          backtrace: error.backtrace?,
+          module_id: module_id,
+          request_body: exec_request
+        }
+      end
     end
 
     # For now a one-to-one debug session to websocket should be fine as it's not
