@@ -40,7 +40,7 @@ module ACAEngine::Core
     )
       @host = host if host
       @port = port if port
-      @connection = HTTP::Client.new(host: host, port: port)
+      @connection = HTTP::Client.new(host: @host, port: @port)
     end
 
     private def connection
@@ -52,20 +52,17 @@ module ACAEngine::Core
 
     # Returns drivers available
     def drivers(repository : String? = nil) : Array(String)
-      params = HTTP::Params.encode({
-        "repository" => repository,
-      }.compact)
-
+      params = HTTP::Params.new
+      params["repository"] = repository if repository
       response = get("/drivers?#{params}")
       Array(String).from_json(response.body)
     end
 
     # Returns the commits for a particular driver
     def driver(driver_id : String, repository : String? = nil, count : Int32? = nil) : Array(String)
-      params = HTTP::Params.encode({
-        "repository" => repository,
-        "count"      => count,
-      }.compact)
+      params = HTTP::Params.new
+      params["repository"] = repository if repository
+      params["count"] = count if count
 
       response = get("/drivers/#{driver_id}?#{params}")
       Array(String).from_json(response.body)
