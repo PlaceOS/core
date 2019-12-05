@@ -2,9 +2,9 @@ require "../helper"
 
 module ACAEngine::Core
   describe Api::Status do
-    it "status/" do
-      repo, driver, _ = create_resources
-      with_server do
+    with_server do
+      it "status/" do
+        repo, driver, _ = create_resources
         client = Core::Client.new("localhost", 6000)
         status = client.core_status
         status.should be_a Core::Client::CoreStatus

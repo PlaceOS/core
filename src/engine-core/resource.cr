@@ -19,7 +19,7 @@ abstract class ACAEngine::Core::Resource(T)
 
   private getter resource_channel : Channel(T)
 
-  private getter logger : Logger
+  private getter logger : ActionController::Logger::TaggedLogger
 
   enum Result
     Success
@@ -30,7 +30,7 @@ abstract class ACAEngine::Core::Resource(T)
   abstract def process_resource(resource : T) : Result
 
   def initialize(
-    @logger = ActionController::Logger.new,
+    @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
     @processed_buffer_size : Int32 = 64,
     channel_buffer_size : Int32 = 64
   )

@@ -7,7 +7,7 @@ require "./mappings"
 # Sequences the acquisition and production of resources
 module ACAEngine::Core
   class ResourceManager
-    getter logger : Logger
+    getter logger : ActionController::Logger::TaggedLogger
 
     getter cloning : Cloning
     getter compilation : Compilation
@@ -23,7 +23,7 @@ module ACAEngine::Core
       cloning : Cloning? = nil,
       compilation : Compilation? = nil,
       mappings : Mappings? = nil,
-      @logger : Logger = ActionController::Logger.new,
+      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
       testing : Bool = false
     )
       @cloning = cloning || Cloning.new(testing: testing)

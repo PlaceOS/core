@@ -11,7 +11,7 @@ module ACAEngine
     private property startup : Bool = true
 
     def initialize(
-      @logger : Logger = ActionController::Logger.new,
+      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = true,
       bin_dir : String = ACAEngine::Drivers::Compiler.bin_dir,
       drivers_dir : String = ACAEngine::Drivers::Compiler.drivers_dir,
@@ -28,7 +28,7 @@ module ACAEngine
     def self.compile_driver(
       driver : Model::Driver,
       startup : Bool = false,
-      logger : Logger = ActionController::Logger.new
+      logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
     ) : Tuple(Bool, String)
       commit = driver.commit.as(String)
       driver_id = driver.id.as(String)
@@ -48,7 +48,7 @@ module ACAEngine
           return {false, "failed to pull and install #{repository_name}: #{e.try &.message}"}
         end
       elsif ACAEngine::Drivers::Helper.compiled?(file_name, commit)
-        logger.info("driver already compiled: name=#{name} repository_name=#{repository_name} commit=#{commit}")
+        logger.tag_info("driver already compiled", name: name, repository_name: repository_name, commit: commit)
         return {true, ""}
       end
 
@@ -56,9 +56,9 @@ module ACAEngine
       success = result[:exit_status] == 0
 
       if success
-        logger.info("compiled driver: name=#{name} repository_name=#{repository_name} output=#{result[:output]}")
+        logger.tag_info("compiled driver", name: name, repository_name: repository_name, output: result[:output])
       else
-        logger.error("failed to compile driver: name=#{name} repository_name=#{repository_name} output=#{result[:output]}")
+        logger.tag_error("failed to compile driver", name: {name}, repository_name: repository_name, output: result[:output])
       end
 
       if update_commit && success
@@ -67,7 +67,7 @@ module ACAEngine
         if startup
           # There's a potential for multiple writers on startup,
           # However this is an eventually consistent operation.
-          logger.warn("updating commit on driver during startup: name=#{name} id=#{driver.id} commit=#{commit}")
+          logger.tag_warn("updating commit on driver during startup", name: name, id: driver.id, commit: commit)
         end
 
         driver.update_fields(commit: commit)

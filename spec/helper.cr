@@ -42,8 +42,10 @@ macro around_suite(block)
   end
 end
 
+Spec.before_suite &->teardown
+
 around_suite ->{
-  clear_tables
+  # clear_tables
   HoundDog::Service.clear_namespace
 }
 
@@ -91,9 +93,10 @@ def setup(fresh : Bool = false)
     repository, driver, mod = existing_repo, existing_driver, existing_module
   else
     # Clear tables
-    ACAEngine::Model::Repository.clear
+    ACAEngine::Model::ControlSystem.clear
     ACAEngine::Model::Driver.clear
     ACAEngine::Model::Module.clear
+    ACAEngine::Model::Repository.clear
 
     repository = ACAEngine::Model::Generator.repository(type: ACAEngine::Model::Repository::Type::Driver)
     repository.uri = repository_uri
@@ -114,6 +117,9 @@ def setup(fresh : Bool = false)
     driver.save!
 
     mod = ACAEngine::Model::Generator.module(driver: driver).save!
+    control_system = mod.control_system.as(ACAEngine::Model::ControlSystem)
+    control_system.modules = [mod.id.as(String)]
+    control_system.save!
   end
 
   {temp_dir, repository, driver, mod}

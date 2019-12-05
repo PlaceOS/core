@@ -37,16 +37,21 @@ module ACAEngine::Core
       end
     end
 
-    pending "command/:module_id/debugger" do
-      it "pipes debug output of a module" do
-        with_server do
+    with_server do
+      describe "command/:module_id/debugger" do
+        it "pipes debug output of a module" do
           _, _, mod = create_resources
           mod_id = mod.id.as(String)
 
           client = Client.new("localhost", 6000)
           message_channel = Channel(String).new
 
-          client.execute(mod_id, :used_for_aca_testing)
+          begin
+            client.execute(mod_id, :used_for_aca_testing)
+          rescue e
+            pp! e
+            raise e
+          end
 
           spawn do
             client.debug(mod_id) do |message|
@@ -61,8 +66,8 @@ module ACAEngine::Core
 
           begin
             client.execute(mod_id, :used_for_aca_testing)
-          rescue e : Core::ClientError
-            pp! e.status_code
+          rescue e
+            pp! e
             raise e
           end
 

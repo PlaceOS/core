@@ -12,12 +12,12 @@ module ACAEngine
     include Drivers::Helper
 
     getter discovery : HoundDog::Discovery
-    getter logger : Logger = settings.logger
+    getter logger : ActionController::Logger::TaggedLogger = settings.logger
 
     Habitat.create do
       setting ip : String = ENV["CORE_HOST"]? || "localhost"
       setting port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
-      setting logger : Logger = ActionController::Logger.new
+      setting logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
     end
 
     # # Ready-state logic sketch
@@ -112,8 +112,7 @@ module ACAEngine
 
       balance_modules
 
-      logger.info("loaded modules: running_drivers=#{running_drivers} running_modules=#{running_modules}")
-
+      logger.tag_info("loaded modules", drivers: running_drivers, modules: running_modules)
       Fiber.yield
 
       self
@@ -156,7 +155,7 @@ module ACAEngine
 
       raise ModuleError.new("No protocol manager for #{mod_id}") unless proc_manager
 
-      logger.info("starting module protocol manager: module_id=#{mod_id} driver=#{mod.driver.try &.name}")
+      logger.tag_info("starting module protocol manager", module_id: mod_id, driver: mod.driver.try &.name)
       proc_manager.start(mod_id, payload)
     end
 
@@ -188,13 +187,13 @@ module ACAEngine
 
         # Check if the module is on the current node
         unless (driver_path = ACAEngine::Drivers::Compiler.is_built?(driver_file_name, driver_commit))
-          logger.error("driver does not exist: driver_name=#{driver_name} driver_commit=#{driver_commit} module_id=#{mod_id}")
+          logger.tag_error("driver does not exist", driver_name: driver_name, driver_commit: driver_commit, module_id: mod_id)
           return
         end
 
         if manager_by_module_id(mod_id)
           # Module already loaded
-          logger.info("module already loaded: module_id=#{mod_id} driver_name=#{driver_name} driver_commit=#{driver_commit}")
+          logger.tag_info("module already loaded", module_id: mod_id, driver_name: driver_name, driver_commit: driver_commit)
         elsif (existing_driver_manager = manager_by_driver_path(driver_path))
           # Use the existing driver protocol manager
           @module_proc_managers[mod_id] = existing_driver_manager
@@ -209,7 +208,7 @@ module ACAEngine
         start_module(mod)
       elsif manager_by_module_id(mod_id)
         # Not on node, but protocol manager exists
-        logger.info("stopping module protocol manager: module_id=#{mod_id}")
+        logger.tag_info("stopping module protocol manager", module_id: mod_id)
         remove_module(mod)
       end
     end

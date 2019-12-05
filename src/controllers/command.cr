@@ -23,7 +23,7 @@ module ACAEngine::Core::Api
         render json: protocol_manager.execute(module_id, exec_request)
       rescue error : ACAEngine::Driver::RemoteException
         render :non_authoritative_information, json: {
-          message: error.message,
+          message:   error.message,
           backtrace: error.backtrace?,
         }
       end

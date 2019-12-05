@@ -10,7 +10,7 @@ module ACAEngine
     private property startup : Bool = true
 
     def initialize(
-      @logger : Logger = ActionController::Logger.new,
+      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = true
     )
       super(@logger)
@@ -19,7 +19,7 @@ module ACAEngine
     def self.update_mapping(
       system : Model::ControlSystem,
       startup : Bool = false,
-      logger : Logger = ActionController::Logger.new
+      logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
     ) : Resource::Result
       # NOTE the module's custom name is not used for the key
       system_id = system.id.as(String)
@@ -41,14 +41,14 @@ module ACAEngine
 
         module_ids.each_with_index do |id, index|
           unless (key = keys[index])
-            logger.warn("module not found while setting indirect mapping in redis: module_id=#{id} index=#{index}")
+            logger.tag_warn("module not found while setting indirect mapping in redis", module_id: id, index: index)
             next
           end
           # Remove the mapping if system destroyed
           storage[key] = destroyed ? nil : id
         end
 
-        logger.info("#{destroyed ? "created" : "deleted"} indirect module mappings: system_id=#{system_id}")
+        logger.tag_info("#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system_id)
         Resource::Result::Success
       else
         Resource::Result::Skipped
@@ -59,7 +59,7 @@ module ACAEngine
       Mappings.update_mapping(system, startup, logger)
     rescue e
       message = e.try(&.message) || ""
-      logger.error("while updating mapping for system: message=#{message}")
+      logger.tag_error("while updating mapping for system", error: message)
       errors << {name: system.name.as(String), reason: message}
 
       Resource::Result::Error

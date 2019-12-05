@@ -14,7 +14,7 @@ module ACAEngine
       @username : String? = nil,
       @password : String? = nil,
       @working_dir : String = ACAEngine::Drivers::Compiler.repository_dir,
-      @logger : Logger = ActionController::Logger.new,
+      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = false,
       @testing : Bool = false
     )
@@ -28,7 +28,7 @@ module ACAEngine
       password : String? = nil,
       startup : Bool = false,
       testing : Bool = false,
-      logger : Logger = ActionController::Logger.new
+      logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
     )
       repository_id = repository.id.as(String)
       repository_name = repository.name.as(String)
@@ -49,14 +49,14 @@ module ACAEngine
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
       if current_commit != repository_commit && own_node
         if startup
-          logger.warn("updating commit on repository during startup: name=#{repository_name}")
+          logger.tag_warn("updating commit on repository during startup", name: repository_name)
         end
 
         # Refresh the repository model commit hash
         repository.update_fields(commit_hash: current_commit)
       end
 
-      logger.info("cloned repository: repository=#{repository_name} uri=#{repository_uri}")
+      logger.tag_info("cloned repository", repository: repository_name, uri: repository_uri)
     end
 
     def process_resource(repository) : Resource::Result
