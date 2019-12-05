@@ -48,7 +48,7 @@ module ACAEngine::Core::Api
 
         response = response.merge({
           # CPU in % and memory in KB
-          percentage_cpu: process.cpu_usage,
+          percentage_cpu: process.stat.cpu_usage!,
           memory_total:   memory.total,
           memory_usage:   process.memory,
         })
@@ -69,7 +69,7 @@ module ACAEngine::Core::Api
         cpu_count: System.cpu_count,
 
         # these are as a percent of the total available
-        core_cpu:  process.cpu_usage,
+        core_cpu:  process.stat.cpu_usage!,
         total_cpu: cpu.usage,
 
         # Memory in KB

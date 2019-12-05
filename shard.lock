@@ -6,15 +6,15 @@ shards:
 
   action-controller:
     github: spider-gazelle/action-controller
-    version: 2.0.2
+    commit: 9d6f20a31db772296d603ea08ae3f084cae85432
 
   active-model:
     github: spider-gazelle/active-model
-    commit: 50ef8092777620eb1fa2e1cb4bce4f10919ea55d
+    commit: 339ec3f53aaf863cf5c70937161320bab459ce28
 
   ameba:
     github: crystal-ameba/ameba
-    version: 0.10.1
+    version: 0.11.0
 
   bisect:
     github: spider-gazelle/bisect
@@ -34,15 +34,15 @@ shards:
 
   engine-driver:
     github: aca-labs/crystal-engine-driver
-    commit: 61dec70f5549a04a19ddaaa5f1d603c9cdcfbab8
+    commit: 24c9391e487217342717800dc91562fa3b991e52
 
   engine-drivers:
     github: aca-labs/crystal-engine-drivers
-    commit: e5519528811d572e00b5dd77b89bbe0413780c02
+    commit: 026e2a1d09af80d1c9d46a80ca1d683db4f01f80
 
   engine-models:
     github: aca-labs/crystal-engine-models
-    commit: 81dc00e306e9d7c124c455fda7fe8606e3792f74
+    commit: ed4fbc26961501a0800f4913f2924c03706dd2f8
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -62,7 +62,7 @@ shards:
 
   hardware:
     github: crystal-community/hardware
-    version: 0.4.0
+    version: 0.5.0
 
   hound-dog:
     github: aca-labs/hound-dog
@@ -114,7 +114,7 @@ shards:
 
   redis:
     github: stefanwille/crystal-redis
-    version: 2.2.1
+    version: 2.5.0
 
   rendezvous-hash:
     github: caspiano/rendezvous-hash
@@ -122,7 +122,7 @@ shards:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: 8f540d9fd67d7fa25ccec31bf4aa8e182b5c5832
+    commit: e3655f6b9a25d932c27f32cbaf847b2668bb1f6d
 
   retriable:
     github: Sija/retriable.cr
@@ -134,7 +134,7 @@ shards:
 
   ssh2:
     github: spider-gazelle/ssh2.cr
-    commit: fd9946c951eea33636b38cac999c6deeb0ca28ef
+    commit: 71573443ff24a2ce727f0e8998bc0f65ca9da216
 
   tasker:
     github: spider-gazelle/tasker
