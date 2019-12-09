@@ -34,7 +34,7 @@ shards:
 
   engine-driver:
     github: aca-labs/crystal-engine-driver
-    commit: 24c9391e487217342717800dc91562fa3b991e52
+    commit: 807cd9fb6acac98a12e782ded26a205e1cb53545
 
   engine-drivers:
     github: aca-labs/crystal-engine-drivers
@@ -42,7 +42,7 @@ shards:
 
   engine-models:
     github: aca-labs/crystal-engine-models
-    commit: ed4fbc26961501a0800f4913f2924c03706dd2f8
+    commit: edf7154b9472ca7ec181a6543aaa73475e919950
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -74,7 +74,7 @@ shards:
 
   jwt:
     github: crystal-community/jwt
-    version: 1.1.2
+    version: 1.2.0
 
   kilt:
     github: jeromegn/kilt
@@ -90,7 +90,7 @@ shards:
 
   openssl_ext:
     github: stakach/openssl_ext
-    version: 1.0.0
+    version: 1.1.1
 
   pool:
     github: ysbaddaden/pool
@@ -102,7 +102,7 @@ shards:
 
   promise:
     github: spider-gazelle/promise
-    version: 1.3.0
+    version: 1.4.2
 
   protobuf:
     github: jeromegn/protobuf.cr
