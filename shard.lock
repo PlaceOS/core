@@ -10,11 +10,15 @@ shards:
 
   active-model:
     github: spider-gazelle/active-model
-    commit: 339ec3f53aaf863cf5c70937161320bab459ce28
+    commit: cfb070793fd53cc20c799761aa5fe8b195e75739
 
   ameba:
     github: crystal-ameba/ameba
     version: 0.11.0
+
+  bindata:
+    github: spider-gazelle/bindata
+    version: 1.2.0
 
   bisect:
     github: spider-gazelle/bisect
@@ -34,15 +38,15 @@ shards:
 
   engine-driver:
     github: aca-labs/crystal-engine-driver
-    commit: 807cd9fb6acac98a12e782ded26a205e1cb53545
+    commit: 7e701ed3da0109349d184ff349b558ff3d0ed980
 
   engine-drivers:
     github: aca-labs/crystal-engine-drivers
-    commit: 8a70a9e3823e774577838d813cb9d91c7bab3c90
+    commit: 088127c24c7db8d76a81055e998ef5692238006a
 
   engine-models:
     github: aca-labs/crystal-engine-models
-    commit: edf7154b9472ca7ec181a6543aaa73475e919950
+    commit: 19b77897291a8ec9943cb4de1a6fdea130f645f1
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -74,7 +78,7 @@ shards:
 
   jwt:
     github: crystal-community/jwt
-    version: 1.2.0
+    version: 1.4.0
 
   kilt:
     github: jeromegn/kilt
@@ -90,7 +94,7 @@ shards:
 
   openssl_ext:
     github: stakach/openssl_ext
-    version: 1.1.1
+    version: 1.2.0
 
   pool:
     github: ysbaddaden/pool
@@ -102,7 +106,7 @@ shards:
 
   promise:
     github: spider-gazelle/promise
-    version: 1.4.2
+    version: 1.4.3
 
   protobuf:
     github: jeromegn/protobuf.cr
