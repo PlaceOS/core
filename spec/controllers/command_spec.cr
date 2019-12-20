@@ -38,7 +38,7 @@ module ACAEngine::Core
     end
 
     with_server do
-      describe "command/:module_id/debugger" do
+      pending "command/:module_id/debugger" do
         it "pipes debug output of a module" do
           _, _, mod = create_resources
           mod_id = mod.id.as(String)

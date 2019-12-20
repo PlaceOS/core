@@ -1,4 +1,4 @@
-FROM crystallang/crystal:0.32.0
+FROM crystallang/crystal:0.32.1
 
 WORKDIR /app
 
@@ -20,13 +20,17 @@ RUN rm -rf ./*.deb
 
 # Install shards for caching
 COPY shard.yml shard.yml
+COPY shard.lock shard.lock
+
 RUN shards install --production
 
 # Add src
 COPY ./src /app/src
 
+RUN mkdir -p /app/bin/drivers
+
 # Build application
-RUN crystal build /app/src/app.cr -o engine-core
+RUN crystal build --release /app/src/app.cr -o engine-core
 
 # Run the app binding on port 3000
 EXPOSE 3000
