@@ -30,10 +30,6 @@ def clear_tables
   ACAEngine::Model::Module.clear
 end
 
-ACAEngine::Core::ResourceManager.configure do |settings|
-  settings.testing = true
-end
-
 # Remove the shared test directory
 Spec.after_suite &->teardown
 
@@ -134,7 +130,7 @@ def create_resources
   _, repository, driver, mod = setup
 
   # Clone, compile
-  ACAEngine::Core::ResourceManager.instance
+  ACAEngine::Core::ResourceManager.instance(testing: true)
 
   {repository, driver, mod}
 end

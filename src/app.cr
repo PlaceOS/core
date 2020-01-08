@@ -67,10 +67,6 @@ end
 Signal::USR1.trap &logging
 Signal::USR2.trap &logging
 
-ACAEngine::Core::ResourceManager.configure do |settings|
-  settings.logger = logger
-end
-
 # Acquire resources on startup
 ACAEngine::Core::ResourceManager.instance.start do
   # Start managing modules once relevant resources present
