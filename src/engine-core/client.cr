@@ -27,7 +27,8 @@ module ACAEngine::Core
       @request_id : String? = nil,
       @core_version : String = "v1"
     )
-      @host = uri.host
+      uri_host = uri.host
+      @host = uri_host if uri_host
       @port = uri.port || 3000
       @connection = HTTP::Client.new(uri)
     end
