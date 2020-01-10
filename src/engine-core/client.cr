@@ -63,9 +63,9 @@ module ACAEngine::Core
     def driver(driver_id : String, repository : String? = nil, count : Int32? = nil) : Array(String)
       params = HTTP::Params.new
       params["repository"] = repository if repository
-      params["count"] = count if count
+      params["count"] = count.to_s if count
 
-      response = get("/drivers/#{driver_id}?#{params}")
+      response = get("/drivers/#{URI.encode(driver_id)}?#{params}")
       Array(String).from_json(response.body)
     end
 
