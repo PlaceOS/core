@@ -6,7 +6,7 @@ shards:
 
   action-controller:
     github: spider-gazelle/action-controller
-    commit: 4937bad23f62aa10918be2468d7ad9f2607ecac1
+    commit: aab97fea685b1ad641b9628e6c4e885054ece477
 
   active-model:
     github: spider-gazelle/active-model
@@ -36,17 +36,21 @@ shards:
     github: kingsleyh/crystal-rethinkdb
     version: 0.1.10
 
+  delimiter_tree:
+    github: drujensen/delimiter_tree
+    version: 0.1.4
+
   engine-driver:
     github: aca-labs/crystal-engine-driver
-    commit: 7e701ed3da0109349d184ff349b558ff3d0ed980
+    commit: 3c72ac508839603b430eea809591ff05516746ab
 
   engine-drivers:
     github: aca-labs/crystal-engine-drivers
-    commit: dfb64410f4087d555bc623620273e4ba3d8037a9
+    commit: bfa2743f534fd486ac04076605c44f37ddfb9b5b
 
   engine-models:
     github: aca-labs/crystal-engine-models
-    commit: 5e7e400cde10d586d277dff6820be424d4ae11de
+    commit: ab16126e8e4e9b9b2c8eb344a80f4be4a2520e4a
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -70,7 +74,7 @@ shards:
 
   hound-dog:
     github: aca-labs/hound-dog
-    commit: e6a5590ab2c71cd8f3569b43768d8035d9314ba4
+    commit: 080cb2eb7dfd70438ac8b231ba46beb184e79298
 
   ipaddress:
     github: Sija/ipaddress.cr
@@ -102,27 +106,23 @@ shards:
 
   priority-queue:
     github: spider-gazelle/priority-queue
-    commit: cd8dc4f0803d7e00a4bb0d79e4c98c5d72223012
+    commit: bde47d11cb4b4d1ed7680a7f417ff707c434b1e4
 
   promise:
     github: spider-gazelle/promise
-    version: 1.4.3
+    version: 2.1.0
 
   protobuf:
     github: jeromegn/protobuf.cr
     version: 2.1.2
 
-  radix:
-    github: luislavena/radix
-    version: 0.3.9
-
   redis:
     github: stefanwille/crystal-redis
-    version: 2.5.0
+    version: 2.5.3
 
   rendezvous-hash:
     github: caspiano/rendezvous-hash
-    version: 0.2.1
+    version: 0.2.2
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
@@ -138,7 +138,7 @@ shards:
 
   ssh2:
     github: spider-gazelle/ssh2.cr
-    commit: 71573443ff24a2ce727f0e8998bc0f65ca9da216
+    version: 1.2.3
 
   tasker:
     github: spider-gazelle/tasker
