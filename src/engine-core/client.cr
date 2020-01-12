@@ -70,7 +70,7 @@ module ACAEngine::Core
     end
 
     # Returns the metadata for a particular driver
-    def driver_metadata(driver_id : String, commit : String, repository : String? = nil) : String
+    def driver_details(driver_id : String, commit : String, repository : String? = nil) : String
       params = HTTP::Params.new
       params["commit"] = commit
       params["repository"] = repository if repository
