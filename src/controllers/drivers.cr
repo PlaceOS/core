@@ -41,7 +41,7 @@ module ACAEngine::Core::Api
       io = IO::Memory.new
       result = Process.run(
         exe_path,
-        {"-d"},
+        {"--defaults"},
         input: Process::Redirect::Close,
         output: io,
         error: Process::Redirect::Close

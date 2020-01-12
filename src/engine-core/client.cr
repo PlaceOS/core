@@ -69,6 +69,19 @@ module ACAEngine::Core
       Array(String).from_json(response.body)
     end
 
+    # Returns the metadata for a particular driver
+    def driver_metadata(driver_id : String, commit : String, repository : String? = nil) : String
+      params = HTTP::Params.new
+      params["commit"] = commit
+      params["repository"] = repository if repository
+
+      response = get("/drivers/#{URI.encode(driver_id)}/details?#{params}")
+
+      # Response looks like:
+      # https://github.com/aca-labs/crystal-engine-driver/blob/master/docs/command_line_options.md#discovery-and-defaults
+      response.body
+    end
+
     # Command
     ###########################################################################
 
