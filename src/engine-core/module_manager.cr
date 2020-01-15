@@ -176,6 +176,65 @@ module ACAEngine
       Model::Module.all.each &->load_module(Model::Module)
     end
 
+    # Used in `on_exec` for locating the remote module
+    def which_core?(hash_id : String)
+      node = discovery.find!(hash_id)
+      own_node = node[:ip] == @discovery.ip && node[:port] == @discovery.port
+      {own_node, URI.new(host: node[:ip], port: node[:port])}
+    end
+
+    def on_exec(request : Request, response_cb : Proc(Request, Nil))
+      # Protocol.instance.expect_response(@module_id, @reply_id, "exec", request, raw: true)
+      remote_module_id = request.id
+      raw_execute_json = request.payload.not_nil!
+
+      this_node, core_uri = which_core?(remote_module_id)
+
+      if this_node
+        if manager = @module_proc_managers[remote_module_id]?
+          # responds with a JSON string
+          request.payload = manager.execute(remote_module_id, raw_execute_json)
+        else
+          raise "could not locate module #{remote_module_id}. It may not be running."
+        end
+      else
+        # build request
+        core_uri.path = "/api/core/v1/command/#{remote_module_id}/execute"
+        response = HTTP::Client.post(
+          core_uri,
+          headers: HTTP::Headers{"X-Request-ID" => ""},
+          body: raw_execute_json
+        )
+
+        case response.status_code
+        when 200
+          # exec was successful, json string returned
+          request.payload = response.body
+        when 203
+          # exec sent to module and it raised an error
+          info = NamedTuple(message: String, backtrace: Array(String)?).from_json(response.body)
+          request.payload = info[:message]
+          request.backtrace = info[:backtrace]
+          request.error = "RequestFailed"
+        else
+          # some other failure 3
+          request.payload = "unexpected response code #{response.status_code}"
+          request.error = "UnexpectedFailure"
+        end
+      end
+
+      response_cb.call(request)
+    rescue error
+      request.set_error(error)
+      response_cb.call(request)
+    end
+
+    def save_setting(module_id : String, setting_name : String, setting_value : JSON::Any)
+      # TODO::
+    end
+
+    alias Request = ACAEngine::Driver::Protocol::Request
+
     # Load the module if current node is responsible
     def load_module(mod : Model::Module)
       mod_id = mod.id.as(String)
@@ -200,6 +259,14 @@ module ACAEngine
         else
           # Create a new protocol manager
           proc_manager = Driver::Protocol::Management.new(driver_path, logger)
+
+          # Hook up the callbacks
+          proc_manager.on_exec = ->(request : Request, response_cb : Proc(Request, Nil)) {
+            on_exec(request, response_cb); nil
+          }
+          proc_manager.on_setting = ->(module_id : String, setting_name : String, setting_value : JSON::Any) {
+            save_setting(module_id, setting_name, setting_value); nil
+          }
 
           @driver_proc_managers[driver_path] = proc_manager
           @module_proc_managers[mod_id] = proc_manager

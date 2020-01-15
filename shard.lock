@@ -30,11 +30,15 @@ shards:
 
   cron_parser:
     github: kostya/cron_parser
-    version: 0.2.0
+    version: 0.3.0
 
   crystal-rethinkdb:
     github: kingsleyh/crystal-rethinkdb
     version: 0.1.10
+
+  debug:
+    github: Sija/debug.cr
+    version: 1.1.0
 
   delimiter_tree:
     github: drujensen/delimiter_tree
@@ -42,19 +46,19 @@ shards:
 
   engine-driver:
     github: aca-labs/crystal-engine-driver
-    commit: 3c72ac508839603b430eea809591ff05516746ab
+    commit: 205f383c1632dfbd5f48437f288c01ccba1e80d8
 
   engine-drivers:
     github: aca-labs/crystal-engine-drivers
-    commit: bfa2743f534fd486ac04076605c44f37ddfb9b5b
+    commit: e09581450f054a16d58015859182a8976159706b
 
   engine-models:
     github: aca-labs/crystal-engine-models
-    commit: ab16126e8e4e9b9b2c8eb344a80f4be4a2520e4a
+    commit: 5a94424450d0703c175af444129d484802548e63
 
   etcd:
     github: aca-labs/crystal-etcd
-    commit: 25a02e60f32a8de6609cee4dbbec07698878f102
+    commit: 34265068acc13c65ff22f862ab88ae666a8655ab
 
   exec_from:
     github: aca-labs/exec_from
@@ -74,7 +78,7 @@ shards:
 
   hound-dog:
     github: aca-labs/hound-dog
-    commit: 080cb2eb7dfd70438ac8b231ba46beb184e79298
+    commit: 2b9cc3e026ba57470d57c8900867444718207299
 
   ipaddress:
     github: Sija/ipaddress.cr
@@ -94,7 +98,7 @@ shards:
 
   neuroplastic:
     github: aca-labs/neuroplastic
-    commit: 54375dfc1f9472850dfa44afa11a830919f3ccce
+    version: 1.3.1
 
   openssl_ext:
     github: stakach/openssl_ext
