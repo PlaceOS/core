@@ -202,7 +202,7 @@ module ACAEngine
         core_uri.path = "/api/core/v1/command/#{remote_module_id}/execute"
         response = HTTP::Client.post(
           core_uri,
-          headers: HTTP::Headers{"X-Request-ID" => ""},
+          headers: HTTP::Headers{"X-Request-ID" => "int-#{request.reply}-#{remote_module_id}-#{Time.utc.to_unix_ms}"},
           body: raw_execute_json
         )
 
@@ -229,8 +229,19 @@ module ACAEngine
       response_cb.call(request)
     end
 
-    def save_setting(module_id : String, setting_name : String, setting_value : JSON::Any)
-      # TODO::
+    def save_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
+      mod = ACAEngine::Model::Module.find(module_id).not_nil!
+      if setting = mod.settings_at?(:none)
+      else
+        setting = ACAEngine::Model::Settings.new
+        setting.parent = mod
+        setting.encryption_level = :none
+      end
+
+      settings_hash = setting.any
+      settings_hash[YAML::Any.new(setting_name)] = setting_value
+      setting.settings_string = settings_hash.to_yaml
+      setting.save!
     end
 
     alias Request = ACAEngine::Driver::Protocol::Request
@@ -264,7 +275,7 @@ module ACAEngine
           proc_manager.on_exec = ->(request : Request, response_cb : Proc(Request, Nil)) {
             on_exec(request, response_cb); nil
           }
-          proc_manager.on_setting = ->(module_id : String, setting_name : String, setting_value : JSON::Any) {
+          proc_manager.on_setting = ->(module_id : String, setting_name : String, setting_value : YAML::Any) {
             save_setting(module_id, setting_name, setting_value); nil
           }
 
