@@ -23,7 +23,7 @@ module ACAEngine::Core
       cloning : Cloning? = nil,
       compilation : Compilation? = nil,
       mappings : Mappings? = nil,
-      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
+      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger),
       testing : Bool = false
     )
       @cloning = cloning || Cloning.new(testing: testing)
