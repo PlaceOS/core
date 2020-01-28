@@ -20,26 +20,6 @@ module ACAEngine
       setting logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
     end
 
-    # # Ready-state logic sketch
-    # increment_string = ->(var : String) { (var.to_i + 1).to_s }
-    #
-    # value = "0" unless (value = client.get(key))
-    #
-    # # Attempt to increment the nodes in the cluster state
-    # # This will require a slight change to the etcd library (regarding return type)
-    # value, success = client.compare_and_swap(key, value, increment_string.call(value)) # result => {String, Bool}
-    #
-    # until success
-    #     value, success = client.compare_and_swap(key, value, increment_string.call(value))
-    # end
-    #
-    # # Set up a watch feed on the cluster state.
-    # # Once the cluster state for ready nodes is equal to the cluster, continue.
-    # # The watch feed occurs separately,
-    # # - Once the ready state is reached, it continues operations.
-    # # - If the state is inconsistent, it triggers the above block (stabilize, then increment)
-    # # - Flow is blocked by the watch feed
-
     # From environment
     @@instance : ModuleManager?
 
