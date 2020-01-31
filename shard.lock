@@ -6,7 +6,7 @@ shards:
 
   action-controller:
     github: spider-gazelle/action-controller
-    commit: aab97fea685b1ad641b9628e6c4e885054ece477
+    commit: 5f21856f2805ff903ba985b3c71976c30100783f
 
   active-model:
     github: spider-gazelle/active-model
@@ -46,7 +46,7 @@ shards:
 
   engine-driver:
     github: aca-labs/crystal-engine-driver
-    commit: ad219a5b7a3dc50bfbcb6ddae56381df35eb3949
+    commit: f7c99b570c77b16484ff1bcc4733a90937c8c0d9
 
   engine-drivers:
     github: aca-labs/crystal-engine-drivers
@@ -54,11 +54,11 @@ shards:
 
   engine-models:
     github: aca-labs/crystal-engine-models
-    commit: 9f481173e7a05b7d39aa26ab237d4f2e96ac48f5
+    commit: 98acd836d37380ebaa8d56c4eb214d19d377f41c
 
   etcd:
     github: aca-labs/crystal-etcd
-    commit: 34265068acc13c65ff22f862ab88ae666a8655ab
+    commit: d2a9829c3c2160647ecc8e3aaed3eb7990c14032
 
   exec_from:
     github: aca-labs/exec_from
@@ -78,7 +78,7 @@ shards:
 
   hound-dog:
     github: aca-labs/hound-dog
-    commit: 2b9cc3e026ba57470d57c8900867444718207299
+    commit: 4b769c2caf873139a024517103df029594906cd0
 
   ipaddress:
     github: Sija/ipaddress.cr
@@ -98,7 +98,7 @@ shards:
 
   neuroplastic:
     github: aca-labs/neuroplastic
-    version: 1.3.1
+    commit: 2e764788efa0e59f8b24605e3d71770459f3fb3a
 
   openssl_ext:
     github: stakach/openssl_ext
