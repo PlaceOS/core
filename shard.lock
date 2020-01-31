@@ -6,7 +6,7 @@ shards:
 
   action-controller:
     github: spider-gazelle/action-controller
-    commit: aab97fea685b1ad641b9628e6c4e885054ece477
+    commit: d0d05315c62923f4f5abd455da4b988d68e7f3de
 
   active-model:
     github: spider-gazelle/active-model
@@ -23,6 +23,10 @@ shards:
   bisect:
     github: spider-gazelle/bisect
     version: 1.2.0
+
+  clustering:
+    github: aca-labs/clustering
+    commit: 9a067812fc5b368b00d4a153af6138e0ac7442e0
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -45,20 +49,20 @@ shards:
     version: 0.1.4
 
   engine-driver:
-    github: aca-labs/crystal-engine-driver
-    commit: ad219a5b7a3dc50bfbcb6ddae56381df35eb3949
+    github: acaengine/driver
+    commit: f7c99b570c77b16484ff1bcc4733a90937c8c0d9
 
   engine-drivers:
-    github: aca-labs/crystal-engine-drivers
+    github: acaengine/drivers
     commit: e09581450f054a16d58015859182a8976159706b
 
   engine-models:
-    github: aca-labs/crystal-engine-models
-    commit: 9f481173e7a05b7d39aa26ab237d4f2e96ac48f5
+    github: acaengine/models
+    commit: 98acd836d37380ebaa8d56c4eb214d19d377f41c
 
   etcd:
     github: aca-labs/crystal-etcd
-    commit: 34265068acc13c65ff22f862ab88ae666a8655ab
+    version: 0.2.4
 
   exec_from:
     github: aca-labs/exec_from
@@ -78,7 +82,7 @@ shards:
 
   hound-dog:
     github: aca-labs/hound-dog
-    commit: 2b9cc3e026ba57470d57c8900867444718207299
+    commit: d03b830eef527b44d5f03cdbae4534fb0d3d8f06
 
   ipaddress:
     github: Sija/ipaddress.cr
@@ -98,7 +102,7 @@ shards:
 
   neuroplastic:
     github: aca-labs/neuroplastic
-    version: 1.3.1
+    commit: 2e764788efa0e59f8b24605e3d71770459f3fb3a
 
   openssl_ext:
     github: stakach/openssl_ext
@@ -126,7 +130,7 @@ shards:
 
   rendezvous-hash:
     github: caspiano/rendezvous-hash
-    version: 0.2.2
+    version: 0.3.1
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
@@ -155,4 +159,8 @@ shards:
   tokenizer:
     github: spider-gazelle/tokenizer
     version: 1.1.0
+
+  ulid:
+    github: aca-labs/ulid
+    version: 0.1.2
 
