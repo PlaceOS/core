@@ -47,7 +47,8 @@ development_dependencies:
   ameba:
     github: crystal-ameba/ameba
 
-# compile target
 targets:
   engine-core:
     main: src/app.cr
+  exec_from:
+    main: lib/exec_from/src/exec_from.cr

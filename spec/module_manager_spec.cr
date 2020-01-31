@@ -26,7 +26,7 @@ module ACAEngine::Core
       driver_commit_hash = ACAEngine::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
       driver_path = ACAEngine::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit_hash)
 
-      module_manager = ModuleManager.new("localhost", 4200, DiscoveryMock.new("core"))
+      module_manager = ModuleManager.new("localhost", 4200, discovery: DiscoveryMock.new("core"))
 
       module_manager.load_module(mod)
       module_manager.running_modules.should eq 1
