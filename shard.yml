@@ -1,6 +1,12 @@
 name: engine-core
 version: 0.1.0
 
+targets:
+  engine-core:
+    main: src/app.cr
+  exec_from:
+    main: lib/exec_from/exec_from.cr
+
 dependencies:
   action-controller:
     github: spider-gazelle/action-controller
@@ -41,8 +47,3 @@ development_dependencies:
     github: askn/faker
   ameba:
     github: crystal-ameba/ameba
-
-# compile target
-targets:
-  engine-core:
-    main: src/app.cr
