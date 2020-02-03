@@ -14,6 +14,10 @@ module ACAEngine
     include Clustering
     alias TaggedLogger = ActionController::Logger::TaggedLogger
 
+    class_property ip : String = ENV["CORE_HOST"]? || "localhost"
+    class_property port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
+    class_property logger : TaggedLogger = TaggedLogger.new(ActionController::Base.settings.logger)
+
     getter discovery : HoundDog::Discovery
 
     def etcd_client : Etcd::Client
@@ -93,7 +97,6 @@ module ACAEngine
 
       # Listen for incoming module changes
       spawn(same_thread: true) { watch_modules }
-
       logger.tag_info("loaded modules", drivers: running_drivers, modules: running_modules)
       Fiber.yield
 
@@ -277,10 +280,6 @@ module ACAEngine
         remove_module(mod)
       end
     end
-
-    class_property ip : String = ENV["CORE_HOST"]? || "localhost"
-    class_property port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
-    class_property logger : TaggedLogger = TaggedLogger.new(ActionController::Base.settings.logger)
 
     getter ip = ModuleManager.ip
     getter port = ModuleManager.port

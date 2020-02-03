@@ -5,6 +5,7 @@ require "./compilation"
 require "./mappings"
 
 # Sequences the acquisition and production of resources
+#
 module ACAEngine::Core
   class ResourceManager
     getter logger : ActionController::Logger::TaggedLogger

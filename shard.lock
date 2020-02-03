@@ -26,7 +26,7 @@ shards:
 
   clustering:
     github: aca-labs/clustering
-    commit: 9a067812fc5b368b00d4a153af6138e0ac7442e0
+    commit: 6b9d3d264eba3c767fc9be122831cd823de4c433
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -134,7 +134,7 @@ shards:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: e3655f6b9a25d932c27f32cbaf847b2668bb1f6d
+    commit: 994b644d62378f5c691c7eb6562b737321898edc
 
   retriable:
     github: Sija/retriable.cr

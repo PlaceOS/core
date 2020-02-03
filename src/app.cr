@@ -67,10 +67,15 @@ end
 Signal::USR1.trap &logging
 Signal::USR2.trap &logging
 
+resource_manager = ACAEngine::Core::ResourceManager.instance
+module_manager = ACAEngine::Core::ModuleManager.instance
+
 # Acquire resources on startup
-ACAEngine::Core::ResourceManager.instance.start do
+resource_manager.start do
   # Start managing modules once relevant resources present
-  ACAEngine::Core::ModuleManager.instance.start
+  spawn(same_thread: true) do
+    module_manager.start
+  end
 end
 
 # Start the server
