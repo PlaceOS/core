@@ -1,14 +1,11 @@
 dist: xenial
-sudo: required
 language: crystal
 services:
   - docker
   - redis-server
 
 env:
-  # Set spider-gazelle environment
-  - SG_ENV=production
-  - TRAVIS_TEST=true
+  - SG_ENV=production TRAVIS_TEST=true
 
 before_install:
   # Add rethinkdb 2.3.6
