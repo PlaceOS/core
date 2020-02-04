@@ -8,19 +8,19 @@ require "./resource"
 
 module ACAEngine
   class Core::Compilation < Core::Resource(Model::Driver)
-    private property startup : Bool = true
+    private getter? startup : Bool = true
 
     def initialize(
-      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
+      @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = true,
-      bin_dir : String = ACAEngine::Drivers::Compiler.bin_dir,
-      drivers_dir : String = ACAEngine::Drivers::Compiler.drivers_dir,
-      repository_dir : String = ACAEngine::Drivers::Compiler.repository_dir
+      bin_dir : String = Drivers::Compiler.bin_dir,
+      drivers_dir : String = Drivers::Compiler.drivers_dir,
+      repository_dir : String = Drivers::Compiler.repository_dir
     )
       buffer_size = System.cpu_count.to_i
-      ACAEngine::Drivers::Compiler.bin_dir = bin_dir
-      ACAEngine::Drivers::Compiler.drivers_dir = drivers_dir
-      ACAEngine::Drivers::Compiler.repository_dir = repository_dir
+      Drivers::Compiler.bin_dir = bin_dir
+      Drivers::Compiler.drivers_dir = drivers_dir
+      Drivers::Compiler.repository_dir = repository_dir
 
       super(@logger, buffer_size)
     end
@@ -28,7 +28,7 @@ module ACAEngine
     def self.compile_driver(
       driver : Model::Driver,
       startup : Bool = false,
-      logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
+      logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
     ) : Tuple(Bool, String)
       commit = driver.commit.as(String)
       driver_id = driver.id.as(String)
@@ -47,12 +47,12 @@ module ACAEngine
         rescue e
           return {false, "failed to pull and install #{repository_name}: #{e.try &.message}"}
         end
-      elsif ACAEngine::Drivers::Helper.compiled?(file_name, commit)
+      elsif Drivers::Helper.compiled?(file_name, commit)
         logger.tag_info("driver already compiled", name: name, repository_name: repository_name, commit: commit)
         return {true, ""}
       end
 
-      result = ACAEngine::Drivers::Helper.compile_driver(file_name, repository_name)
+      result = Drivers::Helper.compile_driver(file_name, repository_name)
       success = result[:exit_status] == 0
 
       if success
@@ -77,7 +77,7 @@ module ACAEngine
     end
 
     def process_resource(driver) : Resource::Result
-      success, output = Compilation.compile_driver(driver, startup, logger)
+      success, output = Compilation.compile_driver(driver, startup?, logger)
       errors << {name: driver.name.as(String), reason: output} unless success
       success ? Resource::Result::Success : Resource::Result::Error
     end

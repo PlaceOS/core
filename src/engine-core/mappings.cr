@@ -7,10 +7,10 @@ require "./module_manager"
 module ACAEngine
   # TODO resource manager for removing module mappings on module deletes
   class Core::Mappings < Core::Resource(Model::ControlSystem)
-    private property startup : Bool = true
+    private getter? startup : Bool = true
 
     def initialize(
-      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
+      @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = true
     )
       super(@logger)
@@ -19,7 +19,7 @@ module ACAEngine
     def self.update_mapping(
       system : Model::ControlSystem,
       startup : Bool = false,
-      logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
+      logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
     ) : Resource::Result
       # NOTE the module's custom name is not used for the key
       system_id = system.id.as(String)
@@ -56,7 +56,7 @@ module ACAEngine
     end
 
     def process_resource(system) : Resource::Result
-      Mappings.update_mapping(system, startup, logger)
+      Mappings.update_mapping(system, startup?, logger)
     rescue e
       message = e.try(&.message) || ""
       logger.tag_error("while updating mapping for system", error: message)

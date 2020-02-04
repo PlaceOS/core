@@ -7,14 +7,14 @@ require "./resource"
 
 module ACAEngine
   class Core::Cloning < Core::Resource(Model::Repository)
-    @startup : Bool = true
-    @testing : Bool = false # Prevent redundant pulls/installs
+    private getter? startup : Bool = true
+    private getter? testing : Bool = false # Prevent redundant pulls/installs
 
     def initialize(
       @username : String? = nil,
       @password : String? = nil,
-      @working_dir : String = ACAEngine::Drivers::Compiler.repository_dir,
-      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
+      @working_dir : String = Drivers::Compiler.repository_dir,
+      @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = false,
       @testing : Bool = false
     )
@@ -23,19 +23,19 @@ module ACAEngine
 
     def self.clone_and_install(
       repository : Model::Repository,
-      working_dir : String = ACAEngine::Drivers::Compiler.repository_dir,
+      working_dir : String = Drivers::Compiler.repository_dir,
       username : String? = nil,
       password : String? = nil,
       startup : Bool = false,
       testing : Bool = false,
-      logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
+      logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
     )
       repository_id = repository.id.as(String)
       repository_name = repository.name.as(String)
       repository_uri = repository.uri.as(String)
       repository_commit = repository.commit_hash.as(String)
 
-      ACAEngine::Drivers::Compiler.clone_and_install(
+      Drivers::Compiler.clone_and_install(
         repository: repository_name,
         repository_uri: repository_uri,
         username: username || repository.username,
@@ -45,7 +45,7 @@ module ACAEngine
       )
 
       # Update commit hash if repository id maps to current node, or during startup
-      current_commit = ACAEngine::Drivers::Helper.repository_commit_hash(repository_name)
+      current_commit = Drivers::Helper.repository_commit_hash(repository_name)
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
       if current_commit != repository_commit && own_node
         if startup
@@ -66,8 +66,8 @@ module ACAEngine
         password: @password,
         working_dir: @working_dir,
         logger: @logger,
-        startup: @startup,
-        testing: @testing,
+        startup: startup?,
+        testing: testing?,
       )
 
       Resource::Result::Success

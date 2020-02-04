@@ -27,6 +27,8 @@ module ACAEngine::Core
 
         commit_hash = ACAEngine::Drivers::Helper.repository_commit_hash(repo.name.as(String))
         ACAEngine::Model::Repository.find!(repo.id).commit_hash.should eq commit_hash
+
+        cloner.stop
       end
     end
   end

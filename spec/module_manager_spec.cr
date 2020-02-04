@@ -18,9 +18,10 @@ module ACAEngine::Core
         pp! e
       end
 
+      # Clone, compile, etcd
       cloning = Cloning.new(testing: true)
-      # Clone, compile
-      ResourceManager.new(cloning: cloning)
+      resource_manager = ResourceManager.new(cloning: cloning)
+      resource_manager.start { }
 
       mod_id = mod.id.as(String)
       driver_commit_hash = ACAEngine::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
@@ -36,6 +37,8 @@ module ACAEngine::Core
       module_manager.manager_by_driver_path(driver_path).should_not be_nil
 
       module_manager.manager_by_module_id(mod_id).should eq(module_manager.manager_by_driver_path(driver_path))
+
+      resource_manager.stop
     end
 
     describe "startup" do

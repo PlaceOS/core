@@ -22,6 +22,9 @@ abstract class ACAEngine::Core::Resource(T)
   # NOTE: rw lock?
   getter errors : Array(Error) = [] of Error
 
+  private getter channel_buffer_size
+  private getter processed_buffer_size
+
   # Buffer of recently processed elements
   # NOTE: rw lock?
   getter processed : Deque(T)
@@ -35,13 +38,17 @@ abstract class ACAEngine::Core::Resource(T)
   def initialize(
     @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
     @processed_buffer_size : Int32 = 64,
-    channel_buffer_size : Int32 = 64
+    @channel_buffer_size : Int32 = 64
   )
     @resource_channel = Channel(T).new(channel_buffer_size)
     @processed = Deque(T).new(processed_buffer_size)
   end
 
   def start : self
+    errors.clear
+    processed.clear
+    @resource_channel = Channel(T).new(channel_buffer_size) if resource_channel.closed?
+
     # Listen for changes on the resource table
     spawn(same_thread: true) { watch_resources }
     # Load all the resources into a channel
@@ -52,6 +59,12 @@ abstract class ACAEngine::Core::Resource(T)
     spawn(same_thread: true) { watch_processing }
 
     Fiber.yield
+
+    self
+  end
+
+  def stop : self
+    resource_channel.close
 
     self
   end
@@ -76,6 +89,7 @@ abstract class ACAEngine::Core::Resource(T)
   #
   private def watch_resources
     T.changes.each do |change|
+      break if resource_channel.closed?
       resource = change[:value]
 
       case change[:event]
@@ -88,8 +102,10 @@ abstract class ACAEngine::Core::Resource(T)
       end
     end
   rescue e
-    logger.tag_error(message: "error while watching for resources", error: e.inspect_with_backtrace)
-    watch_resources
+    unless e.is_a?(Channel::ClosedError)
+      logger.tag_error("error while watching for resources", error: e.inspect_with_backtrace)
+      watch_resources
+    end
   end
 
   # Consumes resources ready for processing
@@ -100,8 +116,10 @@ abstract class ACAEngine::Core::Resource(T)
       spawn(same_thread: true) { _process_resource(resource) }
     end
   rescue e
-    logger.tag_error(message: "error while consuming resource queue", error: e.inspect_with_backtrace)
-    watch_processing unless e.is_a?(Channel::ClosedError)
+    unless e.is_a?(Channel::ClosedError)
+      logger.tag_error("error while consuming resource queue", error: e.inspect_with_backtrace)
+      watch_processing
+    end
   end
 
   # Process the resource, place into the processed buffer
@@ -112,6 +130,6 @@ abstract class ACAEngine::Core::Resource(T)
       processed.shift if processed.size > @processed_buffer_size
     end
   rescue e
-    logger.tag_error(message: "while processing resource", resource: resource.inspect, error: e.inspect_with_backtrace)
+    logger.tag_error("while processing resource", resource: resource.inspect, error: e.inspect_with_backtrace)
   end
 end
