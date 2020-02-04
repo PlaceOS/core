@@ -158,7 +158,7 @@ module ACAEngine
 
     # Used in `on_exec` for locating the remote module
     def which_core?(hash_id : String)
-      node = discovery.find!(hash_id)
+      node = discovery.find(hash_id)
       own_node = node[:ip] == @discovery.ip && node[:port] == @discovery.port
       {own_node, URI.new(host: node[:ip], port: node[:port])}
     end

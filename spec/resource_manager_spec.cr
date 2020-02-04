@@ -22,6 +22,7 @@ module ACAEngine::Core
       {1, 2}.any?(resource_manager.compilation.processed.size).should be_true
 
       resource_manager.mappings.processed.size.should eq 0
+      resource_manager.stop
     end
   end
 end

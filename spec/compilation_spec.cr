@@ -21,12 +21,17 @@ module ACAEngine::Core
         )
 
         # Commence compilation
-        compiler = Compilation.new.start
+        logger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
+        logger.level = Logger::Severity::DEBUG
+
+        compiler = Compilation.new(logger: logger).start
         compiler.processed.size.should eq 1
         compiler.processed.first.id.should eq driver.id
 
         driver.reload!
         ACAEngine::Drivers::Helper.compiled?(driver_file, driver.commit.not_nil!).should be_true
+
+        compiler.stop
       end
     end
   end

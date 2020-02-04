@@ -8,10 +8,22 @@ abstract class ACAEngine::Core::Resource(T)
   include ACAEngine::Drivers::Helper
 
   alias Error = NamedTuple(name: String, reason: String)
+  alias Event = RethinkORM::Changefeed::Event
+  alias TaggedLogger = ActionController::Logger::TaggedLogger
+
+  # Outcome of processing a resource
+  enum Result
+    Success
+    Error
+    Skipped
+  end
 
   # Errors generated while processing resources
   # NOTE: rw lock?
   getter errors : Array(Error) = [] of Error
+
+  private getter channel_buffer_size
+  private getter processed_buffer_size
 
   # Buffer of recently processed elements
   # NOTE: rw lock?
@@ -21,24 +33,22 @@ abstract class ACAEngine::Core::Resource(T)
 
   private getter logger : ActionController::Logger::TaggedLogger
 
-  enum Result
-    Success
-    Error
-    Skipped
-  end
-
   abstract def process_resource(resource : T) : Result
 
   def initialize(
-    @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT)),
+    @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
     @processed_buffer_size : Int32 = 64,
-    channel_buffer_size : Int32 = 64
+    @channel_buffer_size : Int32 = 64
   )
     @resource_channel = Channel(T).new(channel_buffer_size)
     @processed = Deque(T).new(processed_buffer_size)
   end
 
   def start : self
+    errors.clear
+    processed.clear
+    @resource_channel = Channel(T).new(channel_buffer_size) if resource_channel.closed?
+
     # Listen for changes on the resource table
     spawn(same_thread: true) { watch_resources }
     # Load all the resources into a channel
@@ -48,15 +58,24 @@ abstract class ACAEngine::Core::Resource(T)
     # Begin background processing
     spawn(same_thread: true) { watch_processing }
 
+    Fiber.yield
+
     self
   end
 
-  def consume_resource : T
+  def stop : self
+    resource_channel.close
+
+    self
+  end
+
+  private def consume_resource : T
     resource_channel.receive
   end
 
   # Load all resources from the database, push into a channel
-  def load_resources
+  #
+  private def load_resources
     count = 0
     T.all.each do |resource|
       resource_channel.send(resource)
@@ -66,33 +85,51 @@ abstract class ACAEngine::Core::Resource(T)
     count
   end
 
-  # Consume the resource, pop onto the processed buffer
+  # Listen to changes on the resource table
+  #
+  private def watch_resources
+    T.changes.each do |change|
+      break if resource_channel.closed?
+      resource = change[:value]
+
+      case change[:event]
+      when Event::Deleted
+        # TODO: Remove the resource
+      when Event::Updated
+        resource_channel.send(resource.as(T))
+      when Event::Created
+        resource_channel.send(resource.as(T))
+      end
+    end
+  rescue e
+    unless e.is_a?(Channel::ClosedError)
+      logger.tag_error("error while watching for resources", error: e.inspect_with_backtrace)
+      watch_resources
+    end
+  end
+
+  # Consumes resources ready for processing
+  #
+  private def watch_processing
+    loop do
+      resource = consume_resource
+      spawn(same_thread: true) { _process_resource(resource) }
+    end
+  rescue e
+    unless e.is_a?(Channel::ClosedError)
+      logger.tag_error("error while consuming resource queue", error: e.inspect_with_backtrace)
+      watch_processing
+    end
+  end
+
+  # Process the resource, place into the processed buffer
+  #
   private def _process_resource(resource : T)
     if process_resource(resource) == Result::Success
       processed.push(resource)
       processed.shift if processed.size > @processed_buffer_size
     end
-  end
-
-  # Listen to changes on the resource table
-  def watch_resources
-    T.changes.each do |change|
-      resource = change[:value]
-
-      case change[:event]
-      when RethinkORM::Changefeed::Event::Deleted
-        # TODO: Remove the resource
-      when RethinkORM::Changefeed::Event::Updated
-        resource_channel.send(resource.as(T))
-      when RethinkORM::Changefeed::Event::Created
-        resource_channel.send(resource.as(T))
-      end
-    end
-  end
-
-  def watch_processing
-    # Block on the resource channel
-    resource = consume_resource
-    spawn(same_thread: true) { _process_resource(resource) }
+  rescue e
+    logger.tag_error("while processing resource", resource: resource.inspect, error: e.inspect_with_backtrace)
   end
 end

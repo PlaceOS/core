@@ -33,16 +33,22 @@ module ACAEngine::Core
 
     def start
       logger.info("cloning repositories")
-      @cloning.start
+      cloning.start
 
       logger.info("compiling drivers")
-      @compilation.start
+      compilation.start
 
       # Run the on-load processes
       yield
 
       logger.info("maintaining mappings")
-      @mappings.start
+      mappings.start
+    end
+
+    def stop
+      cloning.stop
+      compilation.stop
+      mappings.stop
     end
   end
 end
