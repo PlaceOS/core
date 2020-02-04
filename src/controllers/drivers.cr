@@ -26,13 +26,14 @@ module ACAEngine::Core::Api
       driver = URI.decode(params["id"])
       commit = params["commit"]
       repository = params["repository"]? || "drivers"
+      meta = {repository: repository, driver: driver, commit: commit}
 
       if !ACAEngine::Drivers::Helper.compiled?(driver, commit)
-        logger.info "compiling #{repository}/#{driver}@#{commit}"
+        logger.tag_info("compiling", **meta)
         result = ACAEngine::Drivers::Helper.compile_driver(driver, repository, commit)
         # check driver compiled
         if result[:exit_status] != 0
-          logger.error "failed to compile #{repository}/#{driver}@#{commit}"
+          logger.tag_error("failed to compile", **meta)
           render :internal_server_error, json: result
         end
       end
@@ -48,7 +49,7 @@ module ACAEngine::Core::Api
       )
 
       if result.exit_status != 0
-        logger.error "failed to execute #{repository}/#{driver}@#{commit}"
+        logger.tag_error("failed to execute", **meta)
         render :internal_server_error, json: {
           exit_status: result.exit_status,
           output:      io.to_s,

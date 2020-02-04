@@ -21,10 +21,7 @@ module ACAEngine::Core
         )
 
         # Commence compilation
-        logger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
-        logger.level = Logger::Severity::DEBUG
-
-        compiler = Compilation.new(logger: logger).start
+        compiler = Compilation.new(logger: LOGGER).start
         compiler.processed.size.should eq 1
         compiler.processed.first.id.should eq driver.id
 

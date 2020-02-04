@@ -19,15 +19,15 @@ module ACAEngine::Core
       end
 
       # Clone, compile, etcd
-      cloning = Cloning.new(testing: true)
-      resource_manager = ResourceManager.new(cloning: cloning)
+      cloning = Cloning.new(testing: true, logger: LOGGER)
+      resource_manager = ResourceManager.new(cloning: cloning, logger: LOGGER)
       resource_manager.start { }
 
       mod_id = mod.id.as(String)
       driver_commit_hash = ACAEngine::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
       driver_path = ACAEngine::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit_hash)
 
-      module_manager = ModuleManager.new("localhost", 4200, discovery: DiscoveryMock.new("core"))
+      module_manager = ModuleManager.new("localhost", 4200, discovery: DiscoveryMock.new("core"), logger: LOGGER)
 
       module_manager.load_module(mod)
       module_manager.running_modules.should eq 1
@@ -38,6 +38,7 @@ module ACAEngine::Core
 
       module_manager.manager_by_module_id(mod_id).should eq(module_manager.manager_by_driver_path(driver_path))
 
+      module_manager.stop
       resource_manager.stop
     end
 
@@ -48,7 +49,7 @@ module ACAEngine::Core
         Model::Repository.clear
 
         # Start module manager
-        module_manager = ModuleManager.new("localhost", 4200).start
+        module_manager = ModuleManager.new("localhost", 4200, logger: LOGGER).start
 
         # Check that the node is registered in etcd
         module_manager.discovery.nodes.size.should eq 1
@@ -58,16 +59,18 @@ module ACAEngine::Core
 
         # Check that the node is registered in etcd
         module_manager.discovery.nodes.size.should eq 0
+        module_manager.stop
       end
 
       it "loads relevant modules" do
         create_resources
 
         # Start module manager
-        module_manager = ModuleManager.new("localhost", 4200).start
+        module_manager = ModuleManager.new("localhost", 4200, logger: LOGGER).start
 
         # Check that the module is loaded, and the module manager can be received
         module_manager.running_modules.should eq 1
+        module_manager.stop
       end
     end
   end

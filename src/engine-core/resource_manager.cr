@@ -8,7 +8,7 @@ require "./mappings"
 #
 module ACAEngine::Core
   class ResourceManager
-    getter logger : ActionController::Logger::TaggedLogger
+    property logger : ActionController::Logger::TaggedLogger
 
     getter cloning : Cloning
     getter compilation : Compilation
@@ -27,9 +27,9 @@ module ACAEngine::Core
       @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger),
       testing : Bool = false
     )
-      @cloning = cloning || Cloning.new(testing: testing)
-      @compilation = compilation || Compilation.new
-      @mappings = mappings || Mappings.new
+      @cloning = cloning || Cloning.new(testing: testing, logger: logger)
+      @compilation = compilation || Compilation.new(logger: logger)
+      @mappings = mappings || Mappings.new(logger: logger)
     end
 
     def start

@@ -18,7 +18,7 @@ module ACAEngine::Core
       it "executes a command on a running module" do
         _, _, mod = create_resources
         mod_id = mod.id.as(String)
-        module_manager = ModuleManager.new("localhost", 4200, discovery: DiscoveryMock.new("core"))
+        module_manager = ModuleManager.new("localhost", 4200, logger: LOGGER, discovery: DiscoveryMock.new("core"))
         module_manager.load_module(mod)
 
         route = File.join(namespace, mod_id, "execute")

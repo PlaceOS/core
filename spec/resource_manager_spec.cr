@@ -7,9 +7,9 @@ module ACAEngine::Core
       setup
 
       # Clone, compile
-      cloning = Cloning.new(testing: true)
-      mappings = Mappings.new(startup: false)
-      resource_manager = ResourceManager.new(cloning: cloning, mappings: mappings)
+      cloning = Cloning.new(testing: true, logger: LOGGER)
+      mappings = Mappings.new(startup: false, logger: LOGGER)
+      resource_manager = ResourceManager.new(cloning: cloning, mappings: mappings, logger: LOGGER)
 
       called = false
       resource_manager.start { called = true }

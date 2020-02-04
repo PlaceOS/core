@@ -15,6 +15,9 @@ SPEC_DRIVER = "drivers/aca/private_helper.cr"
 # - Use setup(fresh: true) if you require a clean working directory
 TEMP_DIR = get_temp
 
+LOGGER = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger)
+LOGGER.level = Logger::Severity::DEBUG
+
 def get_temp
   "#{Dir.tempdir}/core-spec"
 end
