@@ -78,7 +78,7 @@ def setup(fresh : Bool = false)
   temp_dir = set_temporary_working_directory(fresh)
 
   # Repository metadata
-  repository_uri = "https://github.com/aca-labs/private-crystal-engine-drivers"
+  repository_uri = "https://github.com/acaengine/private-drivers"
   repository_name = repository_folder_name = "drivers"
 
   # Driver metadata
