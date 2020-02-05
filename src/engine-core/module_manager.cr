@@ -24,7 +24,12 @@ module ACAEngine
       Etcd.from_env
     end
 
-    getter redis : Redis::PooledClient = Redis::PooledClient.new
+    @redis : Redis?
+
+    # Lazy redis client
+    def redis : Redis
+      (@redis ||= Redis.new(url: ENV["REDIS_URL"]?)).as(Redis)
+    end
 
     # From environment
     @@instance : ModuleManager?
