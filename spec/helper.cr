@@ -53,6 +53,7 @@ around_suite ->{
 }
 
 Spec.after_suite do
+  ACAEngine::Core::ResourceManager.instance.stop
   `pkill -f "core-spec"`
 end
 
@@ -133,7 +134,7 @@ def create_resources
   _, repository, driver, mod = setup
 
   # Clone, compile
-  ACAEngine::Core::ResourceManager.instance(testing: true)
+  ACAEngine::Core::ResourceManager.instance(testing: true).start { }
 
   {repository, driver, mod}
 end

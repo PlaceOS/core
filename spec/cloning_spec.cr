@@ -6,11 +6,11 @@ module ACAEngine::Core
   describe Cloning do
     describe "startup" do
       it "clones repositories" do
-        set_temporary_working_directory
+        set_temporary_working_directory(fresh: true)
 
         ACAEngine::Model::Repository.clear
         repo = ACAEngine::Model::Generator.repository(type: ACAEngine::Model::Repository::Type::Driver)
-        repo.uri = "https://github.com/aca-labs/private-crystal-engine-drivers"
+        repo.uri = "https://github.com/acaengine/private-drivers"
         repo.name = "drivers"
         repo.folder_name = "drivers"
         repo.commit_hash = "head"

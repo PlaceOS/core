@@ -33,7 +33,14 @@ module ACAEngine::Core
         command_controller = Api::Command.new(ctx, :execute, module_manager)
 
         command_controller.execute
-        String.from_json(ctx.response.output.to_s).should eq %("you can delete this file")
+
+        result = begin
+          String.from_json(ctx.response.output.to_s)
+        rescue
+          nil
+        end
+
+        result.should eq %("you can delete this file")
       end
     end
 

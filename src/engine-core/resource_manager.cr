@@ -15,6 +15,7 @@ module ACAEngine::Core
     getter compilation : Compilation
     getter mappings : Mappings
     getter logger : TaggedLogger
+    getter? started = false
 
     @@instance : ResourceManager?
 
@@ -36,6 +37,9 @@ module ACAEngine::Core
     end
 
     def start
+      return if started?
+
+      @started = true
       logger.info("cloning repositories")
       cloning.start
 
@@ -50,6 +54,9 @@ module ACAEngine::Core
     end
 
     def stop
+      return unless started?
+
+      @started = false
       cloning.stop
       compilation.stop
       mappings.stop
