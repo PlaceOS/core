@@ -69,11 +69,11 @@ Signal::USR2.trap &logging
 
 logger = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger)
 
+ACAEngine::Core::ResourceManager.logger = logger
+ACAEngine::Core::ModuleManager.logger = logger
+
 resource_manager = ACAEngine::Core::ResourceManager.instance
 module_manager = ACAEngine::Core::ModuleManager.instance
-
-resource_manager.logger = logger
-module_manager.logger = logger
 
 # Acquire resources on startup
 resource_manager.start do
