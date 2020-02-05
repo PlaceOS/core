@@ -5,7 +5,7 @@ targets:
   engine-core:
     main: src/app.cr
   exec_from:
-    main: lib/exec_from/exec_from.cr
+    main: lib/exec_from/src/exec_from.cr
 
 dependencies:
   action-controller:
