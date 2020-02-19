@@ -31,7 +31,8 @@ module ACAEngine
       logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
     )
       repository_id = repository.id.as(String)
-      repository_name = repository.name.as(String)
+      # NOTE:: we want to use folder name at this level
+      repository_name = repository.folder_name.as(String)
       repository_uri = repository.uri.as(String)
       repository_commit = repository.commit_hash.as(String)
 
