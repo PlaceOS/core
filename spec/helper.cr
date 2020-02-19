@@ -144,3 +144,12 @@ class DiscoveryMock < HoundDog::Discovery
     true
   end
 end
+
+class MockClustering < Clustering
+  def start
+    stabilize.call([{ip: ip, port: port}])
+  end
+
+  def stop
+  end
+end

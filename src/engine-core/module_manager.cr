@@ -10,26 +10,18 @@ require "rethinkdb-orm"
 
 module ACAEngine
   class Core::ModuleManager
-    include Drivers::Helper # MUST be first module due to clustering initialization
-    include Clustering
+    include Drivers::Helper
+
     alias TaggedLogger = ActionController::Logger::TaggedLogger
 
     class_property ip : String = ENV["CORE_HOST"]? || "localhost"
     class_property port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
     class_property logger : TaggedLogger = TaggedLogger.new(ActionController::Base.settings.logger)
 
+    getter clustering : Clustering
     getter discovery : HoundDog::Discovery
 
-    def etcd_client : Etcd::Client
-      Etcd.from_env
-    end
-
-    @redis : Redis?
-
-    # Lazy redis client
-    def redis : Redis
-      (@redis ||= Redis.new(url: ENV["REDIS_URL"]?)).as(Redis)
-    end
+    delegate stop, to: clustering
 
     # From environment
     @@instance : ModuleManager?
@@ -54,11 +46,18 @@ module ACAEngine
       ip : String,
       port : Int32,
       logger : TaggedLogger? = nil,
-      discovery : HoundDog::Discovery? = nil
+      discovery : HoundDog::Discovery? = nil,
+      clustering : Clustering? = nil
     )
       @discovery = discovery || HoundDog::Discovery.new(service: "core", ip: ip, port: port)
       @logger = logger if logger
-      super()
+      @clustering = Clustering.new(
+        ip: ip,
+        port: port,
+        discovery: @discovery,
+        logger: @logger,
+        stabilize: ->stabilize(Array(HoundDog::Service::Node)),
+      )
     end
 
     def watch_modules
@@ -98,13 +97,13 @@ module ACAEngine
     end
 
     def start
-      super # Commence clustering
-
+      # Start clustering process
+      clustering.start
       # Listen for incoming module changes
       spawn(same_thread: true) { watch_modules }
+
       logger.tag_info("loaded modules", drivers: running_drivers, modules: running_modules)
       Fiber.yield
-
       self
     end
 
@@ -162,7 +161,7 @@ module ACAEngine
       @module_proc_managers.delete(mod_id)
     end
 
-    def stabilize(nodes)
+    def stabilize(nodes : Array(HoundDog::Service::Node))
       # create a one off rendezvous hash with nodes from the stabilization event
       rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Service.key_value(HoundDog::Service::Node)))
       Model::Module.all.each do |m|

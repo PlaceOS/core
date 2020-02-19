@@ -6,7 +6,7 @@ shards:
 
   action-controller:
     github: spider-gazelle/action-controller
-    commit: d0d05315c62923f4f5abd455da4b988d68e7f3de
+    commit: 6b8a41799119cd9d2d9267b7718829960422206c
 
   active-model:
     github: spider-gazelle/active-model
@@ -26,7 +26,7 @@ shards:
 
   clustering:
     github: aca-labs/clustering
-    commit: 909ac121048b695a762f949648e50968fff11b02
+    commit: a68d0eccfe317bd0328e5aa4c1f28ca9216dd9f3
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -54,15 +54,15 @@ shards:
 
   engine-drivers:
     github: acaengine/drivers
-    commit: e09581450f054a16d58015859182a8976159706b
+    commit: 7b32c61f56cec44e871b09e924240a129b4bc666
 
   engine-models:
     github: acaengine/models
-    commit: 98acd836d37380ebaa8d56c4eb214d19d377f41c
+    commit: 0955a7013d947a6ad9b8ebd3a4eb38b7849a86dc
 
   etcd:
     github: aca-labs/crystal-etcd
-    version: 0.2.4
+    version: 0.3.1
 
   exec_from:
     github: aca-labs/exec_from
@@ -102,7 +102,7 @@ shards:
 
   neuroplastic:
     github: aca-labs/neuroplastic
-    commit: 2e764788efa0e59f8b24605e3d71770459f3fb3a
+    commit: ee1cf93d3888e938dcf9025b6b88dbc42cb979ab
 
   openssl_ext:
     github: stakach/openssl_ext
@@ -122,7 +122,7 @@ shards:
 
   protobuf:
     github: jeromegn/protobuf.cr
-    version: 2.1.2
+    version: 2.2.0
 
   redis:
     github: stefanwille/crystal-redis
@@ -137,7 +137,7 @@ shards:
     commit: 994b644d62378f5c691c7eb6562b737321898edc
 
   retriable:
-    github: Sija/retriable.cr
+    github: sija/retriable.cr
     version: 0.2.0
 
   rwlock:
@@ -146,7 +146,7 @@ shards:
 
   ssh2:
     github: spider-gazelle/ssh2.cr
-    version: 1.2.3
+    version: 1.2.4
 
   tasker:
     github: spider-gazelle/tasker
