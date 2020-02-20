@@ -1,12 +1,18 @@
+# NOTE: segfault occurs on include of engine-models files
+# debugger
+require "engine-models/module"
+require "engine-models/control_system"
+require "engine-models/settings"
+require "engine-models/driver"
+
 require "action-controller"
 require "clustering"
 require "engine-driver/protocol/management"
 require "engine-drivers/compiler"
 require "engine-drivers/helper"
-require "engine-models"
 require "habitat"
 require "hound-dog"
-require "rethinkdb-orm"
+require "rethinkdb-orm/utils/changefeed"
 
 module ACAEngine
   class Core::ModuleManager
@@ -51,7 +57,7 @@ module ACAEngine
     )
       @discovery = discovery || HoundDog::Discovery.new(service: "core", ip: ip, port: port)
       @logger = logger if logger
-      @clustering = Clustering.new(
+      @clustering = clustering || Clustering.new(
         ip: ip,
         port: port,
         discovery: @discovery,

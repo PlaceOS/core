@@ -2,6 +2,7 @@ require "hardware"
 require "engine-drivers/helper"
 
 require "./application"
+require "../engine-core/module_manager"
 require "../engine-core/resource_manager"
 
 module ACAEngine::Core::Api

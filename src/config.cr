@@ -15,9 +15,8 @@ class ACAEngine::Driver::Protocol; end
 # Application code
 require "engine-driver/protocol/management"
 require "./constants"
-require "./controllers/application"
-require "./controllers/*"
 require "./engine-core"
+require "./controllers/*"
 
 # Server required after application controllers
 require "action-controller/server"

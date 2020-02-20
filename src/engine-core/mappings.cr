@@ -1,6 +1,7 @@
 require "action-controller/logger"
 require "engine-driver/storage"
-require "engine-models"
+require "engine-models/control_system"
+require "engine-models/module"
 
 require "./module_manager"
 

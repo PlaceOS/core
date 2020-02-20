@@ -1,6 +1,7 @@
-require "engine-drivers/compiler"
-require "engine-models"
 require "action-controller/logger"
+require "engine-drivers/compiler"
+require "engine-models/driver"
+require "engine-models/repository"
 
 require "./cloning"
 require "./module_manager"

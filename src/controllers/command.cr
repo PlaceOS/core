@@ -1,4 +1,5 @@
 require "./application"
+require "../engine-core/module_manager"
 
 module ACAEngine::Core::Api
   class Command < Application

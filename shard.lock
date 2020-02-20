@@ -50,7 +50,7 @@ shards:
 
   engine-driver:
     github: acaengine/driver
-    commit: 258c605fd0b4e2a0df4687b3e39cc3fe539eb925
+    commit: 0f0d965e90b4f2fdd0b48b86652f8e6bb01662aa
 
   engine-drivers:
     github: acaengine/drivers
@@ -58,7 +58,7 @@ shards:
 
   engine-models:
     github: acaengine/models
-    commit: 0955a7013d947a6ad9b8ebd3a4eb38b7849a86dc
+    commit: 4d4c497f3927d1e9d75fec72a776e5330045a847
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -102,7 +102,7 @@ shards:
 
   neuroplastic:
     github: aca-labs/neuroplastic
-    commit: ee1cf93d3888e938dcf9025b6b88dbc42cb979ab
+    commit: 090e63375a5c12d81fb006e737c28bb3a325f27c
 
   openssl_ext:
     github: stakach/openssl_ext
@@ -134,7 +134,7 @@ shards:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: 994b644d62378f5c691c7eb6562b737321898edc
+    commit: 2f5b11243252658876f915683f4aeaf0d720e152
 
   retriable:
     github: sija/retriable.cr

@@ -3,6 +3,7 @@ require "engine-drivers/compiler"
 require "engine-drivers/git_commands"
 require "engine-models"
 
+require "./module_manager"
 require "./resource"
 
 module ACAEngine

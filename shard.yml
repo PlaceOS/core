@@ -42,7 +42,6 @@ dependencies:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    branch: master
 
 development_dependencies:
   faker:

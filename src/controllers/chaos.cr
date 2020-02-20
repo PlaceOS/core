@@ -1,5 +1,6 @@
 require "./application"
-require "../engine-core"
+
+require "../engine-core/module_manager"
 
 module ACAEngine::Core::Api
   class Chaos < Application

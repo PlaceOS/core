@@ -1,5 +1,4 @@
 require "uuid"
-require "../engine-core/module_manager"
 
 module ACAEngine::Core::Api
   abstract class Application < ActionController::Base
