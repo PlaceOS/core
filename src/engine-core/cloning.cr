@@ -16,7 +16,7 @@ module ACAEngine
       @password : String? = nil,
       @working_dir : String = Drivers::Compiler.repository_dir,
       @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
-      @startup : Bool = false,
+      @startup : Bool = true,
       @testing : Bool = false
     )
       super(@logger)
