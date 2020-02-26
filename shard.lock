@@ -54,7 +54,7 @@ shards:
 
   engine-drivers:
     github: acaengine/drivers
-    commit: 7b32c61f56cec44e871b09e924240a129b4bc666
+    commit: cff06e43f8b9947350ca4a40d68b56d03db7591c
 
   engine-models:
     github: acaengine/models

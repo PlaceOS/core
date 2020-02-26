@@ -34,7 +34,8 @@ before_script:
 
 script:
   # Specs
-  - crystal spec
+  - crystal spec --release --error-trace -v --tag "api"
+  - crystal spec --release --error-trace -v --tag "~api"
   # Linter
   - bin/ameba
   # Formatter
