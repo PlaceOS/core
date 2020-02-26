@@ -1,5 +1,3 @@
-# NOTE: segfault occurs on include of engine-models files
-# debugger
 require "engine-models/module"
 require "engine-models/control_system"
 require "engine-models/settings"
@@ -20,8 +18,7 @@ module ACAEngine
 
     alias TaggedLogger = ActionController::Logger::TaggedLogger
 
-    class_property ip : String = ENV["CORE_HOST"]? || "localhost"
-    class_property port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
+    class_property uri : URI = URI.parse(ENV["CORE_URI"]? || "http://localhost:3000")
     class_property logger : TaggedLogger = TaggedLogger.new(ActionController::Base.settings.logger)
 
     getter clustering : Clustering
@@ -34,7 +31,7 @@ module ACAEngine
 
     # Class to be used as a singleton
     def self.instance : ModuleManager
-      (@@instance ||= ModuleManager.new(ip: self.ip, port: self.port)).as(ModuleManager)
+      (@@instance ||= ModuleManager.new(uri: self.uri, logger: self.logger)).as(ModuleManager)
     end
 
     # Mapping from module_id to protocol manager
@@ -49,20 +46,17 @@ module ACAEngine
     # - launch the modules on those processes etc
     # - once load complete, mark in etcd that load is complete
     def initialize(
-      ip : String,
-      port : Int32,
+      uri : String | URI,
       logger : TaggedLogger? = nil,
       discovery : HoundDog::Discovery? = nil,
       clustering : Clustering? = nil
     )
-      @discovery = discovery || HoundDog::Discovery.new(service: "core", ip: ip, port: port)
       @logger = logger if logger
+      @discovery = discovery || HoundDog::Discovery.new(service: "core", uri: uri)
       @clustering = clustering || Clustering.new(
-        ip: ip,
-        port: port,
+        uri: uri,
         discovery: @discovery,
-        logger: @logger,
-        stabilize: ->stabilize(Array(HoundDog::Service::Node)),
+        logger: @logger
       )
     end
 
@@ -104,7 +98,7 @@ module ACAEngine
 
     def start
       # Start clustering process
-      clustering.start
+      clustering.start { |nodes| stabilize(nodes) }
       # Listen for incoming module changes
       spawn(same_thread: true) { watch_modules }
 
@@ -169,7 +163,7 @@ module ACAEngine
 
     def stabilize(nodes : Array(HoundDog::Service::Node))
       # create a one off rendezvous hash with nodes from the stabilization event
-      rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Service.key_value(HoundDog::Service::Node)))
+      rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
       Model::Module.all.each do |m|
         load_module(m, rendezvous_hash)
       end
@@ -177,9 +171,7 @@ module ACAEngine
 
     # Used in `on_exec` for locating the remote module
     def which_core?(hash_id : String)
-      node = discovery.find(hash_id)
-      own_node = node[:ip] == @discovery.ip && node[:port] == @discovery.port
-      {own_node, URI.new(host: node[:ip], port: node[:port])}
+      discovery.find?(hash_id).try &.[:uri]
     end
 
     def on_exec(request : Request, response_cb : Proc(Request, Nil))
@@ -187,9 +179,11 @@ module ACAEngine
       remote_module_id = request.id
       raw_execute_json = request.payload.not_nil!
 
-      this_node, core_uri = which_core?(remote_module_id)
+      core_uri = which_core?(remote_module_id)
+      raise "no registered cores" unless core_uri
 
-      if this_node
+      # If module maps to this node
+      if core_uri == uri
         if manager = @module_proc_managers[remote_module_id]?
           # responds with a JSON string
           request.payload = manager.execute(remote_module_id, raw_execute_json)
@@ -248,8 +242,12 @@ module ACAEngine
     # Load the module if current node is responsible
     def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
       mod_id = mod.id.as(String)
-      node = rendezvous_hash[mod_id]?.try &->HoundDog::Service.node(String)
-      if node && node[:ip] == ip && node[:port] == port
+
+      module_uri = rendezvous_hash[mod_id]?.try do |hash_value|
+        HoundDog::Discovery.from_hash_value(hash_value)[:uri]
+      end
+
+      if module_uri == uri
         driver = mod.driver.as(Model::Driver)
         driver_name = driver.name.as(String)
         driver_file_name = driver.file_name.as(String)
@@ -291,8 +289,7 @@ module ACAEngine
       end
     end
 
-    getter ip = ModuleManager.ip
-    getter port = ModuleManager.port
+    protected getter uri : URI = ModuleManager.uri
     protected getter logger : TaggedLogger = ModuleManager.logger
   end
 end

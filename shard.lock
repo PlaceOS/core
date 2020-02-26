@@ -6,7 +6,7 @@ shards:
 
   action-controller:
     github: spider-gazelle/action-controller
-    commit: 6b8a41799119cd9d2d9267b7718829960422206c
+    version: 2.3.4
 
   active-model:
     github: spider-gazelle/active-model
@@ -26,7 +26,7 @@ shards:
 
   clustering:
     github: aca-labs/clustering
-    commit: a68d0eccfe317bd0328e5aa4c1f28ca9216dd9f3
+    version: 0.3.1
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -82,7 +82,7 @@ shards:
 
   hound-dog:
     github: aca-labs/hound-dog
-    commit: d03b830eef527b44d5f03cdbae4534fb0d3d8f06
+    version: 2.0.2
 
   ipaddress:
     github: Sija/ipaddress.cr

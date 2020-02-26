@@ -8,11 +8,10 @@ targets:
 dependencies:
   action-controller:
     github: spider-gazelle/action-controller
-    branch: master
 
   clustering:
     github: aca-labs/clustering
-    branch: master
+    version: ~> 0.3.1
 
   engine-driver:
     github: acaengine/driver
@@ -38,7 +37,6 @@ dependencies:
 
   hound-dog:
     github: aca-labs/hound-dog
-    branch: master
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm

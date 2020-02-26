@@ -146,8 +146,9 @@ class DiscoveryMock < HoundDog::Discovery
 end
 
 class MockClustering < Clustering
-  def start
-    stabilize.call([{ip: ip, port: port}])
+  def start(&stabilize : Array(HoundDog::Service::Node) ->)
+    @stabilize = stabilize
+    stabilize.call([discovery.node])
   end
 
   def stop

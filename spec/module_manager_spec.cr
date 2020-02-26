@@ -27,7 +27,7 @@ module ACAEngine::Core
       driver_commit_hash = ACAEngine::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
       driver_path = ACAEngine::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit_hash)
 
-      module_manager = ModuleManager.new("localhost", 4200, discovery: DiscoveryMock.new("core"), logger: LOGGER)
+      module_manager = ModuleManager.new("http://localhost:4200", discovery: DiscoveryMock.new("core"), logger: LOGGER)
 
       module_manager.load_module(mod)
       module_manager.running_modules.should eq 1
@@ -49,7 +49,7 @@ module ACAEngine::Core
         Model::Repository.clear
 
         # Start module manager
-        module_manager = ModuleManager.new("localhost", 4200, logger: LOGGER).start
+        module_manager = ModuleManager.new("http://localhost:4200", logger: LOGGER).start
 
         # Check that the node is registered in etcd
         module_manager.discovery.nodes.size.should eq 1
@@ -66,7 +66,7 @@ module ACAEngine::Core
         create_resources
 
         # Start module manager
-        module_manager = ModuleManager.new("localhost", 4200, logger: LOGGER).start
+        module_manager = ModuleManager.new("http://localhost:4200", logger: LOGGER).start
 
         # Check that the module is loaded, and the module manager can be received
         module_manager.running_modules.should eq 1
