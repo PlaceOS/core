@@ -63,11 +63,26 @@ module ACAEngine::Core
         module_manager.stop
       end
 
-      it "loads relevant modules" do
+      it "loads modules that hash to the node" do
         create_resources
 
+        uri = "http://localhost:4200"
+        discovery_mock = DiscoveryMock.new("core", uri: uri)
+        clustering_mock = MockClustering.new(
+          uri: uri,
+          discovery: discovery_mock,
+          logger: LOGGER
+        )
+
+        module_manager = ModuleManager.new(
+          uri: uri,
+          clustering: clustering_mock,
+          discovery: discovery_mock,
+          logger: LOGGER,
+        )
+
         # Start module manager
-        module_manager = ModuleManager.new("http://localhost:4200", logger: LOGGER).start
+        module_manager.start
 
         # Check that the module is loaded, and the module manager can be received
         module_manager.running_modules.should eq 1
