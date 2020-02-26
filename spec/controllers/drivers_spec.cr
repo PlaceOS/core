@@ -1,7 +1,7 @@
 require "../helper"
 
 module ACAEngine::Core
-  describe Api::Drivers do
+  describe Api::Drivers, tags: "api" do
     namespace = Api::Drivers::NAMESPACE[0]
     with_server do
       describe "drivers/" do

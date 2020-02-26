@@ -1,7 +1,7 @@
 require "../helper"
 
 module ACAEngine::Core
-  describe Api::Status do
+  describe Api::Status, tags: "api" do
     with_server do
       it "status/" do
         repo, driver, _ = create_resources

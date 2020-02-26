@@ -11,14 +11,15 @@ module ACAEngine::Core
     used_for_aca_testing: [] of String,
   }.to_json
 
-  describe Api::Command do
+  describe Api::Command, tags: "api" do
     namespace = Api::Command::NAMESPACE[0]
 
     describe "command/:module_id/execute" do
       it "executes a command on a running module" do
         _, _, mod = create_resources
         mod_id = mod.id.as(String)
-        module_manager = ModuleManager.new("http://localhost:4200", discovery: DiscoveryMock.new("core"), logger: LOGGER).start
+        uri = "http://localhost:4200"
+        module_manager = ModuleManager.new(uri, discovery: DiscoveryMock.new("core", uri: uri), logger: LOGGER).start
         module_manager.load_module(mod)
 
         route = File.join(namespace, mod_id, "execute")

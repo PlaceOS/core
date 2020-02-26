@@ -143,6 +143,10 @@ class DiscoveryMock < HoundDog::Discovery
   def own_node?(key : String) : Bool
     true
   end
+
+  def etcd_nodes
+    [@service_events.node].map &->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)
+  end
 end
 
 class MockClustering < Clustering
