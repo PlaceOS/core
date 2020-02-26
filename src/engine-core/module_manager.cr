@@ -170,8 +170,10 @@ module ACAEngine
     end
 
     # Used in `on_exec` for locating the remote module
-    def which_core?(hash_id : String)
-      discovery.find?(hash_id).try &.[:uri]
+    def which_core(hash_id : String) : URI
+      node = discovery.find?(hash_id)
+      raise "no registered core instances" unless node
+      node[:uri]
     end
 
     def on_exec(request : Request, response_cb : Proc(Request, Nil))
@@ -179,8 +181,7 @@ module ACAEngine
       remote_module_id = request.id
       raw_execute_json = request.payload.not_nil!
 
-      core_uri = which_core?(remote_module_id)
-      raise "no registered cores" unless core_uri
+      core_uri = which_core(remote_module_id)
 
       # If module maps to this node
       if core_uri == uri
