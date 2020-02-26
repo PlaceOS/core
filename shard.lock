@@ -26,7 +26,7 @@ shards:
 
   clustering:
     github: aca-labs/clustering
-    version: 0.3.1
+    version: 0.3.2
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -50,7 +50,7 @@ shards:
 
   engine-driver:
     github: acaengine/driver
-    commit: 0f0d965e90b4f2fdd0b48b86652f8e6bb01662aa
+    commit: 964b68a3211d87643bbf53e4ed6e5ee9e553d2dd
 
   engine-drivers:
     github: acaengine/drivers
