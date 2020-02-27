@@ -5,7 +5,9 @@ module ACAEngine::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
-    getter module_manager = ModuleManager.instance
+    def module_manager
+      @module_manager || ModuleManager.instance
+    end
 
     # Executes a command against a module
     post "/:module_id/execute", :execute do
@@ -60,6 +62,8 @@ module ACAEngine::Core::Api
 
     # Overriding initializers for dependency injection
     ###########################################################################
+
+    @module_manager : ModuleManager? = nil
 
     def initialize(@context, @action_name = :index, @__head_request__ = false)
       super(@context, @action_name, @__head_request__)

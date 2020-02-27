@@ -8,6 +8,9 @@ env:
   - SG_ENV=production TRAVIS_TEST=true
 
 before_install:
+  # Configure git
+  - git config --global user.name "ACAEngine"
+  - git config --global user.email support@acaprojects.com
   # Add rethinkdb 2.3.6
   - docker run --net="host" -p "29015:29015" -p "28015:28015" -d acalabs/rethinkdb:2.3.6
   # Add etcd 3.3.13
@@ -30,12 +33,11 @@ install:
   - shards install
 
 before_script:
-  - sleep 5
+  - sleep 1
 
 script:
   # Specs
-  - crystal spec --release --error-trace -v --tag "api"
-  - crystal spec --release --error-trace -v --tag "~api"
+  - crystal spec --error-trace -v
   # Linter
   - bin/ameba
   # Formatter

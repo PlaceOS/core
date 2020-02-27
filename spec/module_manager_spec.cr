@@ -46,10 +46,8 @@ module ACAEngine::Core
     describe "startup" do
       it "registers to etcd" do
         # Remove metadata in etcd
-        client = HoundDog.etcd_client
         namespace = HoundDog.settings.service_namespace
-        pp! namespace
-        pp! client.kv.delete_prefix(namespace)
+        HoundDog.etcd_client.kv.delete_prefix(namespace)
 
         # Clear relevant tables
         Model::Driver.clear

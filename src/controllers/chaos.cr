@@ -6,7 +6,9 @@ module ACAEngine::Core::Api
   class Chaos < Application
     base "/api/core/v1/chaos/"
 
-    getter module_manager : ModuleManager = ModuleManager.instance
+    def module_manager
+      @module_manager || ModuleManager.instance
+    end
 
     # terminate a process
     post "/terminate", :terminate do
@@ -23,6 +25,8 @@ module ACAEngine::Core::Api
 
     # Overriding initializers for dependency injection
     ###########################################################################
+
+    @module_manager : ModuleManager? = nil
 
     def initialize(@context, @action_name = :index, @__head_request__ = false)
       super(@context, @action_name, @__head_request__)
