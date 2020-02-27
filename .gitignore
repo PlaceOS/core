@@ -4,7 +4,7 @@
 .shards
 app
 bin
-doc
+docs
 drivers
 lib
 repositories

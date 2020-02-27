@@ -72,16 +72,7 @@ logger = ActionController::Logger::TaggedLogger.new(ActionController::Base.setti
 ACAEngine::Core::ResourceManager.logger = logger
 ACAEngine::Core::ModuleManager.logger = logger
 
-resource_manager = ACAEngine::Core::ResourceManager.instance
-module_manager = ACAEngine::Core::ModuleManager.instance
-
-# Acquire resources on startup
-resource_manager.start do
-  # Start managing modules once relevant resources present
-  spawn(same_thread: true) do
-    module_manager.start
-  end
-end
+ACAEngine::Core.start_managers
 
 # Start the server
 server.run do
