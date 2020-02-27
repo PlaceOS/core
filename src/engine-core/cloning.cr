@@ -3,6 +3,7 @@ require "engine-drivers/compiler"
 require "engine-drivers/git_commands"
 require "engine-models"
 
+require "./module_manager"
 require "./resource"
 
 module ACAEngine
@@ -15,7 +16,7 @@ module ACAEngine
       @password : String? = nil,
       @working_dir : String = Drivers::Compiler.repository_dir,
       @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
-      @startup : Bool = false,
+      @startup : Bool = true,
       @testing : Bool = false
     )
       super(@logger)
@@ -32,12 +33,12 @@ module ACAEngine
     )
       repository_id = repository.id.as(String)
       # NOTE:: we want to use folder name at this level
-      repository_name = repository.folder_name.as(String)
+      repository_folder_name = repository.folder_name.as(String)
       repository_uri = repository.uri.as(String)
       repository_commit = repository.commit_hash.as(String)
 
       Drivers::Compiler.clone_and_install(
-        repository: repository_name,
+        repository: repository_folder_name,
         repository_uri: repository_uri,
         username: username || repository.username,
         password: password || repository.password,
@@ -46,18 +47,28 @@ module ACAEngine
       )
 
       # Update commit hash if repository id maps to current node, or during startup
-      current_commit = Drivers::Helper.repository_commit_hash(repository_name)
+      current_commit = Drivers::Helper.repository_commit_hash(repository_folder_name)
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
       if current_commit != repository_commit && own_node
         if startup
-          logger.tag_warn("updating commit on repository during startup", name: repository_name)
+          logger.tag_warn(
+            message: "updating commit on repository during startup",
+            current_commit: current_commit,
+            repository_commit: repository_commit,
+            folder_name: repository_folder_name
+          )
         end
 
         # Refresh the repository model commit hash
         repository.update_fields(commit_hash: current_commit)
       end
 
-      logger.tag_info("cloned repository", repository: repository_name, uri: repository_uri)
+      logger.tag_info(
+        message: "cloned repository",
+        commit: current_commit,
+        repository: repository_folder_name,
+        uri: repository_uri
+      )
     end
 
     def process_resource(repository) : Resource::Result

@@ -6,7 +6,7 @@ require "../helper"
 # - Check the outcome of the request
 
 module ACAEngine::Core
-  describe Api::Chaos do
+  describe Api::Chaos, tags: "api" do
     pending "chaos/terminate"
   end
 end

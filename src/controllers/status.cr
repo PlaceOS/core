@@ -2,6 +2,7 @@ require "hardware"
 require "engine-drivers/helper"
 
 require "./application"
+require "../engine-core/module_manager"
 require "../engine-core/resource_manager"
 
 module ACAEngine::Core::Api
@@ -9,8 +10,13 @@ module ACAEngine::Core::Api
     base "/api/core/v1/status/"
     id_param :commit_hash
 
-    getter module_manager = ModuleManager.instance
-    getter resource_manager = ResourceManager.instance
+    def module_manager
+      @module_manager || ModuleManager.instance
+    end
+
+    def resource_manager
+      @resource_manager || ResourceManager.instance
+    end
 
     # General statistics related to the process
     def index
@@ -81,6 +87,9 @@ module ACAEngine::Core::Api
 
     # Overriding initializers for dependency injection
     ###########################################################################
+
+    @module_manager : ModuleManager? = nil
+    @resource_manager : ResourceManager? = nil
 
     def initialize(@context, @action_name = :index, @__head_request__ = false)
       super(@context, @action_name, @__head_request__)

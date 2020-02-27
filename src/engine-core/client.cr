@@ -78,7 +78,7 @@ module ACAEngine::Core
       response = get("/drivers/#{URI.encode(driver_id)}/details?#{params}")
 
       # Response looks like:
-      # https://github.com/aca-labs/crystal-engine-driver/blob/master/docs/command_line_options.md#discovery-and-defaults
+      # https://github.com/acaengine/driver/blob/master/docs/command_line_options.md#discovery-and-defaults
       response.body
     end
 

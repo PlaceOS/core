@@ -5,13 +5,17 @@ require "./compilation"
 require "./mappings"
 
 # Sequences the acquisition and production of resources
+#
 module ACAEngine::Core
   class ResourceManager
-    getter logger : ActionController::Logger::TaggedLogger
+    alias TaggedLogger = ActionController::Logger::TaggedLogger
 
+    class_property logger : TaggedLogger = TaggedLogger.new(ActionController::Base.settings.logger)
     getter cloning : Cloning
     getter compilation : Compilation
     getter mappings : Mappings
+    getter logger : TaggedLogger
+    getter? started = false
 
     @@instance : ResourceManager?
 
@@ -23,15 +27,19 @@ module ACAEngine::Core
       cloning : Cloning? = nil,
       compilation : Compilation? = nil,
       mappings : Mappings? = nil,
-      @logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger),
+      logger : ActionController::Logger::TaggedLogger? = nil,
       testing : Bool = false
     )
-      @cloning = cloning || Cloning.new(testing: testing)
-      @compilation = compilation || Compilation.new
-      @mappings = mappings || Mappings.new
+      @logger = logger || ResourceManager.logger
+      @cloning = cloning || Cloning.new(testing: testing, logger: @logger)
+      @compilation = compilation || Compilation.new(logger: @logger)
+      @mappings = mappings || Mappings.new(logger: @logger)
     end
 
     def start
+      return if started?
+
+      @started = true
       logger.info("cloning repositories")
       cloning.start
 
@@ -46,6 +54,9 @@ module ACAEngine::Core
     end
 
     def stop
+      return unless started?
+
+      @started = false
       cloning.stop
       compilation.stop
       mappings.stop

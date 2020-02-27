@@ -67,11 +67,12 @@ end
 Signal::USR1.trap &logging
 Signal::USR2.trap &logging
 
-# Acquire resources on startup
-ACAEngine::Core::ResourceManager.instance.start do
-  # Start managing modules once relevant resources present
-  ACAEngine::Core::ModuleManager.instance.start
-end
+logger = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger)
+
+ACAEngine::Core::ResourceManager.logger = logger
+ACAEngine::Core::ModuleManager.logger = logger
+
+ACAEngine::Core.start_managers
 
 # Start the server
 server.run do

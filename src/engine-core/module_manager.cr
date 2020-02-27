@@ -1,31 +1,37 @@
+require "engine-models/module"
+require "engine-models/control_system"
+require "engine-models/settings"
+require "engine-models/driver"
+
 require "action-controller"
+require "clustering"
 require "engine-driver/protocol/management"
 require "engine-drivers/compiler"
 require "engine-drivers/helper"
-require "engine-models"
 require "habitat"
 require "hound-dog"
-require "rethinkdb-orm"
+require "rethinkdb-orm/utils/changefeed"
 
 module ACAEngine
   class Core::ModuleManager
     include Drivers::Helper
 
-    getter discovery : HoundDog::Discovery
-    getter logger : ActionController::Logger::TaggedLogger = settings.logger
+    alias TaggedLogger = ActionController::Logger::TaggedLogger
 
-    Habitat.create do
-      setting ip : String = ENV["CORE_HOST"]? || "localhost"
-      setting port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
-      setting logger : ActionController::Logger::TaggedLogger = ActionController::Logger::TaggedLogger.new(Logger.new(STDOUT))
-    end
+    class_property uri : URI = URI.parse(ENV["CORE_URI"]? || "http://localhost:3000")
+    class_property logger : TaggedLogger = TaggedLogger.new(ActionController::Base.settings.logger)
+
+    getter clustering : Clustering
+    getter discovery : HoundDog::Discovery
+
+    delegate stop, to: clustering
 
     # From environment
     @@instance : ModuleManager?
 
     # Class to be used as a singleton
     def self.instance : ModuleManager
-      (@@instance ||= ModuleManager.new(ip: settings.ip, port: settings.port)).as(ModuleManager)
+      (@@instance ||= ModuleManager.new(uri: self.uri, logger: self.logger)).as(ModuleManager)
     end
 
     # Mapping from module_id to protocol manager
@@ -33,16 +39,28 @@ module ACAEngine
     # Mapping from driver path to protocol manager
     @driver_proc_managers = {} of String => Driver::Protocol::Management
 
-    # Once registered, run through all the modules, consistent hashing to determine what modules need to be loaded
-    # Start the driver processes as required.
-    # Launch the modules on those processes etc
-    # Once all the modules are running. Mark in etcd that load is complete.
+    # Start up process is as follows..
+    # - registered
+    # - consist hash all modules to determine loadable modules
+    # - lazily start the driver processes
+    # - launch the modules on those processes etc
+    # - once load complete, mark in etcd that load is complete
     def initialize(
-      ip : String,
-      port : Int32,
-      discovery : HoundDog::Discovery? = HoundDog::Discovery.new(service: "core")
+      uri : String | URI,
+      logger : TaggedLogger? = nil,
+      discovery : HoundDog::Discovery? = nil,
+      clustering : Clustering? = nil
     )
-      @discovery = discovery || HoundDog::Discovery.new(service: "core", ip: ip, port: port)
+      @uri = uri.is_a?(URI) ? uri : URI.parse(uri)
+      ModuleManager.uri = @uri
+
+      @logger = logger if logger
+      @discovery = discovery || HoundDog::Discovery.new(service: "core", uri: @uri)
+      @clustering = clustering || Clustering.new(
+        uri: @uri,
+        discovery: @discovery,
+        logger: @logger
+      )
     end
 
     def watch_modules
@@ -82,19 +100,13 @@ module ACAEngine
     end
 
     def start
-      logger.debug("loading modules")
-
-      # Self-register
-      discovery.register { balance_modules }
-
+      # Start clustering process
+      clustering.start { |nodes| stabilize(nodes) }
       # Listen for incoming module changes
       spawn(same_thread: true) { watch_modules }
 
-      balance_modules
-
       logger.tag_info("loaded modules", drivers: running_drivers, modules: running_modules)
       Fiber.yield
-
       self
     end
 
@@ -152,15 +164,19 @@ module ACAEngine
       @module_proc_managers.delete(mod_id)
     end
 
-    def balance_modules
-      Model::Module.all.each &->load_module(Model::Module)
+    def stabilize(nodes : Array(HoundDog::Service::Node))
+      # create a one off rendezvous hash with nodes from the stabilization event
+      rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
+      Model::Module.all.each do |m|
+        load_module(m, rendezvous_hash)
+      end
     end
 
     # Used in `on_exec` for locating the remote module
-    def which_core?(hash_id : String)
-      node = discovery.find(hash_id)
-      own_node = node[:ip] == @discovery.ip && node[:port] == @discovery.port
-      {own_node, URI.new(host: node[:ip], port: node[:port])}
+    def which_core(hash_id : String) : URI
+      node = discovery.find?(hash_id)
+      raise "no registered core instances" unless node
+      node[:uri]
     end
 
     def on_exec(request : Request, response_cb : Proc(Request, Nil))
@@ -168,9 +184,10 @@ module ACAEngine
       remote_module_id = request.id
       raw_execute_json = request.payload.not_nil!
 
-      this_node, core_uri = which_core?(remote_module_id)
+      core_uri = which_core(remote_module_id)
 
-      if this_node
+      # If module maps to this node
+      if core_uri == uri
         if manager = @module_proc_managers[remote_module_id]?
           # responds with a JSON string
           request.payload = manager.execute(remote_module_id, raw_execute_json)
@@ -227,9 +244,14 @@ module ACAEngine
     alias Request = ACAEngine::Driver::Protocol::Request
 
     # Load the module if current node is responsible
-    def load_module(mod : Model::Module)
+    def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
       mod_id = mod.id.as(String)
-      if discovery.own_node?(mod_id)
+
+      module_uri = rendezvous_hash[mod_id]?.try do |hash_value|
+        HoundDog::Discovery.from_hash_value(hash_value)[:uri]
+      end
+
+      if module_uri == uri
         driver = mod.driver.as(Model::Driver)
         driver_name = driver.name.as(String)
         driver_file_name = driver.file_name.as(String)
@@ -270,5 +292,8 @@ module ACAEngine
         remove_module(mod)
       end
     end
+
+    protected getter uri : URI = ModuleManager.uri
+    protected getter logger : TaggedLogger = ModuleManager.logger
   end
 end

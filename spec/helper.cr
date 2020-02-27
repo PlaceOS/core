@@ -1,4 +1,5 @@
 require "spec"
+require "uuid"
 require "../lib/action-controller/spec/curl_context"
 
 # Application config
@@ -10,13 +11,21 @@ require "engine-models/spec/generator"
 
 SPEC_DRIVER = "drivers/aca/private_helper.cr"
 
+CORE_URL = ENV["CORE_URL"]? || "http://core:3000"
+
 # To reduce the run-time of the very setup heavy specs.
 # - Use teardown if you need to clear a temporary repository
 # - Use setup(fresh: true) if you require a clean working directory
 TEMP_DIR = get_temp
 
+# Set the working directory before specs
+set_temporary_working_directory
+
+LOGGER = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger)
+LOGGER.level = Logger::Severity::DEBUG
+
 def get_temp
-  "#{Dir.tempdir}/core-spec"
+  "#{Dir.tempdir}/core-spec-#{UUID.random.to_s.split('-').first}"
 end
 
 def teardown(temp_dir = TEMP_DIR)
@@ -50,6 +59,7 @@ around_suite ->{
 }
 
 Spec.after_suite do
+  ACAEngine::Core::ResourceManager.instance.stop
   `pkill -f "core-spec"`
 end
 
@@ -75,7 +85,7 @@ def setup(fresh : Bool = false)
   temp_dir = set_temporary_working_directory(fresh)
 
   # Repository metadata
-  repository_uri = "https://github.com/aca-labs/private-crystal-engine-drivers"
+  repository_uri = "https://github.com/acaengine/private-drivers"
   repository_name = repository_folder_name = "drivers"
 
   # Driver metadata
@@ -125,12 +135,14 @@ def setup(fresh : Bool = false)
   {temp_dir, repository, driver, mod}
 end
 
-def create_resources
+def create_resources(fresh : Bool = false, process : Bool = true)
   # Prepare models, set working dir
-  _, repository, driver, mod = setup
+  _, repository, driver, mod = setup(fresh)
 
   # Clone, compile
-  ACAEngine::Core::ResourceManager.instance(testing: true)
+  if process
+    ACAEngine::Core::ResourceManager.instance(testing: true).start { }
+  end
 
   {repository, driver, mod}
 end
@@ -138,5 +150,19 @@ end
 class DiscoveryMock < HoundDog::Discovery
   def own_node?(key : String) : Bool
     true
+  end
+
+  def etcd_nodes
+    [@service_events.node].map &->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)
+  end
+end
+
+class MockClustering < Clustering
+  def start(&stabilize : Array(HoundDog::Service::Node) ->)
+    @stabilize = stabilize
+    stabilize.call([discovery.node])
+  end
+
+  def stop
   end
 end

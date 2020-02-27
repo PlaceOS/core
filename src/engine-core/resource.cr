@@ -57,7 +57,6 @@ abstract class ACAEngine::Core::Resource(T)
     initial_resource_count.times { _process_resource(consume_resource) }
     # Begin background processing
     spawn(same_thread: true) { watch_processing }
-
     Fiber.yield
 
     self
@@ -65,7 +64,6 @@ abstract class ACAEngine::Core::Resource(T)
 
   def stop : self
     resource_channel.close
-
     self
   end
 
