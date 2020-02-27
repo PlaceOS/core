@@ -16,6 +16,7 @@ module ACAEngine::Core
         sleep 0.2
       rescue e
         pp! e
+        raise e
       end
 
       # Clone, compile, etcd
@@ -27,8 +28,7 @@ module ACAEngine::Core
       driver_commit_hash = ACAEngine::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
       driver_path = ACAEngine::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit_hash)
 
-      uri = "http://localhost:4200"
-      module_manager = ModuleManager.new(uri, discovery: DiscoveryMock.new("core", uri: uri), logger: LOGGER)
+      module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL), logger: LOGGER)
 
       module_manager.load_module(mod)
       module_manager.running_modules.should eq 1
@@ -45,12 +45,20 @@ module ACAEngine::Core
 
     describe "startup" do
       it "registers to etcd" do
+        # Remove metadata in etcd
+        client = HoundDog.etcd_client
+        namespace = HoundDog.settings.service_namespace
+        pp! namespace
+        pp! client.kv.delete_prefix(namespace)
+
+        # Clear relevant tables
         Model::Driver.clear
         Model::Module.clear
         Model::Repository.clear
 
         # Start module manager
-        module_manager = ModuleManager.new("http://localhost:4200", logger: LOGGER).start
+        module_manager = ModuleManager.new(uri: CORE_URL, logger: LOGGER)
+        module_manager.start
 
         # Check that the node is registered in etcd
         module_manager.discovery.nodes.size.should eq 1
@@ -66,16 +74,15 @@ module ACAEngine::Core
       it "loads modules that hash to the node" do
         create_resources
 
-        uri = "http://localhost:4200"
-        discovery_mock = DiscoveryMock.new("core", uri: uri)
+        discovery_mock = DiscoveryMock.new("core", uri: CORE_URL)
         clustering_mock = MockClustering.new(
-          uri: uri,
+          uri: CORE_URL,
           discovery: discovery_mock,
           logger: LOGGER
         )
 
         module_manager = ModuleManager.new(
-          uri: uri,
+          uri: CORE_URL,
           clustering: clustering_mock,
           discovery: discovery_mock,
           logger: LOGGER,
