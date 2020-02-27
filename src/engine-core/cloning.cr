@@ -51,14 +51,24 @@ module ACAEngine
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
       if current_commit != repository_commit && own_node
         if startup
-          logger.tag_warn("updating commit on repository during startup", folder_name: repository_folder_name)
+          logger.tag_warn(
+            message: "updating commit on repository during startup",
+            current_commit: current_commit,
+            repository_commit: repository_commit,
+            folder_name: repository_folder_name
+          )
         end
 
         # Refresh the repository model commit hash
         repository.update_fields(commit_hash: current_commit)
       end
 
-      logger.tag_info("cloned repository", repository: repository_folder_name, uri: repository_uri)
+      logger.tag_info(
+        message: "cloned repository",
+        commit: current_commit,
+        repository: repository_folder_name,
+        uri: repository_uri
+      )
     end
 
     def process_resource(repository) : Resource::Result

@@ -55,9 +55,9 @@ module ACAEngine
       ModuleManager.uri = @uri
 
       @logger = logger if logger
-      @discovery = discovery || HoundDog::Discovery.new(service: "core", uri: uri)
+      @discovery = discovery || HoundDog::Discovery.new(service: "core", uri: @uri)
       @clustering = clustering || Clustering.new(
-        uri: uri,
+        uri: @uri,
         discovery: @discovery,
         logger: @logger
       )

@@ -12,10 +12,16 @@ module ACAEngine::Core::Api
       module_id = params["module_id"]
       protocol_manager = module_manager.manager_by_module_id(module_id)
 
-      head :not_found unless protocol_manager
+      unless protocol_manager
+        logger.info { "module_id=#{module_id} message=module not loaded" }
+        head :not_found
+      end
 
       body = request.body
-      head :not_acceptable unless body
+      unless body
+        logger.info { "message=no request body" }
+        head :not_acceptable
+      end
 
       # We don't parse the request here or parse the response, just proxy it.
       exec_request = body.gets_to_end
@@ -23,6 +29,7 @@ module ACAEngine::Core::Api
       begin
         render json: protocol_manager.execute(module_id, exec_request)
       rescue error : ACAEngine::Driver::RemoteException
+        logger.error { "error=#{error.message} backtrace=\"#{error.backtrace?}\" message=execute errored" }
         render :non_authoritative_information, json: {
           message:   error.message,
           backtrace: error.backtrace?,
