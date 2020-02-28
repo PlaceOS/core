@@ -54,7 +54,7 @@ shards:
 
   engine-drivers:
     github: acaengine/drivers
-    commit: cff06e43f8b9947350ca4a40d68b56d03db7591c
+    commit: 43d2166330c179869c5595f53e89e2c008cb0b63
 
   engine-models:
     github: acaengine/models
@@ -66,7 +66,7 @@ shards:
 
   exec_from:
     github: aca-labs/exec_from
-    commit: 0372de93356432eed1c1aa7c55f97cf9ecc14553
+    commit: d48ea78370cc55f83fe5c2fc516a790134fbf3a7
 
   faker:
     github: askn/faker
