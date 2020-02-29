@@ -61,7 +61,7 @@ module ACAEngine::Core
     end
 
     # Returns the commits for a particular driver
-    def driver(driver_id : String, repository : String? = nil, count : Int32? = nil) : Array(String)
+    def driver(driver_id : String, repository : String? = nil, count : Int32? = nil)
       params = HTTP::Params.new
       params["repository"] = repository if repository
       params["count"] = count.to_s if count
