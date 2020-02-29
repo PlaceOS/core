@@ -186,7 +186,7 @@ module ACAEngine::Core
       private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType? = nil)
         path = File.join(BASE_PATH, CORE_VERSION, path)
         response = connection.{{method.id}}(path, headers, body)
-        raise Core::ClientError.from_response(path, response) unless response.success?
+        raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response) unless response.success?
 
         response
       end
@@ -219,7 +219,7 @@ module ACAEngine::Core
       # unsuccessful.
       private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType = nil)
         connection.{{method.id}}(path, headers, body) do |response|
-          raise Core::ClientError.from_response(path, response) unless response.success?
+          raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response) unless response.success?
           yield response
         end
       end
