@@ -67,7 +67,12 @@ module ACAEngine::Core
       params["count"] = count.to_s if count
 
       response = get("/drivers/#{URI.encode(driver_id)}?#{params}")
-      Array(String).from_json(response.body)
+      Array(NamedTuple(
+        commit: String,
+        date: String,
+        author: String,
+        subject: String
+      )).from_json(response.body)
     end
 
     # Returns the metadata for a particular driver
