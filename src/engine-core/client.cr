@@ -8,7 +8,8 @@ module ACAEngine::Core
   class Client
     # Core base
     BASE_PATH = "/api/core"
-    getter core_version : String = "v1"
+    CORE_VERSION = "v1"
+    getter core_version : String = CORE_VERSION
 
     # Set the request_id on the client
     property request_id : String? = nil
@@ -25,7 +26,7 @@ module ACAEngine::Core
     def initialize(
       uri : URI,
       @request_id : String? = nil,
-      @core_version : String = "v1"
+      @core_version : String = CORE_VERSION
     )
       uri_host = uri.host
       @host = uri_host if uri_host
@@ -37,7 +38,7 @@ module ACAEngine::Core
       host : String? = nil,
       port : Int32? = nil,
       @request_id : String? = nil,
-      @core_version : String = "v1"
+      @core_version : String = CORE_VERSION
     )
       @host = host if host
       @port = port if port
@@ -103,7 +104,7 @@ module ACAEngine::Core
 
       socket = HTTP::WebSocket.new(
         host: host,
-        path: "#{BASE_PATH}/#{core_version}/command/#{module_id}/debugger",
+        path: "#{BASE_PATH}/#{CORE_VERSION}/command/#{module_id}/debugger",
         port: port,
         headers: headers,
       )
@@ -183,9 +184,9 @@ module ACAEngine::Core
       # unsuccessful.
       # ```
       private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType? = nil)
-        path = File.join(BASE_PATH, core_version, path)
+        path = File.join(BASE_PATH, CORE_VERSION, path)
         response = connection.{{method.id}}(path, headers, body)
-        raise Core::ClientError.from_response(response) unless response.success?
+        raise Core::ClientError.from_response(path, response) unless response.success?
 
         response
       end
@@ -218,7 +219,7 @@ module ACAEngine::Core
       # unsuccessful.
       private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType = nil)
         connection.{{method.id}}(path, headers, body) do |response|
-          raise Core::ClientError.from_response(response) unless response.success?
+          raise Core::ClientError.from_response(path, response) unless response.success?
           yield response
         end
       end

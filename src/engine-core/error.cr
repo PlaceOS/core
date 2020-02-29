@@ -17,8 +17,16 @@ module ACAEngine::Core
       super(message)
     end
 
-    def self.from_response(response : HTTP::Client::Response)
-      new(response.status_code, response.body)
+    def initialize(path : String, @status_code : Int32, message : String)
+      super("request to #{path} failed with #{message}")
+    end
+
+    def initialize(path : String, @status_code : Int32)
+      super("request to #{path} failed")
+    end
+
+    def self.from_response(path : String, response : HTTP::Client::Response)
+      new(path, response.status_code, response.body)
     end
   end
 end
