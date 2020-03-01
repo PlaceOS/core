@@ -66,7 +66,7 @@ module ACAEngine::Core
       params["repository"] = repository if repository
       params["count"] = count.to_s if count
 
-      response = get("/drivers/#{URI.encode(driver_id)}?#{params}")
+      response = get("/drivers/#{URI.encode_www_form(driver_id)}?#{params}")
       Array(NamedTuple(
         commit: String,
         date: String,
@@ -81,7 +81,7 @@ module ACAEngine::Core
       params["commit"] = commit
       params["repository"] = repository if repository
 
-      response = get("/drivers/#{URI.encode(driver_id)}/details?#{params}")
+      response = get("/drivers/#{URI.encode_www_form(driver_id)}/details?#{params}")
 
       # Response looks like:
       # https://github.com/acaengine/driver/blob/master/docs/command_line_options.md#discovery-and-defaults
