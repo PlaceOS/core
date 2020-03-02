@@ -123,9 +123,16 @@ abstract class ACAEngine::Core::Resource(T)
   # Process the resource, place into the processed buffer
   #
   private def _process_resource(resource : T)
-    if process_resource(resource) == Result::Success
+    type, id = T.name, resource.id
+
+    logger.tag_debug("processing resource", type: type, id: id)
+    case process_resource(resource)
+    when Result::Success
       processed.push(resource)
       processed.shift if processed.size > @processed_buffer_size
+      logger.tag_info("processed resource", type: type, id: id)
+    when Result::Error   then logger.tag_warn("processing failed", type: type, id: id)
+    when Result::Skipped then logger.tag_info("processing skipped", type: type, id: id)
     end
   rescue e
     logger.tag_error("while processing resource", resource: resource.inspect, error: e.inspect_with_backtrace)
