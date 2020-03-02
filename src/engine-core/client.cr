@@ -7,7 +7,7 @@ require "./error"
 module ACAEngine::Core
   class Client
     # Core base
-    BASE_PATH = "/api/core"
+    BASE_PATH    = "/api/core"
     CORE_VERSION = "v1"
     getter core_version : String = CORE_VERSION
 
@@ -71,8 +71,7 @@ module ACAEngine::Core
         commit: String,
         date: String,
         author: String,
-        subject: String
-      )).from_json(response.body)
+        subject: String)).from_json(response.body)
     end
 
     # Returns the metadata for a particular driver

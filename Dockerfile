@@ -1,16 +1,23 @@
 FROM crystallang/crystal:0.33.0-alpine
-ADD . /src
-WORKDIR /src
+
+WORKDIR /app
+
+COPY shard.yml /app
+COPY shard.lock /app
+RUN shards install --production
 
 # Install the latest version of LibSSH2
 RUN apk update
 RUN apk add libssh2 libssh2-dev
 
+# Add source last for efficient caching
+COPY src /app/src
+
 # Build App
-RUN mkdir -p /src/bin/drivers
-RUN shards build --error-trace --production
+RUN mkdir -p /app/bin/drivers
+RUN crystal build --release --debug -o bin/engine-core src/app.cr
 
 # Run the app binding on port 3000
 EXPOSE 3000
 HEALTHCHECK CMD wget -qO- http://localhost:3000/api/core/v1
-CMD ["/src/bin/engine-core", "-b", "0.0.0.0", "-p", "3000"]
+CMD ["/app/bin/engine-core", "-b", "0.0.0.0", "-p", "3000"]
