@@ -17,6 +17,16 @@ module ACAEngine
       super(@logger)
     end
 
+    def process_resource(event) : Resource::Result
+      Mappings.update_mapping(event[:resource], startup?, logger)
+    rescue e
+      message = e.try(&.message) || ""
+      logger.tag_error("while updating mapping for system", error: message)
+      errors << {name: event[:resource].name.as(String), reason: message}
+
+      Resource::Result::Error
+    end
+
     def self.update_mapping(
       system : Model::ControlSystem,
       startup : Bool = false,
@@ -54,16 +64,6 @@ module ACAEngine
       else
         Resource::Result::Skipped
       end
-    end
-
-    def process_resource(system) : Resource::Result
-      Mappings.update_mapping(system, startup?, logger)
-    rescue e
-      message = e.try(&.message) || ""
-      logger.tag_error("while updating mapping for system", error: message)
-      errors << {name: system.name.as(String), reason: message}
-
-      Resource::Result::Error
     end
 
     def start

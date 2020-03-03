@@ -26,6 +26,22 @@ module ACAEngine
       super(@logger, buffer_size)
     end
 
+    def process_resource(event) : Resource::Result
+      driver = event[:resource]
+      case event[:action]
+      when Action::Created, Action::Updated
+        success, output = Compilation.compile_driver(driver, startup?, logger)
+        errors << {name: driver.name.as(String), reason: output} unless success
+        success ? Result::Success : Result::Error
+      when Action::Deleted
+        Result::Skipped
+      end.as(Result)
+    rescue e
+      # Add compilation errors
+      errors << {name: event[:resource].name.as(String), reason: e.try &.message || ""}
+      Result::Error
+    end
+
     def self.compile_driver(
       driver : Model::Driver,
       startup : Bool = false,
@@ -75,12 +91,6 @@ module ACAEngine
       end
 
       {success, result[:output]}
-    end
-
-    def process_resource(driver) : Resource::Result
-      success, output = Compilation.compile_driver(driver, startup?, logger)
-      errors << {name: driver.name.as(String), reason: output} unless success
-      success ? Resource::Result::Success : Resource::Result::Error
     end
 
     def start

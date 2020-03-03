@@ -22,6 +22,35 @@ module ACAEngine
       super(@logger)
     end
 
+    def process_resource(event) : Resource::Result
+      repository = event[:resource]
+      case event[:action]
+      when Action::Created, Action::Updated
+        # Clone and install the repository
+        Cloning.clone_and_install(
+          repository: repository,
+          username: @username,
+          password: @password,
+          working_dir: @working_dir,
+          logger: @logger,
+          startup: startup?,
+          testing: testing?,
+        )
+      when Action::Deleted
+        # Delete the repository folder
+        Cloning.delete_repository(
+          repository: repository,
+          working_dir: @working_dir,
+          logger: @logger,
+        )
+      end.as(Result)
+    rescue e
+      # Add cloning errors
+      errors << {name: event[:resource].name.as(String), reason: e.try &.message || ""}
+
+      Result::Error
+    end
+
     def self.clone_and_install(
       repository : Model::Repository,
       working_dir : String = Drivers::Compiler.repository_dir,
@@ -69,25 +98,42 @@ module ACAEngine
         repository: repository_folder_name,
         uri: repository_uri
       )
+
+      Result::Success
     end
 
-    def process_resource(repository) : Resource::Result
-      Cloning.clone_and_install(
-        repository: repository,
-        username: @username,
-        password: @password,
-        working_dir: @working_dir,
-        logger: @logger,
-        startup: startup?,
-        testing: testing?,
-      )
+    def self.delete_repository(
+      repository : Model::Repository | String,
+      working_dir : String = Drivers::Compiler.repository_dir,
+      logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
+    )
+      repository_folder_name = repository.is_a?(String) ? repository : repository.folder_name.as(String)
+      working_dir = File.expand_path(working_dir)
+      repository_dir = File.expand_path(File.join(working_dir, repository_folder_name))
 
-      Resource::Result::Success
-    rescue e
-      # Add cloning errors
-      errors << {name: repository.name.as(String), reason: e.try &.message || ""}
+      # Ensure we are rm -rf a sane folder
+      # - don't delete root
+      # - don't delete working directory
+      safe_directory = repository_dir.starts_with?(working_dir) &&
+                       repository_dir != "/" &&
+                       !repository_folder_name.empty? &&
+                       !repository_folder_name.includes?("/") &&
+                       !repository_folder_name.includes?(".")
 
-      Resource::Result::Error
+      return Result::Error unless safe_directory
+
+      if Dir.exists?(repository_dir)
+        # Delete the direcotry
+        Process.run("./bin/exec_from",
+          {working_dir, "rm", "-rf", repository_folder_name},
+          input: Process::Redirect::Close,
+          output: Process::Redirect::Close,
+          error: Process::Redirect::Close
+        )
+        Result::Success
+      else
+        Result::Skipped
+      end
     end
 
     def start

@@ -1,6 +1,6 @@
 require "./helper"
 
 module ACAEngine::Core
-  describe Resource do
+  describe Resource, tags: "resource" do
   end
 end

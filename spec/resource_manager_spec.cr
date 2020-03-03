@@ -2,7 +2,7 @@ require "./helper"
 require "engine-drivers/helper"
 
 module ACAEngine::Core
-  describe ResourceManager do
+  describe ResourceManager, tags: "resource" do
     it "loads relevant resources" do
       setup
 

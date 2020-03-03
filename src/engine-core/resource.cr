@@ -8,8 +8,10 @@ abstract class ACAEngine::Core::Resource(T)
   include ACAEngine::Drivers::Helper
 
   alias Error = NamedTuple(name: String, reason: String)
-  alias Event = RethinkORM::Changefeed::Event
-  alias TaggedLogger = ActionController::Logger::TaggedLogger
+  alias Action = RethinkORM::Changefeed::Event
+
+  # TODO: Add when crystal supports generic aliasing
+  # alias Event(T) = NamedTuple(resource: T, action: Action)
 
   # Outcome of processing a resource
   enum Result
@@ -27,34 +29,34 @@ abstract class ACAEngine::Core::Resource(T)
 
   # Buffer of recently processed elements
   # NOTE: rw lock?
-  getter processed : Deque(T)
+  getter processed : Deque(NamedTuple(resource: T, action: Action))
+  private getter event_channel : Channel(NamedTuple(resource: T, action: Action))
 
-  private getter resource_channel : Channel(T)
+  alias TaggedLogger = ActionController::Logger::TaggedLogger
+  private getter logger : TaggedLogger
 
-  private getter logger : ActionController::Logger::TaggedLogger
-
-  abstract def process_resource(resource : T) : Result
+  abstract def process_resource(event : NamedTuple(resource: T, action: Action)) : Result
 
   def initialize(
     @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
     @processed_buffer_size : Int32 = 64,
     @channel_buffer_size : Int32 = 64
   )
-    @resource_channel = Channel(T).new(channel_buffer_size)
-    @processed = Deque(T).new(processed_buffer_size)
+    @event_channel = Channel(NamedTuple(resource: T, action: Action)).new(channel_buffer_size)
+    @processed = Deque(NamedTuple(resource: T, action: Action)).new(processed_buffer_size)
   end
 
   def start : self
     errors.clear
     processed.clear
-    @resource_channel = Channel(T).new(channel_buffer_size) if resource_channel.closed?
+    @event_channel = Channel(NamedTuple(resource: T, action: Action)).new(channel_buffer_size) if event_channel.closed?
 
     # Listen for changes on the resource table
     spawn(same_thread: true) { watch_resources }
     # Load all the resources into a channel
     initial_resource_count = load_resources
     # TODO: Defer using a form of Promise.all
-    initial_resource_count.times { _process_resource(consume_resource) }
+    initial_resource_count.times { _process_event(consume_event) }
     # Begin background processing
     spawn(same_thread: true) { watch_processing }
     Fiber.yield
@@ -63,12 +65,12 @@ abstract class ACAEngine::Core::Resource(T)
   end
 
   def stop : self
-    resource_channel.close
+    event_channel.close
     self
   end
 
-  private def consume_resource : T
-    resource_channel.receive
+  private def consume_event : {resource: T, action: Action}
+    event_channel.receive
   end
 
   # Load all resources from the database, push into a channel
@@ -76,7 +78,7 @@ abstract class ACAEngine::Core::Resource(T)
   private def load_resources
     count = 0
     T.all.each do |resource|
-      resource_channel.send(resource)
+      event_channel.send({resource: resource, action: Action::Created})
       count += 1
     end
 
@@ -87,17 +89,14 @@ abstract class ACAEngine::Core::Resource(T)
   #
   private def watch_resources
     T.changes.each do |change|
-      break if resource_channel.closed?
-      resource = change[:value]
+      break if event_channel.closed?
+      event = {
+        action:   change[:event],
+        resource: change[:value],
+      }
 
-      case change[:event]
-      when Event::Deleted
-        # TODO: Remove the resource
-      when Event::Updated
-        resource_channel.send(resource.as(T))
-      when Event::Created
-        resource_channel.send(resource.as(T))
-      end
+      logger.tag_debug("resource event", action: event[:action], id: event[:resource].id)
+      event_channel.send(event)
     end
   rescue e
     unless e.is_a?(Channel::ClosedError)
@@ -110,8 +109,8 @@ abstract class ACAEngine::Core::Resource(T)
   #
   private def watch_processing
     loop do
-      resource = consume_resource
-      spawn(same_thread: true) { _process_resource(resource) }
+      event = consume_event
+      spawn(same_thread: true) { _process_event(event) }
     end
   rescue e
     unless e.is_a?(Channel::ClosedError)
@@ -120,21 +119,21 @@ abstract class ACAEngine::Core::Resource(T)
     end
   end
 
-  # Process the resource, place into the processed buffer
+  # Process the event, place into the processed buffer
   #
-  private def _process_resource(resource : T)
-    type, id = T.name, resource.id
+  private def _process_event(event : NamedTuple(resource: T, action: Action))
+    type, id = T.name, event[:resource].id
 
-    logger.tag_debug("processing resource", type: type, id: id)
-    case process_resource(resource)
+    logger.tag_debug("processing resource event", type: type, id: id)
+    case process_resource(event)
     when Result::Success
-      processed.push(resource)
+      processed.push(event)
       processed.shift if processed.size > @processed_buffer_size
-      logger.tag_info("processed resource", type: type, id: id)
+      logger.tag_info("processed resource event", type: type, id: id)
     when Result::Error   then logger.tag_warn("processing failed", type: type, id: id)
     when Result::Skipped then logger.tag_info("processing skipped", type: type, id: id)
     end
   rescue e
-    logger.tag_error("while processing resource", resource: resource.inspect, error: e.inspect_with_backtrace)
+    logger.tag_error("while processing resource event", resource: event[:resource].inspect, error: e.inspect_with_backtrace)
   end
 end
