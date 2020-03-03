@@ -104,6 +104,17 @@ module ACAEngine
       @driver_proc_managers[path]?
     end
 
+    # Map reduce the querying of what modules are loaded on running drivers
+    def loaded_modules : Hash(String, Array(String))
+      Promise.all(@driver_proc_managers.map { |driver, manager|
+        Promise.defer { {driver, manager.info} }
+      }).then { |driver_info|
+        loaded = {} of String => Array(String)
+        driver_info.each { |(driver, info)| loaded[driver] = info }
+        loaded
+      }.get
+    end
+
     def start
       # Start clustering process
       clustering.start { |nodes| stabilize(nodes) }

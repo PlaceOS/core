@@ -50,15 +50,15 @@ shards:
 
   engine-driver:
     github: acaengine/driver
-    commit: 964b68a3211d87643bbf53e4ed6e5ee9e553d2dd
+    commit: bb0a010e8d11248881d67c044567ed21099e3a39
 
   engine-drivers:
     github: acaengine/drivers
-    commit: 43d2166330c179869c5595f53e89e2c008cb0b63
+    commit: ad34f230ac702b0cf706d5a2b6a6cd8a4d5f5492
 
   engine-models:
     github: acaengine/models
-    commit: 4d4c497f3927d1e9d75fec72a776e5330045a847
+    commit: f5d8d849b4df2a12062f158b2373e4bd5a7b077a
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -134,7 +134,7 @@ shards:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: 2f5b11243252658876f915683f4aeaf0d720e152
+    commit: 84d358e2b66b3a3afb059720898d34a20c34e5d3
 
   retriable:
     github: sija/retriable.cr

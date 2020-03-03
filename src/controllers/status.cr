@@ -85,6 +85,11 @@ module ACAEngine::Core::Api
       }
     end
 
+    # Returns the lists of modules the drivers report to have loaded
+    get "/loaded", :loaded do
+      render json: module_manager.loaded_modules
+    end
+
     # Overriding initializers for dependency injection
     ###########################################################################
 
