@@ -138,7 +138,6 @@ module ACAEngine
         tls:            mod.tls || false,
         makebreak:      mod.makebreak,
         role:           mod.role,
-        settings:       mod.merge_settings,
         control_system: {
           id:   cs.id,
           name: cs.name,
@@ -148,15 +147,10 @@ module ACAEngine
           capacity: cs.capacity,
           bookable: cs.bookable,
         },
-      }.to_json
+      }.to_json.rchop
 
-      # NOTE: The settings object needs to be unescaped
-      # OPTIMIZE: Might be better if the driver parses the setttings as a seperate JSON chunk
-      payload = payload.gsub(/"settings":"{(.*)}",/) do |m1|
-        m1.gsub(/"{(.*)}"/) do |m2|
-          m2.strip('"')
-        end
-      end
+      # The settings object needs to be unescaped
+      payload = %(#{payload},"settings":#{mod.merge_settings}})
 
       mod_id = mod.id.as(String)
       proc_manager = manager_by_module_id(mod_id)
