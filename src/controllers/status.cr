@@ -52,9 +52,13 @@ module ACAEngine::Core::Api
         process = Hardware::PID.new(manager.pid)
         memory = Hardware::Memory.new
 
+        percentage_cpu = process.stat.cpu_usage!
+        # -1 utilization for NaNs
+        percentage_cpu = -1 if percentage_cpu.nan?
+
         response = response.merge({
           # CPU in % and memory in KB
-          percentage_cpu: process.stat.cpu_usage!,
+          percentage_cpu: percentage_cpu,
           memory_total:   memory.total,
           memory_usage:   process.memory,
         })
@@ -69,14 +73,20 @@ module ACAEngine::Core::Api
       memory = Hardware::Memory.new
       cpu = Hardware::CPU.new
 
+      core_cpu = process.stat.cpu_usage!
+      total_cpu = cpu.usage
+      # -1 utilization for NaNs
+      core_cpu = -1 if core_cpu.nan?
+      total_cpu = -1 if total_cpu.nan?
+
       render json: {
         # These will be the values in the container but that's all good
         hostname:  System.hostname,
         cpu_count: System.cpu_count,
 
         # these are as a percent of the total available
-        core_cpu:  process.stat.cpu_usage!,
-        total_cpu: cpu.usage,
+        core_cpu:  core_cpu,
+        total_cpu: total_cpu,
 
         # Memory in KB
         memory_total: memory.total,
