@@ -51,7 +51,7 @@ module ACAEngine
           # Extract module name
           name = Model::Module.find(id).try(&.custom_name)
           # Indexes start from 1
-          keys[id] = name ? "#{name}\x02#{index + 1}" : nil
+          keys[id] = name ? "#{name}/#{index + 1}" : nil
         end
 
         keys.each_with_index do |(id, key), index|
