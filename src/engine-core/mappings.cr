@@ -1,5 +1,6 @@
 require "action-controller/logger"
 require "engine-driver/storage"
+require "engine-driver/subscriptions"
 require "engine-models/control_system"
 require "engine-models/module"
 
@@ -63,12 +64,17 @@ module ACAEngine
             )
             next
           end
-
           # Remove the mapping if system destroyed
           storage[key] = destroyed ? nil : id
         end
 
         logger.tag_info("#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system_id)
+
+        # Notify subscribers of a system module ordering change
+        unless destroyed
+          Driver::Storage.redis_pool.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)
+        end
+
         Resource::Result::Success
       else
         Resource::Result::Skipped
