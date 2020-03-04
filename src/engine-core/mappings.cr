@@ -44,17 +44,26 @@ module ACAEngine
 
       if relevant_node && needs_update
         storage = Driver::Storage.new(system_id, "system")
-        # generate hash keys
-        keys = module_ids.map_with_index do |id, index|
-          name = Model::Module.find(id).try &.custom_name
-          "#{name}\x02#{index}" if name
+
+        # Construct a hash of module_id to redis key
+        keys = {} of String => String?
+        module_ids.each_with_index do |id, index|
+          # Extract module name
+          name = Model::Module.find(id).try(&.custom_name)
+          # Indexes start from 1
+          keys[id] = name ? "#{name}\x02#{index + 1}" : nil
         end
 
-        module_ids.each_with_index do |id, index|
-          unless (key = keys[index])
-            logger.tag_warn("module not found while setting indirect mapping in redis", module_id: id, index: index)
+        keys.each_with_index do |(id, key), index|
+          unless key
+            logger.tag_warn(
+              message: "module not found while setting indirect mapping in redis",
+              module_id: id,
+              index: index + 1
+            )
             next
           end
+
           # Remove the mapping if system destroyed
           storage[key] = destroyed ? nil : id
         end
