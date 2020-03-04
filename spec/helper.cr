@@ -93,7 +93,6 @@ def setup(fresh : Bool = false)
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
   driver_role = ACAEngine::Model::Driver::Role::Logic
-  driver_version = SemanticVersion.new(major: 1, minor: 0, patch: 0)
 
   existing_repo = ACAEngine::Model::Repository.where(uri: repository_uri).first?
   existing_driver = existing_repo.try(&.drivers.first?)
@@ -118,7 +117,6 @@ def setup(fresh : Bool = false)
       name: driver_name,
       role: driver_role,
       commit: "head",
-      version: driver_version,
       module_name: driver_module_name,
       file_name: driver_file_name,
     )
