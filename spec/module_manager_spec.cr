@@ -5,6 +5,11 @@ module ACAEngine::Core
     it "load_module" do
       _, repo, driver, mod = setup
 
+      # Clone, compile, etcd
+      cloning = Cloning.new(testing: true, logger: LOGGER)
+      resource_manager = ResourceManager.new(cloning: cloning, logger: LOGGER)
+      resource_manager.start { }
+
       repo_folder = repo.folder_name.as(String)
       driver_file_name = driver.file_name.as(String)
 
@@ -18,11 +23,6 @@ module ACAEngine::Core
         pp! e
         raise e
       end
-
-      # Clone, compile, etcd
-      cloning = Cloning.new(testing: true, logger: LOGGER)
-      resource_manager = ResourceManager.new(cloning: cloning, logger: LOGGER)
-      resource_manager.start { }
 
       mod_id = mod.id.as(String)
       driver_commit_hash = ACAEngine::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)

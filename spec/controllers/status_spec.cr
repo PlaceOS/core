@@ -24,8 +24,6 @@ module ACAEngine::Core
       status.available_repositories.should eq [repo.name]
       status.running_drivers.should eq 0
       status.module_instances.should eq 0
-      status.unavailable_repositories.size.should eq 0
-      status.unavailable_drivers.size.should eq 0
     end
 
     pending "status/driver"
