@@ -20,7 +20,7 @@ module ACAEngine
 
     # In k8s we can grab the Pod information from the environment
     # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-pod-fields-as-values-for-environment-variables
-    CORE_HOST = ENV["CORE_HOST"]? || "localhost"
+    CORE_HOST = ENV["CORE_HOST"]? || System.hostname
     CORE_PORT = (ENV["CORE_PORT"]? || "3000").to_i
 
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
