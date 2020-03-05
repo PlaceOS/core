@@ -37,8 +37,8 @@ shards:
     version: 0.3.0
 
   crystal-rethinkdb:
-    github: kingsleyh/crystal-rethinkdb
-    version: 0.1.10
+    github: aca-labs/crystal-rethinkdb
+    commit: 8155487b5cdbced9fd84cc242d459bcb9cd3b015
 
   debug:
     github: Sija/debug.cr
@@ -134,7 +134,7 @@ shards:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: 84d358e2b66b3a3afb059720898d34a20c34e5d3
+    commit: 1bdc4210236a20fb01e88c13b59dab397938ae75
 
   retriable:
     github: sija/retriable.cr
