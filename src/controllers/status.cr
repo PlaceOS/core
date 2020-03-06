@@ -54,8 +54,8 @@ module ACAEngine::Core::Api
 
         percentage_cpu = process.stat.cpu_usage!
         # 0 utilization for NaNs
-        percentage_cpu = 0 if percentage_cpu.nan?
-        percentage_cpu = 100 if percentage_cpu.infinite?
+        percentage_cpu = 0_f64 if percentage_cpu.nan?
+        percentage_cpu = 100_f64 if percentage_cpu.infinite?
 
         response = response.merge({
           # CPU in % and memory in KB
@@ -78,10 +78,10 @@ module ACAEngine::Core::Api
       total_cpu = cpu.usage!
 
       # 0 utilization for NaNs
-      core_cpu = 0 if core_cpu.nan?
-      total_cpu = 0 if total_cpu.nan?
-      core_cpu = 100 if core_cpu.infinite?
-      total_cpu = 100 if total_cpu.infinite?
+      core_cpu = 0_f64 if core_cpu.nan?
+      total_cpu = 0_f64 if total_cpu.nan?
+      core_cpu = 100_f64 if core_cpu.infinite?
+      total_cpu = 100_f64 if total_cpu.infinite?
 
       render json: {
         # These will be the values in the container but that's all good
