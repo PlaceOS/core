@@ -1,7 +1,7 @@
 require "./helper"
-require "engine-drivers/helper"
+require "drivers/helper"
 
-module ACAEngine::Core
+module PlaceOS::Core
   describe ResourceManager, tags: "resource" do
     it "loads relevant resources" do
       setup

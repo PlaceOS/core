@@ -1,11 +1,11 @@
 require "hardware"
-require "engine-drivers/helper"
+require "drivers/helper"
 
 require "./application"
-require "../engine-core/module_manager"
-require "../engine-core/resource_manager"
+require "../core/module_manager"
+require "../core/resource_manager"
 
-module ACAEngine::Core::Api
+module PlaceOS::Core::Api
   class Status < Application
     base "/api/core/v1/status/"
     id_param :commit_hash
@@ -21,8 +21,8 @@ module ACAEngine::Core::Api
     # General statistics related to the process
     def index
       render json: {
-        compiled_drivers:         ACAEngine::Drivers::Helper.compiled_drivers,
-        available_repositories:   ACAEngine::Drivers::Helper.repositories,
+        compiled_drivers:         PlaceOS::Drivers::Helper.compiled_drivers,
+        available_repositories:   PlaceOS::Drivers::Helper.repositories,
         running_drivers:          module_manager.running_drivers,
         module_instances:         module_manager.running_modules,
         unavailable_repositories: resource_manager.cloning.errors,

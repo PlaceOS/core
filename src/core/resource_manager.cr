@@ -6,7 +6,7 @@ require "./mappings"
 
 # Sequences the acquisition and production of resources
 #
-module ACAEngine::Core
+module PlaceOS::Core
   class ResourceManager
     alias TaggedLogger = ActionController::Logger::TaggedLogger
 

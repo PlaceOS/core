@@ -1,12 +1,12 @@
 require "action-controller/logger"
-require "engine-driver/storage"
-require "engine-driver/subscriptions"
-require "engine-models/control_system"
-require "engine-models/module"
+require "driver/storage"
+require "driver/subscriptions"
+require "models/control_system"
+require "models/module"
 
 require "./module_manager"
 
-module ACAEngine
+module PlaceOS
   # TODO resource manager for removing module mappings on module deletes
   class Core::Mappings < Core::Resource(Model::ControlSystem)
     private getter? startup : Bool = true

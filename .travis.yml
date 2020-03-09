@@ -9,10 +9,10 @@ env:
 
 before_install:
   # Configure git
-  - git config --global user.name "ACAEngine"
+  - git config --global user.name "PlaceOS"
   - git config --global user.email support@acaprojects.com
-  # Add rethinkdb 2.3.6
-  - docker run --net="host" -p "29015:29015" -p "28015:28015" -d acalabs/rethinkdb:2.3.6
+  # Add rethinkdb 2.4
+  - docker run --net="host" -p "29015:29015" -p "28015:28015" -d rethinkdb:2.4
   # Add etcd 3.3.13
   - docker run --net="host" -p "2379:2379" -p "2380:2380" -e ALLOW_NONE_AUTHENTICATION=yes -d bitnami/etcd:3.3.13
 

@@ -4,7 +4,7 @@ require "uri"
 
 require "./error"
 
-module ACAEngine::Core
+module PlaceOS::Core
   class Client
     # Core base
     BASE_PATH    = "/api/core"
@@ -83,7 +83,7 @@ module ACAEngine::Core
       response = get("/drivers/#{URI.encode_www_form(driver_id)}/details?#{params}")
 
       # Response looks like:
-      # https://github.com/acaengine/driver/blob/master/docs/command_line_options.md#discovery-and-defaults
+      # https://github.com/placeos/driver/blob/master/docs/command_line_options.md#discovery-and-defaults
       response.body
     end
 

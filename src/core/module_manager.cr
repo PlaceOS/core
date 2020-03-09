@@ -1,18 +1,18 @@
-require "engine-models/module"
-require "engine-models/control_system"
-require "engine-models/settings"
-require "engine-models/driver"
+require "models/module"
+require "models/control_system"
+require "models/settings"
+require "models/driver"
 
 require "action-controller"
 require "clustering"
-require "engine-driver/protocol/management"
-require "engine-drivers/compiler"
-require "engine-drivers/helper"
+require "driver/protocol/management"
+require "drivers/compiler"
+require "drivers/helper"
 require "habitat"
 require "hound-dog"
 require "rethinkdb-orm/utils/changefeed"
 
-module ACAEngine
+module PlaceOS
   class Core::ModuleManager
     include Drivers::Helper
 
@@ -237,10 +237,10 @@ module ACAEngine
     end
 
     def save_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
-      mod = ACAEngine::Model::Module.find(module_id).not_nil!
+      mod = PlaceOS::Model::Module.find(module_id).not_nil!
       if setting = mod.settings_at?(:none)
       else
-        setting = ACAEngine::Model::Settings.new
+        setting = PlaceOS::Model::Settings.new
         setting.parent = mod
         setting.encryption_level = :none
       end
@@ -251,7 +251,7 @@ module ACAEngine
       setting.save!
     end
 
-    alias Request = ACAEngine::Driver::Protocol::Request
+    alias Request = PlaceOS::Driver::Protocol::Request
 
     # Load the module if current node is responsible
     def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
@@ -268,7 +268,7 @@ module ACAEngine
         driver_commit = driver.commit.as(String)
 
         # Check if the module is on the current node
-        unless (driver_path = ACAEngine::Drivers::Compiler.is_built?(driver_file_name, driver_commit))
+        unless (driver_path = PlaceOS::Drivers::Compiler.is_built?(driver_file_name, driver_commit))
           logger.tag_error("driver does not exist", driver_name: driver_name, driver_commit: driver_commit, module_id: mod_id)
           return
         end

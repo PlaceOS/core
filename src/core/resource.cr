@@ -2,10 +2,10 @@ require "action-controller/logger"
 require "deque"
 require "rethinkdb-orm"
 
-require "engine-drivers/helper"
+require "drivers/helper"
 
-abstract class ACAEngine::Core::Resource(T)
-  include ACAEngine::Drivers::Helper
+abstract class PlaceOS::Core::Resource(T)
+  include PlaceOS::Drivers::Helper
 
   alias Error = NamedTuple(name: String, reason: String)
   alias Action = RethinkORM::Changefeed::Event

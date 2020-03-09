@@ -10,7 +10,7 @@ process_count = 1
 
 # Command line options
 OptionParser.parse(ARGV.dup) do |parser|
-  parser.banner = "Usage: #{ACAEngine::Core::APP_NAME} [arguments]"
+  parser.banner = "Usage: #{PlaceOS::Core::APP_NAME} [arguments]"
 
   parser.on("-b HOST", "--bind=HOST", "Specifies the server host") { |h| host = h }
   parser.on("-p PORT", "--port=PORT", "Specifies the server port") { |p| port = p.to_i }
@@ -26,7 +26,7 @@ OptionParser.parse(ARGV.dup) do |parser|
   end
 
   parser.on("-v", "--version", "Display the application version") do
-    puts "#{ACAEngine::Core::APP_NAME} v#{ACAEngine::Core::VERSION}"
+    puts "#{PlaceOS::Core::APP_NAME} v#{PlaceOS::Core::VERSION}"
     exit 0
   end
 
@@ -37,7 +37,7 @@ OptionParser.parse(ARGV.dup) do |parser|
 end
 
 # Load the routes
-puts "Launching #{ACAEngine::Core::APP_NAME} v#{ACAEngine::Core::VERSION}"
+puts "Launching #{PlaceOS::Core::APP_NAME} v#{PlaceOS::Core::VERSION}"
 server = ActionController::Server.new(port, host)
 
 # Start clustering
@@ -69,10 +69,10 @@ Signal::USR2.trap &logging
 
 logger = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger)
 
-ACAEngine::Core::ResourceManager.logger = logger
-ACAEngine::Core::ModuleManager.logger = logger
+PlaceOS::Core::ResourceManager.logger = logger
+PlaceOS::Core::ModuleManager.logger = logger
 
-ACAEngine::Core.start_managers
+PlaceOS::Core.start_managers
 
 # Start the server
 server.run do
@@ -80,4 +80,4 @@ server.run do
 end
 
 # Shutdown message
-puts "#{ACAEngine::Core::APP_NAME} leaps through the veldt\n"
+puts "#{PlaceOS::Core::APP_NAME} leaps through the veldt\n"

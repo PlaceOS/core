@@ -1,7 +1,7 @@
 require "./application"
 
 # TODO: Remove root controller once radix routing bug fixed
-module ACAEngine::Core::Api
+module PlaceOS::Core::Api
   class Root < Application
     base "/api/core/v1/"
 

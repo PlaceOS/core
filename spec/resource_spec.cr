@@ -1,6 +1,6 @@
 require "./helper"
 
-module ACAEngine::Core
+module PlaceOS::Core
   describe Resource, tags: "resource" do
   end
 end

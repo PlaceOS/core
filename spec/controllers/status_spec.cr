@@ -1,6 +1,6 @@
 require "../helper"
 
-module ACAEngine::Core
+module PlaceOS::Core
   describe Api::Status do
     namespace = Api::Drivers::NAMESPACE[0]
     json_headers = HTTP::Headers{

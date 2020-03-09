@@ -1,6 +1,6 @@
-require "./engine-core/*"
+require "./core/*"
 
-module ACAEngine::Core
+module PlaceOS::Core
   def self.start_managers
     resource_manager = ResourceManager.instance
     module_manager = ModuleManager.instance

@@ -1,6 +1,6 @@
 require "../helper"
 
-module ACAEngine::Core
+module PlaceOS::Core
   describe Api::Drivers, tags: "api" do
     namespace = Api::Drivers::NAMESPACE[0]
     json_headers = HTTP::Headers{
@@ -38,8 +38,8 @@ module ACAEngine::Core
         ctx.response.output = io
         Api::Drivers.new(ctx, :index).show
 
-        expected = ACAEngine::Drivers::Helper.commits(URI.decode(uri), "drivers", 50)
-        result = Array(ACAEngine::Drivers::GitCommands::Commit).from_json(ctx.response.output.to_s)
+        expected = PlaceOS::Drivers::Helper.commits(URI.decode(uri), "drivers", 50)
+        result = Array(PlaceOS::Drivers::GitCommands::Commit).from_json(ctx.response.output.to_s)
         result.should eq expected
       end
     end

@@ -2,14 +2,14 @@ require "uuid"
 
 require "./helper"
 
-module ACAEngine::Core
+module PlaceOS::Core
   describe Cloning, tags: "resource" do
     it "clones/deletes repositories" do
       set_temporary_working_directory(fresh: true)
 
       Model::Repository.clear
       repo = Model::Generator.repository(type: Model::Repository::Type::Driver)
-      repo.uri = "https://github.com/acaengine/private-drivers"
+      repo.uri = "https://github.com/placeos/private-drivers"
       repo.name = "drivers"
       repo.folder_name = "drivers"
       repo.commit_hash = "head"

@@ -48,17 +48,13 @@ shards:
     github: drujensen/delimiter_tree
     version: 0.1.4
 
-  engine-driver:
-    github: acaengine/driver
-    commit: d85d4a8422c3f9068f8574aeae1c6419b0c796dc
+  driver:
+    github: placeos/driver
+    commit: 25f596a36cf291f489e5df0c3f862a40670a12f8
 
-  engine-drivers:
-    github: acaengine/drivers
-    commit: 82af9e28968a09e6fbd57f047ca2256692eacfee
-
-  engine-models:
-    github: acaengine/models
-    commit: f5d8d849b4df2a12062f158b2373e4bd5a7b077a
+  drivers:
+    github: placeos/drivers
+    commit: 984d396d37aa8981b6c3590bb46a83e73ea6f8aa
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -95,6 +91,10 @@ shards:
   kilt:
     github: jeromegn/kilt
     version: 0.6.0
+
+  models:
+    github: placeos/models
+    commit: 6c068d5466ea1186a7cedb16987c753cb3078851
 
   murmur3:
     github: aca-labs/murmur3
@@ -134,7 +134,7 @@ shards:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: 1bdc4210236a20fb01e88c13b59dab397938ae75
+    commit: db9633d99c3b51d656f94859eabfec7633b35723
 
   retriable:
     github: sija/retriable.cr

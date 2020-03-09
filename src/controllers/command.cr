@@ -1,7 +1,7 @@
 require "./application"
-require "../engine-core/module_manager"
+require "../core/module_manager"
 
-module ACAEngine::Core::Api
+module PlaceOS::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
@@ -30,7 +30,7 @@ module ACAEngine::Core::Api
 
       begin
         render json: protocol_manager.execute(module_id, exec_request)
-      rescue error : ACAEngine::Driver::RemoteException
+      rescue error : PlaceOS::Driver::RemoteException
         logger.error { "error=#{error.message} backtrace=\"#{error.backtrace?}\" message=execute errored" }
         render :non_authoritative_information, json: {
           message:   error.message,

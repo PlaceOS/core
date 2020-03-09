@@ -1,9 +1,9 @@
-require "engine-drivers/compiler"
-require "engine-drivers/helper"
+require "drivers/compiler"
+require "drivers/helper"
 
 require "./helper"
 
-module ACAEngine::Core
+module PlaceOS::Core
   describe Compilation, tags: "resource" do
     it "compiles drivers" do
       # Set up a temporary directory
@@ -14,7 +14,7 @@ module ACAEngine::Core
       driver_file = driver.file_name.as(String)
 
       # Clone driver repository
-      ACAEngine::Drivers::Compiler.clone_and_install(
+      PlaceOS::Drivers::Compiler.clone_and_install(
         repository: repository_name,
         repository_uri: repository_uri,
       )
@@ -25,7 +25,7 @@ module ACAEngine::Core
       compiler.processed.first[:resource].id.should eq driver.id
 
       driver.reload!
-      ACAEngine::Drivers::Helper.compiled?(driver_file, driver.commit.not_nil!).should be_true
+      PlaceOS::Drivers::Helper.compiled?(driver_file, driver.commit.not_nil!).should be_true
 
       compiler.stop
     end

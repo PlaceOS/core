@@ -1,8 +1,8 @@
 require "./application"
 
-require "../engine-core/module_manager"
+require "../core/module_manager"
 
-module ACAEngine::Core::Api
+module PlaceOS::Core::Api
   class Chaos < Application
     base "/api/core/v1/chaos/"
 

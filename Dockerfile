@@ -15,9 +15,9 @@ COPY src /app/src
 
 # Build App
 RUN mkdir -p /app/bin/drivers
-RUN crystal build --release --debug -o bin/engine-core src/app.cr
+RUN crystal build --release --debug -o bin/core src/app.cr
 
 # Run the app binding on port 3000
 EXPOSE 3000
 HEALTHCHECK CMD wget -qO- http://localhost:3000/api/core/v1
-CMD ["/app/bin/engine-core", "-b", "0.0.0.0", "-p", "3000"]
+CMD ["/app/bin/core", "-b", "0.0.0.0", "-p", "3000"]

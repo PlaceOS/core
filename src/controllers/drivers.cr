@@ -1,15 +1,15 @@
-require "engine-drivers/helper"
+require "drivers/helper"
 
 require "./application"
 
-module ACAEngine::Core::Api
+module PlaceOS::Core::Api
   class Drivers < Application
     base "/api/core/v1/drivers/"
 
     # The drivers available, returns Array(String)
     def index
       repository = params["repository"]? || "drivers"
-      render json: ACAEngine::Drivers::Helper.drivers(repository)
+      render json: PlaceOS::Drivers::Helper.drivers(repository)
     end
 
     # Returns the list of commits for a particular driver
@@ -18,7 +18,7 @@ module ACAEngine::Core::Api
       repository = params["repository"]? || "drivers"
       count = (params["count"]? || 50).to_i
 
-      render json: ACAEngine::Drivers::Helper.commits(driver, repository, count)
+      render json: PlaceOS::Drivers::Helper.commits(driver, repository, count)
     end
 
     # Returns the details of a driver
@@ -28,9 +28,9 @@ module ACAEngine::Core::Api
       repository = params["repository"]? || "drivers"
       meta = {repository: repository, driver: driver, commit: commit}
 
-      if !ACAEngine::Drivers::Helper.compiled?(driver, commit)
+      if !PlaceOS::Drivers::Helper.compiled?(driver, commit)
         logger.tag_info("compiling", **meta)
-        result = ACAEngine::Drivers::Helper.compile_driver(driver, repository, commit)
+        result = PlaceOS::Drivers::Helper.compile_driver(driver, repository, commit)
         # check driver compiled
         if result[:exit_status] != 0
           logger.tag_error("failed to compile", **meta)
@@ -38,7 +38,7 @@ module ACAEngine::Core::Api
         end
       end
 
-      exe_path = ACAEngine::Drivers::Helper.driver_binary_path(driver, commit)
+      exe_path = PlaceOS::Drivers::Helper.driver_binary_path(driver, commit)
       io = IO::Memory.new
       result = Process.run(
         exe_path,

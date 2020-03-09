@@ -8,14 +8,14 @@ logger = ActionController::Base.settings.logger
 logger.level = PROD ? Logger::INFO : Logger::DEBUG
 
 # Required to convince Crystal this file is not a module
-abstract class ACAEngine::Driver; end
+abstract class PlaceOS::Driver; end
 
-class ACAEngine::Driver::Protocol; end
+class PlaceOS::Driver::Protocol; end
 
 # Application code
-require "engine-driver/protocol/management"
+require "driver/protocol/management"
 require "./constants"
-require "./engine-core"
+require "./core"
 require "./controllers/*"
 
 # Server required after application controllers
@@ -30,9 +30,9 @@ HoundDog.configure do |settings|
 end
 
 # Path to driver repositories
-ACAEngine::Drivers::Compiler.repository_dir = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
+PlaceOS::Drivers::Compiler.repository_dir = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
 # Path to default drivers repository
-ACAEngine::Drivers::Compiler.drivers_dir = ENV["ENGINE_DRIVERS"]? || File.join(ACAEngine::Drivers::Compiler.repository_dir, "drivers")
+PlaceOS::Drivers::Compiler.drivers_dir = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Drivers::Compiler.repository_dir, "drivers")
 
 # Filter out sensitive params that shouldn't be logged
 filter_params = ["password", "bearer_token"]

@@ -1,12 +1,12 @@
 require "action-controller/logger"
-require "engine-drivers/compiler"
-require "engine-drivers/git_commands"
-require "engine-models"
+require "drivers/compiler"
+require "drivers/git_commands"
+require "models"
 
 require "./module_manager"
 require "./resource"
 
-module ACAEngine
+module PlaceOS
   class Core::Cloning < Core::Resource(Model::Repository)
     private getter? startup : Bool = true
     private getter? testing : Bool = false # Prevent redundant pulls/installs

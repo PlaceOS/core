@@ -4,12 +4,12 @@ require "../lib/action-controller/spec/curl_context"
 
 # Application config
 require "../src/config"
-require "../src/engine-core"
-require "../src/engine-core/*"
+require "../src/core"
+require "../src/core/*"
 
-require "engine-models/spec/generator"
+require "models/spec/generator"
 
-SPEC_DRIVER = "drivers/aca/private_helper.cr"
+SPEC_DRIVER = "drivers/place/private_helper.cr"
 
 CORE_URL = ENV["CORE_URL"]? || "http://core:3000"
 
@@ -33,10 +33,10 @@ def teardown(temp_dir = TEMP_DIR)
 end
 
 def clear_tables
-  ACAEngine::Model::ControlSystem.clear
-  ACAEngine::Model::Repository.clear
-  ACAEngine::Model::Driver.clear
-  ACAEngine::Model::Module.clear
+  PlaceOS::Model::ControlSystem.clear
+  PlaceOS::Model::Repository.clear
+  PlaceOS::Model::Driver.clear
+  PlaceOS::Model::Module.clear
 end
 
 # Remove the shared test directory
@@ -59,21 +59,21 @@ around_suite ->{
 }
 
 Spec.after_suite do
-  ACAEngine::Core::ResourceManager.instance.stop
+  PlaceOS::Core::ResourceManager.instance.stop
   `pkill -f "core-spec"`
 end
 
 # Set up a temporary directory
 def set_temporary_working_directory(fresh : Bool = false) : String
   temp_dir = fresh ? get_temp : TEMP_DIR
-  ACAEngine::Drivers::Compiler.bin_dir = "#{temp_dir}/bin"
-  ACAEngine::Drivers::Compiler.drivers_dir = "#{temp_dir}/repositories/drivers"
-  ACAEngine::Drivers::Compiler.repository_dir = "#{temp_dir}/repositories"
+  PlaceOS::Drivers::Compiler.bin_dir = "#{temp_dir}/bin"
+  PlaceOS::Drivers::Compiler.drivers_dir = "#{temp_dir}/repositories/drivers"
+  PlaceOS::Drivers::Compiler.repository_dir = "#{temp_dir}/repositories"
 
   parallel(
-    Dir.mkdir_p(ACAEngine::Drivers::Compiler.bin_dir),
-    Dir.mkdir_p(ACAEngine::Drivers::Compiler.drivers_dir),
-    Dir.mkdir_p(ACAEngine::Drivers::Compiler.repository_dir),
+    Dir.mkdir_p(PlaceOS::Drivers::Compiler.bin_dir),
+    Dir.mkdir_p(PlaceOS::Drivers::Compiler.drivers_dir),
+    Dir.mkdir_p(PlaceOS::Drivers::Compiler.repository_dir),
   )
 
   temp_dir
@@ -85,16 +85,16 @@ def setup(fresh : Bool = false)
   temp_dir = set_temporary_working_directory(fresh)
 
   # Repository metadata
-  repository_uri = "https://github.com/acaengine/private-drivers"
+  repository_uri = "https://github.com/placeos/private-drivers"
   repository_name = repository_folder_name = "drivers"
 
   # Driver metadata
-  driver_file_name = "drivers/aca/private_helper.cr"
+  driver_file_name = "drivers/place/private_helper.cr"
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
-  driver_role = ACAEngine::Model::Driver::Role::Logic
+  driver_role = PlaceOS::Model::Driver::Role::Logic
 
-  existing_repo = ACAEngine::Model::Repository.where(uri: repository_uri).first?
+  existing_repo = PlaceOS::Model::Repository.where(uri: repository_uri).first?
   existing_driver = existing_repo.try(&.drivers.first?)
   existing_module = existing_driver.try(&.modules.first?)
 
@@ -102,18 +102,18 @@ def setup(fresh : Bool = false)
     repository, driver, mod = existing_repo, existing_driver, existing_module
   else
     # Clear tables
-    ACAEngine::Model::ControlSystem.clear
-    ACAEngine::Model::Driver.clear
-    ACAEngine::Model::Module.clear
-    ACAEngine::Model::Repository.clear
+    PlaceOS::Model::ControlSystem.clear
+    PlaceOS::Model::Driver.clear
+    PlaceOS::Model::Module.clear
+    PlaceOS::Model::Repository.clear
 
-    repository = ACAEngine::Model::Generator.repository(type: ACAEngine::Model::Repository::Type::Driver)
+    repository = PlaceOS::Model::Generator.repository(type: PlaceOS::Model::Repository::Type::Driver)
     repository.uri = repository_uri
     repository.name = repository_name
     repository.folder_name = repository_folder_name
     repository.save!
 
-    driver = ACAEngine::Model::Driver.new(
+    driver = PlaceOS::Model::Driver.new(
       name: driver_name,
       role: driver_role,
       commit: "head",
@@ -124,8 +124,8 @@ def setup(fresh : Bool = false)
     driver.repository = repository
     driver.save!
 
-    mod = ACAEngine::Model::Generator.module(driver: driver).save!
-    control_system = mod.control_system.as(ACAEngine::Model::ControlSystem)
+    mod = PlaceOS::Model::Generator.module(driver: driver).save!
+    control_system = mod.control_system.as(PlaceOS::Model::ControlSystem)
     control_system.modules = [mod.id.as(String)]
     control_system.save!
   end
@@ -139,7 +139,7 @@ def create_resources(fresh : Bool = false, process : Bool = true)
 
   # Clone, compile
   if process
-    ACAEngine::Core::ResourceManager.instance(testing: true).start { }
+    PlaceOS::Core::ResourceManager.instance(testing: true).start { }
   end
 
   {repository, driver, mod}

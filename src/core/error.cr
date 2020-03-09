@@ -1,4 +1,4 @@
-module ACAEngine::Core
+module PlaceOS::Core
   class Error < Exception
     getter message
 

@@ -1,13 +1,13 @@
 require "action-controller/logger"
-require "engine-drivers/compiler"
-require "engine-models/driver"
-require "engine-models/repository"
+require "drivers/compiler"
+require "models/driver"
+require "models/repository"
 
 require "./cloning"
 require "./module_manager"
 require "./resource"
 
-module ACAEngine
+module PlaceOS
   class Core::Compilation < Core::Resource(Model::Driver)
     private getter? startup : Bool = true
 

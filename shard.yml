@@ -1,8 +1,8 @@
-name: engine-core
+name: core
 version: 0.1.0
 
 targets:
-  engine-core:
+  core:
     main: src/app.cr
 
 dependencies:
@@ -13,16 +13,16 @@ dependencies:
     github: aca-labs/clustering
     version: ~> 0.3.1
 
-  engine-driver:
-    github: acaengine/driver
+  driver:
+    github: placeos/driver
     branch: master
 
-  engine-drivers:
-    github: acaengine/drivers
+  drivers:
+    github: placeos/drivers
     branch: master
 
-  engine-models:
-    github: acaengine/models
+  models:
+    github: placeos/models
     branch: master
 
   etcd:

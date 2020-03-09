@@ -5,10 +5,10 @@ require "../helper"
 # - Create the call instance
 # - Check the outcome of the request
 
-module ACAEngine::Core
+module PlaceOS::Core
   EXEC_PAYLOAD = {
-    __exec__:             "used_for_aca_testing",
-    used_for_aca_testing: [] of String,
+    __exec__:               "used_for_place_testing",
+    used_for_place_testing: [] of String,
   }.to_json
 
   describe Api::Command, tags: "api" do
