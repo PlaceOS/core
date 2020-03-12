@@ -36,10 +36,6 @@ shards:
     github: kostya/cron_parser
     version: 0.3.0
 
-  crystal-rethinkdb:
-    github: aca-labs/crystal-rethinkdb
-    commit: 8155487b5cdbced9fd84cc242d459bcb9cd3b015
-
   debug:
     github: Sija/debug.cr
     version: 1.1.0
@@ -50,11 +46,11 @@ shards:
 
   driver:
     github: placeos/driver
-    commit: 25f596a36cf291f489e5df0c3f862a40670a12f8
+    commit: 870944d9d369494bebcad0c6a95e55bd3718bfe5
 
   drivers:
     github: placeos/drivers
-    commit: 984d396d37aa8981b6c3590bb46a83e73ea6f8aa
+    commit: d3d08826f3f4fc226cea98a057d75867e37e79f4
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -94,7 +90,7 @@ shards:
 
   models:
     github: placeos/models
-    commit: 6c068d5466ea1186a7cedb16987c753cb3078851
+    commit: 22120dfedf73f28473db75014ab25fdf270b76a7
 
   murmur3:
     github: aca-labs/murmur3
@@ -132,9 +128,13 @@ shards:
     github: caspiano/rendezvous-hash
     version: 0.3.1
 
+  rethinkdb:
+    github: aca-labs/crystal-rethinkdb
+    version: 0.2.0
+
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: db9633d99c3b51d656f94859eabfec7633b35723
+    commit: 3e383e53dd13aeffb9d6fb6d745a933e18982161
 
   retriable:
     github: sija/retriable.cr
