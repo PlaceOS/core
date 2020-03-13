@@ -34,6 +34,8 @@ module PlaceOS
     # From environment
     @@instance : ModuleManager?
 
+    getter? started = false
+
     # Class to be used as a singleton
     def self.instance : ModuleManager
       (@@instance ||= ModuleManager.new(uri: self.uri, logger: self.logger)).as(ModuleManager)
@@ -123,6 +125,9 @@ module PlaceOS
 
       logger.tag_info("loaded modules", drivers: running_drivers, modules: running_modules)
       Fiber.yield
+
+      @started = true
+
       self
     end
 
@@ -169,9 +174,31 @@ module PlaceOS
 
     # Stop and remove the module from node
     def remove_module(mod : Model::Module)
-      mod_id = mod.id.as(String)
-      manager_by_module_id(mod_id).try &.stop(mod_id)
-      @module_proc_managers.delete(mod_id)
+      remove_module(mod.id.as(String))
+    end
+
+    # :ditto:
+    def remove_module(module_id : String)
+      manager_by_module_id(module_id).try &.stop(module_id)
+
+      driver_path = path_for?(module_id)
+      existing_manager = @module_proc_managers.delete(module_id)
+
+      no_module_references = @module_proc_managers.select do |_, manager|
+        manager == existing_manager
+      end.empty?
+
+      # Delete driver indexed manager if there are no other module references.
+      if driver_path && no_module_references
+        @driver_proc_managers.delete(driver_path)
+      end
+    end
+
+    # HACK: get the driver path from the module_id
+    def path_for?(module_id)
+      @module_proc_managers[module_id]?.try do |manager|
+        @driver_proc_managers.key_for?(manager)
+      end
     end
 
     def stabilize(nodes : Array(HoundDog::Service::Node))

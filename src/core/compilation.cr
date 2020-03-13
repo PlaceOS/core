@@ -1,5 +1,6 @@
 require "action-controller/logger"
 require "drivers/compiler"
+require "drivers/helper"
 require "models/driver"
 require "models/repository"
 
@@ -74,23 +75,58 @@ module PlaceOS
 
       if success
         logger.tag_info("compiled driver", name: name, repository_name: repository_name, output: result[:output])
+        module_manager = ModuleManager.instance
+
+        # Set when a module_manager found for stale driver
+        driver_path = nil
+
+        driver.modules.each do |mod|
+          module_id = mod.id.as(String)
+
+          # Remove the module running on the stale driver
+          driver_path = module_manager.path_for?(module_id)
+          module_manager.remove_module(module_id)
+
+          if module_manager.started?
+            # Reload module on new driver binary
+            logger.tag_debug("reloading module after compilation", module_id: module_id, path: driver_path, driver_id: driver_id)
+            module_manager.load_module(mod)
+          end
+        end
+
+        # Remove the stale driver if there is one and there are no more modules running on it.
+        if driver_path && module_manager.manager_by_driver_path(driver_path)
+          remove_stale_driver(driver_path, driver_id, logger)
+        end
+
+        if update_commit
+          # Bump the commit on the driver post-compilation and module loading
+          update_driver_commit(driver: driver, commit: result[:version], startup: startup, logger: logger)
+        end
       else
         logger.tag_error("failed to compile driver", name: {name}, repository_name: repository_name, output: result[:output])
       end
 
-      if update_commit && success
-        commit = result[:version]
+      {success, result[:output]}
+    end
 
-        if startup
-          # There's a potential for multiple writers on startup,
-          # However this is an eventually consistent operation.
-          logger.tag_warn("updating commit on driver during startup", name: name, id: driver.id, commit: commit)
-        end
+    def self.remove_stale_driver(path : String, driver_id : String, logger)
+      logger.tag_info("removing stale driver binary", path: path, driver_id: driver_id)
+      begin
+        File.delete(path)
+      rescue
+        logger.tag_error("failed to remove stale driver binary", path: path, driver_id: driver_id)
+      end
+    end
 
-        driver.update_fields(commit: commit)
+    def self.update_driver_commit(driver : Model::Driver, commit : String, startup : Bool, logger)
+      if startup
+        # There's a potential for multiple writers on startup, However this is an eventually consistent operation.
+        logger.tag_warn("updating commit on driver during startup", name: driver.name, id: driver.id, commit: commit)
       end
 
-      {success, result[:output]}
+      driver.update_fields(commit: commit)
+      logger.tag_info("updated commit on driver", name: driver.name, id: driver.id, commit: commit)
     end
 
     def start
