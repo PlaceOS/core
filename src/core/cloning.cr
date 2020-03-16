@@ -78,10 +78,18 @@ module PlaceOS
       # Update commit hash if repository id maps to current node, or during startup
       current_commit = Drivers::Helper.repository_commit_hash(repository_folder_name)
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
+
       if current_commit != repository_commit && own_node
         if startup
           logger.tag_warn(
             message: "updating commit on repository during startup",
+            current_commit: current_commit,
+            repository_commit: repository_commit,
+            folder_name: repository_folder_name
+          )
+        else
+          logger.tag_info(
+            message: "updating commit on repository",
             current_commit: current_commit,
             repository_commit: repository_commit,
             folder_name: repository_folder_name
