@@ -132,30 +132,11 @@ module PlaceOS
     end
 
     def start_module(mod : Model::Module)
-      cs = mod.control_system.as(Model::ControlSystem)
-
       # Start format
-      payload = {
-        ip:   mod.ip,
-        port: mod.port,
-        # TODO: remove '|| false' after Module has updated defaults
-        udp:            mod.udp || false,
-        tls:            mod.tls || false,
-        makebreak:      mod.makebreak,
-        role:           mod.role,
-        control_system: {
-          id:   cs.id,
-          name: cs.name,
-          # TODO: remove '|| ""' after ControlSystem has updated defaults
-          email:    cs.email || "",
-          features: cs.features || "",
-          capacity: cs.capacity,
-          bookable: cs.bookable,
-        },
-      }.to_json.rchop
+      payload = mod.to_json.rchop
 
       # The settings object needs to be unescaped
-      payload = %(#{payload},"settings":#{mod.merge_settings}})
+      payload = %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{mod.merge_settings}})
 
       mod_id = mod.id.as(String)
       proc_manager = manager_by_module_id(mod_id)
