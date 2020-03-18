@@ -48,15 +48,25 @@ module PlaceOS
         storage.clear
 
         if !destroyed
-          # Construct a hash of module_id to redis key
-          keys = {} of String => String?
+          # Construct a hash of module name to module ids (in-order)
+          keys = {} of String => Array(String)
           module_ids.each_with_index do |id, index|
             # Extract module name
             model = Model::Module.find!(id)
-            name = model.custom_name || model.name
+            name = model.custom_name || model.name.as(String)
 
-            # Indexes start from 1
-            storage["#{name}/#{index + 1}"] = id
+            # Save ordering
+            modules = keys[name]? || [] of String
+            modules << id
+            keys[name] = modules
+          end
+
+          # Index the modules
+          keys.each do |name, ids|
+            ids.each_with_index do |id, index|
+              # Indexes start from 1
+              storage["#{name}/#{index + 1}"] = id
+            end
           end
 
           # Notify subscribers of a system module ordering change
