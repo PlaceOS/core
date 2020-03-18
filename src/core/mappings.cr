@@ -40,13 +40,13 @@ module PlaceOS
 
       # Always load mappings during startup
       relevant_node = startup || ModuleManager.instance.discovery.own_node?(system_id)
+      needs_update = startup || destroyed || system.modules_changed?
 
-      if relevant_node
+      if relevant_node && needs_update
         storage = Driver::Storage.new(system_id, "system")
+        storage.clear
 
-        if destroyed
-          storage.clear
-        else
+        if !destroyed
           # Construct a hash of module name to module ids (in-order)
           keys = {} of String => Array(String)
           module_ids.each do |id|
@@ -61,24 +61,15 @@ module PlaceOS
             keys[name] = modules
           end
 
-          older = storage.to_h
-          current = {} of String => String
-
           # Index the modules
           keys.each do |name, ids|
             ids.each_with_index do |id, index|
               # Indexes start from 1
-              key = "#{name}/#{index + 1}"
-              storage[key] = id
-              current[key] = id
+              storage["#{name}/#{index + 1}"] = id
             end
           end
 
-          remove = older.keys - current.keys
-          remove.each { |key| storage.delete(key) }
-
           # Notify subscribers of a system module ordering change
-          return Resource::Result::Skipped unless remove.size > 0 || older != current
           Driver::Storage.redis_pool.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)
         end
 
