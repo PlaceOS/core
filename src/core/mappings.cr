@@ -7,7 +7,6 @@ require "models/module"
 require "./module_manager"
 
 module PlaceOS
-  # TODO resource manager for removing module mappings on module deletes
   class Core::Mappings < Core::Resource(Model::ControlSystem)
     private getter? startup : Bool = true
 
@@ -50,7 +49,7 @@ module PlaceOS
         if !destroyed
           # Construct a hash of module name to module ids (in-order)
           keys = {} of String => Array(String)
-          module_ids.each_with_index do |id, index|
+          module_ids.each do |id|
             # Extract module name
             model = Model::Module.find!(id)
             name = model.custom_name || model.name.as(String)
