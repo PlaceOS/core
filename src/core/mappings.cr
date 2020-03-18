@@ -45,35 +45,25 @@ module PlaceOS
 
       if relevant_node && needs_update
         storage = Driver::Storage.new(system_id, "system")
+        storage.clear
 
-        # Construct a hash of module_id to redis key
-        keys = {} of String => String?
-        module_ids.each_with_index do |id, index|
-          # Extract module name
-          name = Model::Module.find(id).try(&.custom_name)
-          # Indexes start from 1
-          keys[id] = name ? "#{name}/#{index + 1}" : nil
-        end
+        if !destroyed
+          # Construct a hash of module_id to redis key
+          keys = {} of String => String?
+          module_ids.each_with_index do |id, index|
+            # Extract module name
+            model = Model::Module.find!(id)
+            name = model.custom_name || model.name
 
-        keys.each_with_index do |(id, key), index|
-          unless key
-            logger.tag_warn(
-              message: "module not found while setting indirect mapping in redis",
-              module_id: id,
-              index: index + 1
-            )
-            next
+            # Indexes start from 1
+            storage["#{name}/#{index + 1}"] = id
           end
-          # Remove the mapping if system destroyed
-          storage[key] = destroyed ? nil : id
+
+          # Notify subscribers of a system module ordering change
+          Driver::Storage.redis_pool.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)
         end
 
         logger.tag_info("#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system_id)
-
-        # Notify subscribers of a system module ordering change
-        unless destroyed
-          Driver::Storage.redis_pool.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)
-        end
 
         Resource::Result::Success
       else
