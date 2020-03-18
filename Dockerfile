@@ -2,13 +2,13 @@ FROM crystallang/crystal:0.33.0-alpine
 
 WORKDIR /app
 
-COPY shard.yml /app
-COPY shard.lock /app
-RUN shards install --production
-
 # Install the latest version of LibSSH2
 RUN apk update
 RUN apk add libssh2 libssh2-dev
+
+COPY shard.yml /app
+COPY shard.lock /app
+RUN shards install --production
 
 # Add source last for efficient caching
 COPY src /app/src
