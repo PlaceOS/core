@@ -53,6 +53,7 @@ module PlaceOS
             # Extract module name
             model = Model::Module.find!(id)
             name = model.custom_name || model.name.as(String)
+            name = model.name.as(String) if name.empty?
 
             # Save ordering
             modules = keys[name]? || [] of String
