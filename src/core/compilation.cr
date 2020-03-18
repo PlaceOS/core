@@ -54,7 +54,7 @@ module PlaceOS
       name = driver.name.as(String)
 
       repository = driver.repository.as(Model::Repository)
-      repository_name = repository.name.as(String)
+      repository_name = repository.folder_name.as(String)
 
       update_commit = false
       # If the commit is `head` then the driver must be recompiled.
