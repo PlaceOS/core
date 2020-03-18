@@ -50,7 +50,7 @@ shards:
 
   driver:
     github: placeos/driver
-    commit: 169a4d9ab61753a9bdb5839b9478e9b3923aae4a
+    commit: daf2f25f414ed2dc78565e200a84852dcc351db0
 
   drivers:
     github: placeos/drivers
