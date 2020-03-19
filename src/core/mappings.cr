@@ -46,32 +46,7 @@ module PlaceOS
         storage = Driver::Storage.new(system_id, "system")
         storage.clear
 
-        if !destroyed
-          # Construct a hash of module name to module ids (in-order)
-          keys = {} of String => Array(String)
-          module_ids.each do |id|
-            # Extract module name
-            model = Model::Module.find!(id)
-            name = model.custom_name || model.name.as(String)
-            name = model.name.as(String) if name.empty?
-
-            # Save ordering
-            modules = keys[name]? || [] of String
-            modules << id
-            keys[name] = modules
-          end
-
-          # Index the modules
-          keys.each do |name, ids|
-            ids.each_with_index do |id, index|
-              # Indexes start from 1
-              storage["#{name}/#{index + 1}"] = id
-            end
-          end
-
-          # Notify subscribers of a system module ordering change
-          Driver::Storage.redis_pool.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)
-        end
+        set_mappings(module_ids, system_id, storage) unless destroyed
 
         logger.tag_info("#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system_id)
 
@@ -79,6 +54,32 @@ module PlaceOS
       else
         Resource::Result::Skipped
       end
+    end
+
+    def self.set_mappings(module_ids : Array(String), system_id : String, storage : Driver::Storage)
+      # Construct a hash of module name to module ids (in-order)
+      grouped_modules = module_ids.each_with_object({} of String => Array(String)) do |id, keys|
+        # Extract module name
+        model = Model::Module.find!(id)
+        name = model.custom_name || model.name.as(String)
+        name = model.name.as(String) if name.empty?
+
+        # Save ordering
+        modules = keys[name]? || [] of String
+        modules << id
+        keys[name] = modules
+      end
+
+      # Index the modules
+      grouped_modules.each do |name, ids|
+        ids.each_with_index do |id, index|
+          # Indexes start from 1
+          storage["#{name}/#{index + 1}"] = id
+        end
+      end
+
+      # Notify subscribers of a system module ordering change
+      Driver::Storage.redis_pool.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)
     end
 
     def start
