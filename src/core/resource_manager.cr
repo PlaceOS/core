@@ -2,7 +2,8 @@ require "action-controller/logger"
 
 require "./cloning"
 require "./compilation"
-require "./mappings"
+require "./mappings/control_system_modules"
+require "./mappings/module_names"
 
 # Sequences the acquisition and production of resources
 #
@@ -13,7 +14,8 @@ module PlaceOS::Core
     class_property logger : TaggedLogger = TaggedLogger.new(ActionController::Base.settings.logger)
     getter cloning : Cloning
     getter compilation : Compilation
-    getter mappings : Mappings
+    getter control_system_modules : Mappings::ControlSystemModules
+    getter module_names : Mappings::ModuleNames
     getter logger : TaggedLogger
     getter? started = false
 
@@ -26,31 +28,36 @@ module PlaceOS::Core
     def initialize(
       cloning : Cloning? = nil,
       compilation : Compilation? = nil,
-      mappings : Mappings? = nil,
+      control_system_modules : Mappings::ControlSystemModules? = nil,
+      module_names : Mappings::ModuleNames? = nil,
       logger : ActionController::Logger::TaggedLogger? = nil,
       testing : Bool = false
     )
       @logger = logger || ResourceManager.logger
       @cloning = cloning || Cloning.new(testing: testing, logger: @logger)
       @compilation = compilation || Compilation.new(logger: @logger)
-      @mappings = mappings || Mappings.new(logger: @logger)
+      @control_system_modules = control_system_modules || Mappings::ControlSystemModules.new(logger: @logger)
+      @module_names = module_names || Mappings::ModuleNames.new(logger: @logger)
     end
 
     def start
       return if started?
 
       @started = true
-      logger.info("cloning repositories")
+      logger.info("cloning Repositories")
       cloning.start
 
-      logger.info("compiling drivers")
+      logger.info("compiling Drivers")
       compilation.start
 
       # Run the on-load processes
       yield
 
-      logger.info("maintaining mappings")
-      mappings.start
+      logger.info("maintaining ControlSystem Module redis mappings")
+      control_system_modules.start
+
+      logger.info("synchronising Module name changes with redis mappings")
+      module_names.start
     end
 
     def stop
@@ -59,7 +66,8 @@ module PlaceOS::Core
       @started = false
       cloning.stop
       compilation.stop
-      mappings.stop
+      control_system_modules.stop
+      module_names.stop
     end
   end
 end

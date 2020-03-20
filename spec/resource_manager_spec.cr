@@ -8,8 +8,12 @@ module PlaceOS::Core
 
       # Clone, compile
       cloning = Cloning.new(testing: true, logger: LOGGER)
-      mappings = Mappings.new(startup: false, logger: LOGGER)
-      resource_manager = ResourceManager.new(cloning: cloning, mappings: mappings, logger: LOGGER)
+      control_system_modules = Mappings::ControlSystemModules.new(startup: false, logger: LOGGER)
+      resource_manager = ResourceManager.new(
+        cloning: cloning,
+        control_system_modules: control_system_modules,
+        logger: LOGGER
+      )
 
       called = false
       resource_manager.start { called = true }
@@ -21,7 +25,7 @@ module PlaceOS::Core
       {1, 2}.any?(resource_manager.cloning.processed.size).should be_true
       {1, 2}.any?(resource_manager.compilation.processed.size).should be_true
 
-      resource_manager.mappings.processed.size.should eq 0
+      resource_manager.control_system_modules.processed.size.should eq 0
       resource_manager.stop
     end
   end
