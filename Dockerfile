@@ -3,8 +3,7 @@ FROM crystallang/crystal:0.33.0-alpine
 WORKDIR /app
 
 # Install the latest version of LibSSH2
-RUN apk update
-RUN apk add libssh2 libssh2-dev
+RUN apk add --no-cache libssh2 libssh2-dev
 
 COPY shard.yml /app
 COPY shard.lock /app
