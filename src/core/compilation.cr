@@ -85,7 +85,7 @@ module PlaceOS
 
           # Remove the module running on the stale driver
           driver_path = module_manager.path_for?(module_id)
-          module_manager.remove_module(module_id)
+          module_manager.remove_module(mod)
 
           if module_manager.started?
             # Reload module on new driver binary

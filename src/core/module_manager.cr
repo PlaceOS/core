@@ -73,16 +73,15 @@ module PlaceOS
     def watch_modules
       Model::Module.changes.each do |change|
         mod = change[:value]
-        mod_id = mod.id.as(String)
-        if change[:event] == RethinkORM::Changefeed::Event::Deleted
-          remove_module(mod) if manager_by_module_id(mod_id)
-        else
-          if mod.running_changed?
-            # Running state of the module changed
+        case change[:event]
+        when RethinkORM::Changefeed::Event::Created
+          load_module(mod)
+        when RethinkORM::Changefeed::Event::Deleted
+          remove_module(mod)
+        when RethinkORM::Changefeed::Event::Updated
+          # Running state of the module has changed
+          if mod.running_changed? && discovery.own_node?(mod.id.as(String))
             mod.running ? start_module(mod) : stop_module(mod)
-          else
-            # Load/Reload the module
-            load_module(mod)
           end
         end
       end
@@ -143,27 +142,29 @@ module PlaceOS
 
       raise ModuleError.new("No protocol manager for #{mod_id}") unless proc_manager
 
-      logger.tag_info("starting module protocol manager", module_id: mod_id, driver: mod.driver.try &.name)
       proc_manager.start(mod_id, payload)
+      logger.tag_info("started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name)
     end
 
     # Stop module on node
     def stop_module(mod : Model::Module)
       mod_id = mod.id.as(String)
-      manager_by_module_id(mod_id).try &.stop(mod_id)
+      manager = manager_by_module_id(mod_id)
+
+      if manager
+        manager.stop(mod_id)
+        logger.tag_info("stopped module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name)
+      end
     end
 
     # Stop and remove the module from node
     def remove_module(mod : Model::Module)
-      remove_module(mod.id.as(String))
-    end
-
-    # :ditto:
-    def remove_module(module_id : String)
-      manager_by_module_id(module_id).try &.stop(module_id)
+      module_id = mod.id.as(String)
+      stop_module(mod)
 
       driver_path = path_for?(module_id)
       existing_manager = @module_proc_managers.delete(module_id)
+      logger.tag_info("removed module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name)
 
       no_module_references = @module_proc_managers.select do |_, manager|
         manager == existing_manager
@@ -172,13 +173,7 @@ module PlaceOS
       # Delete driver indexed manager if there are no other module references.
       if driver_path && no_module_references
         @driver_proc_managers.delete(driver_path)
-      end
-    end
-
-    # HACK: get the driver path from the module_id
-    def path_for?(module_id)
-      @module_proc_managers[module_id]?.try do |manager|
-        @driver_proc_managers.key_for?(manager)
+        logger.tag_info("removed driver manager", driver: mod.driver.try(&.name), module_name: mod.name)
       end
     end
 
@@ -264,7 +259,6 @@ module PlaceOS
     # Load the module if current node is responsible
     def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
       mod_id = mod.id.as(String)
-
       module_uri = rendezvous_hash[mod_id]?.try do |hash_value|
         HoundDog::Discovery.from_hash_value(hash_value)[:uri]
       end
@@ -281,37 +275,55 @@ module PlaceOS
           return
         end
 
-        if manager_by_module_id(mod_id)
-          # Module already loaded
-          logger.tag_info("module already loaded", module_id: mod_id, driver_name: driver_name, driver_commit: driver_commit)
-        elsif (existing_driver_manager = manager_by_driver_path(driver_path))
-          # Use the existing driver protocol manager
-          @module_proc_managers[mod_id] = existing_driver_manager
+        meta = {
+          module_id:     mod_id,
+          module_name:   mod.name,
+          custom_name:   mod.custom_name,
+          driver_name:   driver_name,
+          driver_commit: driver_commit,
+        }
+
+        if !manager_by_module_id(mod_id)
+          if (existing_driver_manager = manager_by_driver_path(driver_path))
+            # Use the existing driver protocol manager
+            @module_proc_managers[mod_id] = existing_driver_manager
+          else
+            # Create a new protocol manager
+            proc_manager = Driver::Protocol::Management.new(driver_path, logger)
+
+            # Hook up the callbacks
+            proc_manager.on_exec = ->(request : Request, response_cb : Proc(Request, Nil)) {
+              on_exec(request, response_cb); nil
+            }
+            proc_manager.on_setting = ->(module_id : String, setting_name : String, setting_value : YAML::Any) {
+              save_setting(module_id, setting_name, setting_value); nil
+            }
+
+            @driver_proc_managers[driver_path] = proc_manager
+            @module_proc_managers[mod_id] = proc_manager
+          end
+
+          logger.tag_info("loaded module", **meta)
         else
-          # Create a new protocol manager
-          proc_manager = Driver::Protocol::Management.new(driver_path, logger)
-
-          # Hook up the callbacks
-          proc_manager.on_exec = ->(request : Request, response_cb : Proc(Request, Nil)) {
-            on_exec(request, response_cb); nil
-          }
-          proc_manager.on_setting = ->(module_id : String, setting_name : String, setting_value : YAML::Any) {
-            save_setting(module_id, setting_name, setting_value); nil
-          }
-
-          @driver_proc_managers[driver_path] = proc_manager
-          @module_proc_managers[mod_id] = proc_manager
+          logger.tag_info("module already loaded", **meta)
         end
 
-        start_module(mod)
+        start_module(mod) if mod.running
       elsif manager_by_module_id(mod_id)
         # Not on node, but protocol manager exists
-        logger.tag_info("stopping module protocol manager", module_id: mod_id)
+        logger.tag_info("removing module no longer on node", module_id: mod_id)
         remove_module(mod)
       end
     end
 
     protected getter uri : URI = ModuleManager.uri
     protected getter logger : TaggedLogger = ModuleManager.logger
+
+    # HACK: get the driver path from the module_id
+    protected def path_for?(module_id)
+      @module_proc_managers[module_id]?.try do |manager|
+        @driver_proc_managers.key_for?(manager)
+      end
+    end
   end
 end
