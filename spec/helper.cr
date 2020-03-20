@@ -124,7 +124,10 @@ def setup(fresh : Bool = false)
     driver.repository = repository
     driver.save!
 
-    mod = PlaceOS::Model::Generator.module(driver: driver).save!
+    mod = PlaceOS::Model::Generator.module(driver: driver)
+    mod.running = true
+    mod.save!
+
     control_system = mod.control_system.as(PlaceOS::Model::ControlSystem)
     control_system.modules = [mod.id.as(String)]
     control_system.save!
