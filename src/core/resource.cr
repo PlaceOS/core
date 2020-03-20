@@ -4,6 +4,8 @@ require "rethinkdb-orm"
 
 require "drivers/helper"
 
+# Internally abstracts data event streams.
+#
 abstract class PlaceOS::Core::Resource(T)
   include PlaceOS::Drivers::Helper
 
