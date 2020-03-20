@@ -124,16 +124,20 @@ abstract class PlaceOS::Core::Resource(T)
   # Process the event, place into the processed buffer
   #
   private def _process_event(event : NamedTuple(resource: T, action: Action))
-    type, id = T.name, event[:resource].id
+    meta = {
+      type:    T.name,
+      id:      event[:resource].id,
+      handler: self.class.name,
+    }
 
-    logger.tag_debug("processing resource event", type: type, id: id)
+    logger.tag_debug("processing resource event", **meta)
     case process_resource(event)
     when Result::Success
       processed.push(event)
       processed.shift if processed.size > @processed_buffer_size
-      logger.tag_info("processed resource event", type: type, id: id)
-    when Result::Error   then logger.tag_warn("processing failed", type: type, id: id)
-    when Result::Skipped then logger.tag_info("processing skipped", type: type, id: id)
+      logger.tag_info("processed resource event", **meta)
+    when Result::Error   then logger.tag_warn("processing failed", **meta)
+    when Result::Skipped then logger.tag_info("processing skipped", **meta)
     end
   rescue e
     logger.tag_error("while processing resource event", resource: event[:resource].inspect, error: e.inspect_with_backtrace)
