@@ -94,7 +94,7 @@ shards:
 
   models:
     github: placeos/models
-    commit: 91c7a77df3968853d52b90e2671b3394769ce8d7
+    commit: 3df4dcfa261518c8788a11f094b3cb395ae2a55e
 
   murmur3:
     github: aca-labs/murmur3

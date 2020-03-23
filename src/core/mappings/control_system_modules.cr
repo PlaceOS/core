@@ -51,8 +51,7 @@ module PlaceOS::Core
     # Pass module_id and updated_name to overrride a lookup
     def self.set_mappings(
       control_system : Model::ControlSystem,
-      module_id : String? = nil,
-      module_name : String? = nil
+      mod : Model::Module? = nil
     )
       system_id = control_system.id.as(String)
       storage = Driver::Storage.new(system_id, "system")
@@ -67,13 +66,8 @@ module PlaceOS::Core
 
       # Construct a hash of module name to ordered module ids
       grouped_modules = module_ids.each_with_object({} of String => Array(String)) do |id, keys|
-        # Extract the Module name
-        name = if id == module_id && module_name
-                 # Save a lookup if id and name passed
-                 module_name
-               else
-                 mapping_name(Model::Module.find!(id))
-               end
+        # Save a lookup if id and name passed
+        name = (mod && id == mod.id ? mod : Model::Module.find!(id)).resolved_name.as(String)
 
         # Save ordering
         modules = keys[name]? || [] of String
@@ -91,18 +85,6 @@ module PlaceOS::Core
 
       # Notify subscribers of a system module ordering change
       Driver::Storage.redis_pool.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)
-    end
-
-    # Extract the mapping name from a Module.
-    #
-    # Nil/empty custom_name indicates driver's module_name used
-    def self.mapping_name(mod : Model::Module)
-      custom_name = mod.custom_name
-      if custom_name.nil? || custom_name.empty?
-        mod.name.as(String)
-      else
-        custom_name
-      end
     end
 
     def start

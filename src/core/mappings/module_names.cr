@@ -17,11 +17,9 @@ module PlaceOS::Core
       end
     rescue e
       message = e.try(&.message) || ""
-      resource = event[:resource]
-      name = resource.name.as(String)
-      custom_name = resource.custom_name || ""
-      logger.tag_error("while updating mapping for module", name: name, custom_name: custom_name, error: message)
-      errors << {name: name, reason: message}
+      mod = event[:resource]
+      logger.tag_error("while updating mapping for module", name: mod.name, custom_name: mod.custom_name, error: message)
+      errors << {name: mod.name.as(String), reason: message}
 
       Resource::Result::Error
     end
@@ -36,11 +34,9 @@ module PlaceOS::Core
       # Only one core updates the mappings
       return Resource::Result::Skipped unless ModuleManager.instance.discovery.own_node?(module_id)
 
-      new_name = ControlSystemModules.mapping_name(mod)
-
       # Update mappings for ControlSystems containing the Module
       Model::ControlSystem.using_module(module_id).each do |control_system|
-        ControlSystemModules.set_mappings(control_system, module_id, new_name)
+        ControlSystemModules.set_mappings(control_system, mod)
       end
 
       Resource::Result::Success
