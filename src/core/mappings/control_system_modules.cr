@@ -66,7 +66,7 @@ module PlaceOS::Core
 
       # Construct a hash of resolved module name to ordered module ids
       grouped_modules = module_ids.group_by do |id|
-        # Save a lookup if id and name passed
+        # Save a lookup if a module passed
         (mod && id == mod.id ? mod : Model::Module.find!(id)).resolved_name.as(String)
       end
 
