@@ -64,22 +64,17 @@ module PlaceOS::Core
 
       module_ids = control_system.modules.as(Array(String))
 
-      # Construct a hash of module name to ordered module ids
-      grouped_modules = module_ids.each_with_object({} of String => Array(String)) do |id, keys|
+      # Construct a hash of resolved module name to ordered module ids
+      grouped_modules = module_ids.group_by do |id|
         # Save a lookup if id and name passed
-        name = (mod && id == mod.id ? mod : Model::Module.find!(id)).resolved_name.as(String)
-
-        # Save ordering
-        modules = keys[name]? || [] of String
-        modules << id
-        keys[name] = modules
+        (mod && id == mod.id ? mod : Model::Module.find!(id)).resolved_name.as(String)
       end
 
       # Index the modules
       grouped_modules.each do |name, ids|
-        ids.each_with_index do |id, index|
-          # Indexes start from 1
-          storage["#{name}/#{index + 1}"] = id
+        # Indexes start from 1
+        ids.each_with_index(offset: 1) do |id, index|
+          storage["#{name}/#{index}"] = id
         end
       end
 
