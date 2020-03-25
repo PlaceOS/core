@@ -69,8 +69,8 @@ module PlaceOS
       Drivers::Compiler.clone_and_install(
         repository: repository_folder_name,
         repository_uri: repository_uri,
-        username: username || repository.username,
-        password: password || repository.password,
+        username: repository.username || username,
+        password: repository.password || password,
         working_dir: working_dir,
         pull_if_exists: !testing,
       )
