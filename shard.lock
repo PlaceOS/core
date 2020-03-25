@@ -50,7 +50,7 @@ shards:
 
   driver:
     github: placeos/driver
-    commit: daf2f25f414ed2dc78565e200a84852dcc351db0
+    commit: 864a8050eff8957fba2c7606decb1776dbd7c310
 
   drivers:
     github: placeos/drivers
@@ -94,7 +94,7 @@ shards:
 
   models:
     github: placeos/models
-    commit: 3df4dcfa261518c8788a11f094b3cb395ae2a55e
+    commit: 396befaec03955f35a80c057f5cb8530712f1025
 
   murmur3:
     github: aca-labs/murmur3
