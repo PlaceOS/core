@@ -34,10 +34,10 @@ module PlaceOS::Core
       module_manager.running_modules.should eq 1
       module_manager.running_drivers.should eq 1
 
-      module_manager.manager_by_module_id(mod_id).should_not be_nil
-      module_manager.manager_by_driver_path(driver_path).should_not be_nil
+      module_manager.proc_manager_by_module?(mod_id).should_not be_nil
+      module_manager.proc_manager_by_driver?(driver_path).should_not be_nil
 
-      module_manager.manager_by_module_id(mod_id).should eq(module_manager.manager_by_driver_path(driver_path))
+      module_manager.proc_manager_by_module?(mod_id).should eq(module_manager.proc_manager_by_driver?(driver_path))
 
       module_manager.stop
       resource_manager.stop

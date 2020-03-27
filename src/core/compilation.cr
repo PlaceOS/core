@@ -95,7 +95,7 @@ module PlaceOS
         end
 
         # Remove the stale driver if there is one and there are no more modules running on it.
-        if driver_path && module_manager.manager_by_driver_path(driver_path)
+        if driver_path && module_manager.proc_manager_by_driver?(driver_path)
           remove_stale_driver(driver_path, driver_id, logger)
         end
 

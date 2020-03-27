@@ -36,7 +36,7 @@ module PlaceOS::Core::Api
       driver_path = params["path"]?
       head :unprocessable_entity unless driver_path
 
-      manager = module_manager.manager_by_driver_path(driver_path)
+      manager = module_manager.proc_manager_by_driver?(driver_path)
       head :not_found unless manager
 
       response = {

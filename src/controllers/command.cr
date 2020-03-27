@@ -12,7 +12,7 @@ module PlaceOS::Core::Api
     # Executes a command against a module
     post "/:module_id/execute", :execute do
       module_id = params["module_id"]
-      protocol_manager = module_manager.manager_by_module_id(module_id)
+      protocol_manager = module_manager.proc_manager_by_module?(module_id)
 
       unless protocol_manager
         logger.info { "module_id=#{module_id} message=module not loaded" }
@@ -43,7 +43,7 @@ module PlaceOS::Core::Api
     # a common operation and limited to system administrators
     ws "/:module_id/debugger", :module_debugger do |socket|
       module_id = params["module_id"]
-      protocol_manager = module_manager.manager_by_module_id(module_id)
+      protocol_manager = module_manager.proc_manager_by_module?(module_id)
       raise "module not loaded" unless protocol_manager
 
       # Forward debug messages to the websocket

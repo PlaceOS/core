@@ -10,6 +10,7 @@ require "drivers/compiler"
 require "drivers/helper"
 require "habitat"
 require "hound-dog"
+require "mutex"
 require "rethinkdb-orm/utils/changefeed"
 
 module PlaceOS
@@ -40,11 +41,6 @@ module PlaceOS
     def self.instance : ModuleManager
       (@@instance ||= ModuleManager.new(uri: self.uri, logger: self.logger)).as(ModuleManager)
     end
-
-    # Mapping from module_id to protocol manager
-    @module_proc_managers = {} of String => Driver::Protocol::Management
-    # Mapping from driver path to protocol manager
-    @driver_proc_managers = {} of String => Driver::Protocol::Management
 
     # Start up process is as follows..
     # - registered
@@ -89,20 +85,16 @@ module PlaceOS
 
     # The number of drivers loaded on current node
     def running_drivers
-      @driver_proc_managers.size
+      proc_manager_lock.synchronize do
+        @driver_proc_managers.size
+      end
     end
 
     # The number of module processes on current node
     def running_modules
-      @module_proc_managers.size
-    end
-
-    def manager_by_module_id(mod_id : String) : Driver::Protocol::Management?
-      @module_proc_managers[mod_id]?
-    end
-
-    def manager_by_driver_path(path : String) : Driver::Protocol::Management?
-      @driver_proc_managers[path]?
+      proc_manager_lock.synchronize do
+        @module_proc_managers.size
+      end
     end
 
     # Map reduce the querying of what modules are loaded on running drivers
@@ -138,7 +130,7 @@ module PlaceOS
       payload = %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{mod.merge_settings}})
 
       mod_id = mod.id.as(String)
-      proc_manager = manager_by_module_id(mod_id)
+      proc_manager = proc_manager_by_module?(mod_id)
 
       raise ModuleError.new("No protocol manager for #{mod_id}") unless proc_manager
 
@@ -147,14 +139,25 @@ module PlaceOS
     end
 
     # Stop module on node
+    #
     def stop_module(mod : Model::Module)
       mod_id = mod.id.as(String)
-      manager = manager_by_module_id(mod_id)
+      manager = proc_manager_by_module?(mod_id)
 
       if manager
         manager.stop(mod_id)
         logger.tag_info("stopped module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name)
       end
+    end
+
+    # Stop and load all modules running on stale driver on new driver
+    #
+    def load_onto_driver(stale_driver_path, driver_path)
+      stale_manager = proc_manager_by_driver?(stale_driver_path)
+
+      @driver_proc_managers[driver_path]
+
+      # Delete all mappings where module_id maps to stale_manager
     end
 
     # Stop and remove the module from node
@@ -163,16 +166,18 @@ module PlaceOS
       stop_module(mod)
 
       driver_path = path_for?(module_id)
-      existing_manager = @module_proc_managers.delete(module_id)
+      existing_manager = set_module_proc_manager(module_id, nil)
       logger.tag_info("removed module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name)
 
-      no_module_references = @module_proc_managers.select do |_, manager|
-        manager == existing_manager
-      end.empty?
+      no_module_references = existing_manager.nil? || proc_manager_lock.synchronize do
+        @module_proc_managers.select do |_, manager|
+          manager == existing_manager
+        end.empty?
+      end
 
       # Delete driver indexed manager if there are no other module references.
       if driver_path && no_module_references
-        @driver_proc_managers.delete(driver_path)
+        set_driver_proc_manager(driver_path, nil)
         logger.tag_info("removed driver manager", driver: mod.driver.try(&.name), module_name: mod.name)
       end
     end
@@ -201,7 +206,7 @@ module PlaceOS
 
       # If module maps to this node
       if core_uri == uri
-        if manager = @module_proc_managers[remote_module_id]?
+        if manager = proc_manager_by_module?(remote_module_id)
           # responds with a JSON string
           request.payload = manager.execute(remote_module_id, raw_execute_json)
         else
@@ -283,10 +288,10 @@ module PlaceOS
           driver_commit: driver_commit,
         }
 
-        if !manager_by_module_id(mod_id)
-          if (existing_driver_manager = manager_by_driver_path(driver_path))
+        if !proc_manager_by_module?(mod_id)
+          if (existing_driver_manager = proc_manager_by_driver?(driver_path))
             # Use the existing driver protocol manager
-            @module_proc_managers[mod_id] = existing_driver_manager
+            set_module_proc_manager(mod_id, existing_driver_manager)
           else
             # Create a new protocol manager
             proc_manager = Driver::Protocol::Management.new(driver_path, logger)
@@ -299,8 +304,8 @@ module PlaceOS
               save_setting(module_id, setting_name, setting_value); nil
             }
 
-            @driver_proc_managers[driver_path] = proc_manager
-            @module_proc_managers[mod_id] = proc_manager
+            set_module_proc_manager(mod_id, proc_manager)
+            set_driver_proc_manager(driver_path, proc_manager)
           end
 
           logger.tag_info("loaded module", **meta)
@@ -309,7 +314,7 @@ module PlaceOS
         end
 
         start_module(mod) if mod.running
-      elsif manager_by_module_id(mod_id)
+      elsif proc_manager_by_module?(mod_id)
         # Not on node, but protocol manager exists
         logger.tag_info("removing module no longer on node", module_id: mod_id)
         remove_module(mod)
@@ -319,10 +324,57 @@ module PlaceOS
     protected getter uri : URI = ModuleManager.uri
     protected getter logger : TaggedLogger = ModuleManager.logger
 
+    # Protocol Managers
+    ###########################################################################
+
+    private getter proc_manager_lock = Mutex.new
+
+    # Mapping from module_id to protocol manager
+    @module_proc_managers = {} of String => Driver::Protocol::Management
+
+    # Mapping from driver path to protocol manager
+    @driver_proc_managers = {} of String => Driver::Protocol::Management
+
+    protected def proc_manager_by_module?(module_id) : Driver::Protocol::Management?
+      proc_manager_lock.synchronize do
+        @module_proc_managers[module_id]?
+      end
+    end
+
+    protected def proc_manager_by_driver?(driver_path) : Driver::Protocol::Management?
+      proc_manager_lock.synchronize do
+        @driver_proc_managers[driver_path]?
+      end
+    end
+
+    protected def set_module_proc_manager(module_id, manager : Driver::Protocol::Management?)
+      proc_manager_lock.synchronize do
+        if manager.nil?
+          @module_proc_managers.delete(module_id)
+        else
+          @module_proc_managers[module_id] = manager
+          manager
+        end
+      end
+    end
+
+    protected def set_driver_proc_manager(driver_path, manager : Driver::Protocol::Management?)
+      proc_manager_lock.synchronize do
+        if manager.nil?
+          @driver_proc_managers.delete(driver_path)
+        else
+          @driver_proc_managers[driver_path] = manager
+          manager
+        end
+      end
+    end
+
     # HACK: get the driver path from the module_id
     protected def path_for?(module_id)
-      @module_proc_managers[module_id]?.try do |manager|
-        @driver_proc_managers.key_for?(manager)
+      proc_manager_lock.synchronize do
+        @module_proc_managers[module_id]?.try do |manager|
+          @driver_proc_managers.key_for?(manager)
+        end
       end
     end
   end

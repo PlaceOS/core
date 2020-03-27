@@ -94,7 +94,7 @@ shards:
 
   models:
     github: placeos/models
-    commit: f9c87c0a1d6be568862cd0a50be622cb50822431
+    commit: 3fef4f1329be61fb4a3ba23cb259a4f502adcde8
 
   murmur3:
     github: aca-labs/murmur3
@@ -134,11 +134,11 @@ shards:
 
   rethinkdb:
     github: aca-labs/crystal-rethinkdb
-    version: 0.2.2
+    version: 0.2.3
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: 2231504e1473a337099121270fd97bc3edd4005d
+    commit: 69afec9f9c293dbab410e7bf3eb412fc769bf5ee
 
   retriable:
     github: sija/retriable.cr

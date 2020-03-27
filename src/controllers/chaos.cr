@@ -12,8 +12,8 @@ module PlaceOS::Core::Api
 
     # terminate a process
     post "/terminate", :terminate do
-      driver = params["path"]
-      protocol_manager = module_manager.manager_by_driver_path(driver)
+      driver_path = params["path"]
+      protocol_manager = module_manager.proc_manager_by_driver?(driver_path)
       head :not_found unless protocol_manager
       head :ok unless protocol_manager.running?
 
