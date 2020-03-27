@@ -150,16 +150,6 @@ module PlaceOS
       end
     end
 
-    # Stop and load all modules running on stale driver on new driver
-    #
-    def load_onto_driver(stale_driver_path, driver_path)
-      stale_manager = proc_manager_by_driver?(stale_driver_path)
-
-      @driver_proc_managers[driver_path]
-
-      # Delete all mappings where module_id maps to stale_manager
-    end
-
     # Stop and remove the module from node
     def remove_module(mod : Model::Module)
       module_id = mod.id.as(String)
@@ -262,6 +252,7 @@ module PlaceOS
     alias Request = PlaceOS::Driver::Protocol::Request
 
     # Load the module if current node is responsible
+    #
     def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
       mod_id = mod.id.as(String)
       module_uri = rendezvous_hash[mod_id]?.try do |hash_value|

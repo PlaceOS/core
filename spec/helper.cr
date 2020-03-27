@@ -86,7 +86,8 @@ def setup(fresh : Bool = false)
 
   # Repository metadata
   repository_uri = "https://github.com/placeos/private-drivers"
-  repository_name = repository_folder_name = "drivers"
+  repository_name = "Private Drivers"
+  repository_folder_name = "private-drivers"
 
   # Driver metadata
   driver_file_name = "drivers/place/private_helper.cr"

@@ -9,10 +9,11 @@ module PlaceOS::Core
 
     describe "drivers/" do
       it "lists drivers" do
-        create_resources
+        repo, _, _ = create_resources
 
+        path = "#{namespace}?repository=#{repo.folder_name}"
         io = IO::Memory.new
-        ctx = context("GET", namespace, json_headers)
+        ctx = context("GET", path, json_headers)
         ctx.response.output = io
         Api::Drivers.new(ctx, :index).index
 
