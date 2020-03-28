@@ -54,7 +54,7 @@ end
 Spec.before_suite &->teardown
 
 around_suite ->{
-  # clear_tables
+  clear_tables
   HoundDog::Service.clear_namespace
 }
 

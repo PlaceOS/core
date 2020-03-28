@@ -28,6 +28,8 @@ module PlaceOS::Core::Api
       repository = params["repository"]? || "drivers"
       meta = {repository: repository, driver: driver, commit: commit}
 
+      temporary_driver_path = nil
+
       if !PlaceOS::Drivers::Helper.compiled?(driver, commit)
         logger.tag_info("compiling", **meta)
         result = PlaceOS::Drivers::Helper.compile_driver(driver, repository, commit)
@@ -36,6 +38,7 @@ module PlaceOS::Core::Api
           logger.tag_error("failed to compile", **meta)
           render :internal_server_error, json: result
         end
+        temporary_driver_path = result[:executable]
       end
 
       exe_path = PlaceOS::Drivers::Helper.driver_binary_path(driver, commit)
@@ -48,11 +51,17 @@ module PlaceOS::Core::Api
         error: Process::Redirect::Close
       )
 
+      exec_output = io.to_s
+
+      # Remove the driver if it was compiled for the lifetime of the query
+      File.delete(temporary_driver_path) if File.exists?(temporary_driver_path)
+
       if result.exit_status != 0
-        logger.tag_error("failed to execute", **meta)
+        logger.tag_error("failed to execute", **(meta.merge({output: exec_output}))
+        )
         render :internal_server_error, json: {
           exit_status: result.exit_status,
-          output:      io.to_s,
+          output:      exec_output,
           driver:      driver,
           version:     commit,
           executable:  exe_path,
@@ -61,7 +70,7 @@ module PlaceOS::Core::Api
       end
 
       response.headers["Content-Type"] = "application/json"
-      render text: io.to_s
+      render text: exec_output
     end
   end
 end
