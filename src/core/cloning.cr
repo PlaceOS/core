@@ -46,7 +46,7 @@ module PlaceOS
       end.as(Result)
     rescue e
       # Add cloning errors
-      errors << {name: event[:resource].name.as(String), reason: e.try &.message || ""}
+      errors << {name: event[:resource].name.as(String), reason: "#{e} #{e.message}"}
 
       Result::Error
     end
@@ -111,7 +111,7 @@ module PlaceOS
     end
 
     def self.delete_repository(
-      repository : Model::Repository | String,
+      repository : Model::Repository,
       working_dir : String = Drivers::Compiler.repository_dir,
       logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
     )

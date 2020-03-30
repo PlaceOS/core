@@ -11,7 +11,7 @@ module PlaceOS::Core
       repo = Model::Generator.repository(type: Model::Repository::Type::Driver)
       repo.uri = "https://github.com/placeos/private-drivers"
       repo.name = "drivers"
-      repo.folder_name = "drivers"
+      repo.folder_name = "private-drivers"
       repo.commit_hash = "head"
       repo.save!
 
@@ -24,10 +24,11 @@ module PlaceOS::Core
       # Check the cloning took place
       Dir.exists?(Drivers::Compiler.drivers_dir).should be_true
 
-      commit_hash = Drivers::Helper.repository_commit_hash(repo.name.as(String))
+      commit_hash = Drivers::Helper.repository_commit_hash(repo.folder_name.as(String))
       Model::Repository.find!(repo.id).commit_hash.should eq commit_hash
 
       repo.destroy
+
       sleep 0.5
 
       # Check the repository has been deleted

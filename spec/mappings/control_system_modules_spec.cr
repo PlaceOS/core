@@ -1,5 +1,5 @@
 require "../helper"
 
 module PlaceOS::Core::Mappings
-  pending ControlSystemModules
+  pending ControlSystemModules, tags: "resource"
 end
