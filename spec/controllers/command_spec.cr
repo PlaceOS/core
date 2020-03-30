@@ -77,8 +77,8 @@ module PlaceOS::Core
         ws_server, ws_client = HTTP::WebSocket.new(io_server), HTTP::WebSocket.new(io_client)
 
         message_channel = Channel(String).new
-        ws_client.on_message do |message|
-          message_channel.send(message)
+        ws_client.on_message do |m|
+          message_channel.send(m)
         end
 
         spawn do

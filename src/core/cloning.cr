@@ -46,7 +46,7 @@ module PlaceOS
       end.as(Result)
     rescue e
       # Add cloning errors
-      errors << {name: event[:resource].name.as(String), reason: e.try &.message || ""}
+      errors << {name: event[:resource].name.as(String), reason: "#{e} #{e.message}"}
 
       Result::Error
     end
@@ -111,7 +111,7 @@ module PlaceOS
     end
 
     def self.delete_repository(
-      repository : Model::Repository | String,
+      repository : Model::Repository,
       working_dir : String = Drivers::Compiler.repository_dir,
       logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
     )
@@ -132,8 +132,7 @@ module PlaceOS
 
       if Dir.exists?(repository_dir)
         begin
-          # Delete the direcotry
-          Dir.rmdir(repository_dir)
+          Cloning.rmdir_r(repository_dir)
           Result::Success
         rescue
           Result::Error
@@ -141,6 +140,18 @@ module PlaceOS
       else
         Result::Skipped
       end
+    end
+
+    def self.rmdir_r(directory)
+      Dir.each_child(directory) do |f|
+        path = File.join(directory, f)
+        if File.directory?(path)
+          rmdir_r(path)
+        else
+          File.delete(path)
+        end
+      end
+      Dir.rmdir(directory)
     end
 
     def start

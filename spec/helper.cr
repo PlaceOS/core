@@ -67,7 +67,7 @@ end
 def set_temporary_working_directory(fresh : Bool = false) : String
   temp_dir = fresh ? get_temp : TEMP_DIR
   PlaceOS::Drivers::Compiler.bin_dir = "#{temp_dir}/bin"
-  PlaceOS::Drivers::Compiler.drivers_dir = "#{temp_dir}/repositories/drivers"
+  PlaceOS::Drivers::Compiler.drivers_dir = "#{temp_dir}/repositories/private-drivers"
   PlaceOS::Drivers::Compiler.repository_dir = "#{temp_dir}/repositories"
 
   parallel(
