@@ -119,7 +119,7 @@ module PlaceOS
       working_dir = File.expand_path(working_dir)
       repository_dir = File.expand_path(File.join(working_dir, repository_folder_name))
 
-      # Ensure we are rm -rf a sane folder
+      # Ensure we `rmdir` a sane folder
       # - don't delete root
       # - don't delete working directory
       safe_directory = repository_dir.starts_with?(working_dir) &&
@@ -131,14 +131,13 @@ module PlaceOS
       return Result::Error unless safe_directory
 
       if Dir.exists?(repository_dir)
-        # Delete the direcotry
-        Process.run("./bin/exec_from",
-          {working_dir, "rm", "-rf", repository_folder_name},
-          input: Process::Redirect::Close,
-          output: Process::Redirect::Close,
-          error: Process::Redirect::Close
-        )
-        Result::Success
+        begin
+          # Delete the direcotry
+          Dir.rmdir(repository_dir)
+          Result::Success
+        rescue
+          Result::Error
+        end
       else
         Result::Skipped
       end

@@ -14,7 +14,7 @@ shards:
 
   ameba:
     github: crystal-ameba/ameba
-    version: 0.11.0
+    version: 0.12.0
 
   bindata:
     github: spider-gazelle/bindata
@@ -138,7 +138,7 @@ shards:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: 69afec9f9c293dbab410e7bf3eb412fc769bf5ee
+    commit: a2af48e8d3fee6d815d245bea2819df789b252fe
 
   retriable:
     github: sija/retriable.cr

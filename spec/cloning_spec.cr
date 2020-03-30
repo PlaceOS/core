@@ -29,9 +29,9 @@ module PlaceOS::Core
 
       repo.destroy
       sleep 0.5
+
       # Check the repository has been deleted
       Dir.exists?(Drivers::Compiler.drivers_dir).should be_false
-      cloner.stop
 
       cloner.stop
     end
