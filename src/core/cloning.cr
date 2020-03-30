@@ -132,8 +132,7 @@ module PlaceOS
 
       if Dir.exists?(repository_dir)
         begin
-          # Delete the direcotry
-          Dir.rmdir(repository_dir)
+          Cloning.rmdir_r(repository_dir)
           Result::Success
         rescue
           Result::Error
@@ -141,6 +140,18 @@ module PlaceOS
       else
         Result::Skipped
       end
+    end
+
+    def self.rmdir_r(directory)
+      Dir.each_child(directory) do |f|
+        path = File.join(directory, f)
+        if File.directory?(path)
+          rmdir_r(path)
+        else
+          File.delete(path)
+        end
+      end
+      Dir.rmdir(directory)
     end
 
     def start
