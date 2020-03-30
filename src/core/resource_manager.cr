@@ -16,6 +16,7 @@ module PlaceOS::Core
     getter compilation : Compilation
     getter control_system_modules : Mappings::ControlSystemModules
     getter module_names : Mappings::ModuleNames
+    getter settings_updates : SettingsUpdate
     getter logger : TaggedLogger
     getter? started = false
 
@@ -30,6 +31,7 @@ module PlaceOS::Core
       compilation : Compilation? = nil,
       control_system_modules : Mappings::ControlSystemModules? = nil,
       module_names : Mappings::ModuleNames? = nil,
+      settings_updates : SettingsUpdate? = nil,
       logger : ActionController::Logger::TaggedLogger? = nil,
       testing : Bool = false
     )
@@ -38,6 +40,7 @@ module PlaceOS::Core
       @compilation = compilation || Compilation.new(logger: @logger)
       @control_system_modules = control_system_modules || Mappings::ControlSystemModules.new(logger: @logger)
       @module_names = module_names || Mappings::ModuleNames.new(logger: @logger)
+      @settings_updates = settings_updates || SettingsUpdate.new(logger: @logger)
     end
 
     def start
@@ -58,6 +61,9 @@ module PlaceOS::Core
 
       logger.info("synchronising Module name changes with redis mappings")
       module_names.start
+
+      logger.info("listening for Module Settings update")
+      settings_updates.start
     end
 
     def stop
@@ -68,6 +74,7 @@ module PlaceOS::Core
       compilation.stop
       control_system_modules.stop
       module_names.stop
+      settings_updates.stop
     end
   end
 end
