@@ -26,22 +26,19 @@ module PlaceOS::Core::Api
       driver = URI.decode(params["id"])
       commit = params["commit"]
       repository = params["repository"]? || "drivers"
+      uuid = UUID.random.to_s
       meta = {repository: repository, driver: driver, commit: commit}
 
-      temporary_driver_path = nil
+      logger.tag_info("compiling", **meta)
+      result = PlaceOS::Drivers::Helper.compile_driver(driver, repository, commit, id: uuid)
 
-      if !PlaceOS::Drivers::Helper.compiled?(driver, commit)
-        logger.tag_info("compiling", **meta)
-        result = PlaceOS::Drivers::Helper.compile_driver(driver, repository, commit)
-        # check driver compiled
-        if result[:exit_status] != 0
-          logger.tag_error("failed to compile", **meta)
-          render :internal_server_error, json: result
-        end
-        temporary_driver_path = result[:executable]
+      # check driver compiled
+      if result[:exit_status] != 0
+        logger.tag_error("failed to compile", **meta)
+        render :internal_server_error, json: result
       end
 
-      executable_path = PlaceOS::Drivers::Helper.driver_binary_path(driver, commit)
+      executable_path = PlaceOS::Drivers::Helper.driver_binary_path(driver, commit, uuid)
       io = IO::Memory.new
       result = Process.run(
         executable_path,
@@ -52,9 +49,10 @@ module PlaceOS::Core::Api
       )
 
       execute_output = io.to_s
+      temporary_driver_path = result[:executable]
 
-      # Remove the driver if it was compiled for the lifetime of the query
-      File.delete(temporary_driver_path) if temporary_driver_path && File.exists?(temporary_driver_path)
+      # Remove the driver as it was compiled for the lifetime of the query
+      File.delete(temporary_driver_path) if File.exists?(temporary_driver_path)
 
       if result.exit_code != 0
         logger.tag_error("failed to execute", **(meta.merge({output: execute_output})))
@@ -63,7 +61,7 @@ module PlaceOS::Core::Api
           output:      execute_output,
           driver:      driver,
           version:     commit,
-          executable:  executable_path,
+          executable:  executable_path, # TODO: Remove field
           repository:  repository,
         }
       end

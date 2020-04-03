@@ -25,7 +25,8 @@ module PlaceOS::Core
       compiler.processed.first[:resource].id.should eq driver.id
 
       driver.reload!
-      PlaceOS::Drivers::Helper.compiled?(driver_file, driver.commit.not_nil!).should be_true
+
+      PlaceOS::Drivers::Helper.compiled?(driver_file, driver.commit.not_nil!, driver.id.not_nil!).should be_true
 
       compiler.stop
     end

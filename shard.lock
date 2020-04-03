@@ -54,7 +54,7 @@ shards:
 
   drivers:
     github: placeos/drivers
-    commit: 3e77dc47d10550b3f6935684cdc44a7d2aded743
+    commit: 6718d6f4796dd4b16c7e0b1ef99f96302627bc8a
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -94,7 +94,7 @@ shards:
 
   models:
     github: placeos/models
-    commit: 5a00adc9e1a6ca2e7e80c24cccba6a5887c24c01
+    commit: 525690f53224811f7ff33e1a9824f558b4b9897a
 
   murmur3:
     github: aca-labs/murmur3

@@ -262,12 +262,19 @@ module PlaceOS
       if module_uri == uri
         driver = mod.driver.as(Model::Driver)
         driver_name = driver.name.as(String)
+        driver_id = driver.id.as(String)
         driver_file_name = driver.file_name.as(String)
         driver_commit = driver.commit.as(String)
 
         # Check if the module is on the current node
-        unless (driver_path = PlaceOS::Drivers::Compiler.is_built?(driver_file_name, driver_commit))
-          logger.tag_error("driver does not exist", driver_name: driver_name, driver_commit: driver_commit, module_id: mod_id)
+        unless (driver_path = PlaceOS::Drivers::Compiler.is_built?(driver_file_name, driver_commit, driver_id))
+          logger.tag_error(
+            message: "driver does not exist",
+            driver_name: driver_name,
+            driver_commit: driver_commit,
+            driver_id: driver_id,
+            module_id: mod_id,
+          )
           return
         end
 

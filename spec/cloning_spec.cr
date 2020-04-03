@@ -25,7 +25,7 @@ module PlaceOS::Core
       Dir.exists?(Drivers::Compiler.drivers_dir).should be_true
 
       commit_hash = Drivers::Helper.repository_commit_hash(repo.folder_name.as(String))
-      Model::Repository.find!(repo.id).commit_hash.should eq commit_hash
+      Model::Repository.find!(repo.id.as(String)).commit_hash.should eq commit_hash
 
       repo.destroy
 
