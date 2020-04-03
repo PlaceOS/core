@@ -6,7 +6,7 @@ shards:
 
   action-controller:
     github: spider-gazelle/action-controller
-    version: 2.3.4
+    version: 2.4.0
 
   active-model:
     github: spider-gazelle/active-model
@@ -50,11 +50,11 @@ shards:
 
   driver:
     github: placeos/driver
-    commit: 864a8050eff8957fba2c7606decb1776dbd7c310
+    commit: aa31d08b18d5c4812cc3307b8af4da2d5307f715
 
   drivers:
     github: placeos/drivers
-    commit: 726aa1289d6d2ec74d650acff7ccfc2c3b719b37
+    commit: 3e77dc47d10550b3f6935684cdc44a7d2aded743
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -62,7 +62,7 @@ shards:
 
   exec_from:
     github: aca-labs/exec_from
-    commit: d48ea78370cc55f83fe5c2fc516a790134fbf3a7
+    commit: 5f92f207a61448c5875ad42010f8c260a3b95d61
 
   faker:
     github: askn/faker
@@ -94,7 +94,7 @@ shards:
 
   models:
     github: placeos/models
-    commit: 0b73f2f31446da41b95597520fa9d53896d5167c
+    commit: 5a00adc9e1a6ca2e7e80c24cccba6a5887c24c01
 
   murmur3:
     github: aca-labs/murmur3
@@ -134,11 +134,11 @@ shards:
 
   rethinkdb:
     github: aca-labs/crystal-rethinkdb
-    version: 0.2.3
+    version: 0.2.4
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: 8166192f3d91276b015fd92449b9de4e15f7d7aa
+    commit: b7968cf242a4973930ad57042c98b356f82a2bb0
 
   retriable:
     github: sija/retriable.cr
