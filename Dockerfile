@@ -14,7 +14,7 @@ COPY src /app/src
 
 # Build App
 RUN mkdir -p /app/bin/drivers
-RUN crystal build --release --debug -o bin/core src/app.cr
+RUN crystal build --error-trace --release --debug -o bin/core src/app.cr
 
 # Run the app binding on port 3000
 EXPOSE 3000
