@@ -8,14 +8,14 @@ module PlaceOS::Core::Api
 
     # The drivers available, returns Array(String)
     def index
-      repository = params["repository"]? || "drivers"
+      repository = params["repository"]
       render json: PlaceOS::Drivers::Helper.drivers(repository)
     end
 
     # Returns the list of commits for a particular driver
     def show
       driver = URI.decode(params["id"])
-      repository = params["repository"]? || "drivers"
+      repository = params["repository"]
       count = (params["count"]? || 50).to_i
 
       render json: PlaceOS::Drivers::Helper.commits(driver, repository, count)
@@ -25,7 +25,7 @@ module PlaceOS::Core::Api
     get "/:id/details" do
       driver = URI.decode(params["id"])
       commit = params["commit"]
-      repository = params["repository"]? || "drivers"
+      repository = params["repository"]
       uuid = UUID.random.to_s
       meta = {repository: repository, driver: driver, commit: commit}
 
