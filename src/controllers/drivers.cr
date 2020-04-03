@@ -30,12 +30,13 @@ module PlaceOS::Core::Api
       meta = {repository: repository, driver: driver, commit: commit}
 
       logger.tag_info("compiling", **meta)
-      result = PlaceOS::Drivers::Helper.compile_driver(driver, repository, commit, id: uuid)
+      compile_result = PlaceOS::Drivers::Helper.compile_driver(driver, repository, commit, id: uuid)
+      temporary_driver_path = compile_result[:executable]
 
       # check driver compiled
-      if result[:exit_status] != 0
+      if compile_result[:exit_status] != 0
         logger.tag_error("failed to compile", **meta)
-        render :internal_server_error, json: result
+        render :internal_server_error, json: compile_result
       end
 
       executable_path = PlaceOS::Drivers::Helper.driver_binary_path(driver, commit, uuid)
@@ -49,7 +50,6 @@ module PlaceOS::Core::Api
       )
 
       execute_output = io.to_s
-      temporary_driver_path = result[:executable]
 
       # Remove the driver as it was compiled for the lifetime of the query
       File.delete(temporary_driver_path) if File.exists?(temporary_driver_path)
@@ -61,7 +61,6 @@ module PlaceOS::Core::Api
           output:      execute_output,
           driver:      driver,
           version:     commit,
-          executable:  executable_path, # TODO: Remove field
           repository:  repository,
         }
       end
