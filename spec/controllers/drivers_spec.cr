@@ -29,17 +29,17 @@ module PlaceOS::Core
 
     describe "drivers/:id" do
       it "lists commits for a particular driver" do
-        create_resources
+        repo, _, _ = create_resources
         uri = URI.encode_www_form(SPEC_DRIVER)
 
         io = IO::Memory.new
-        path = File.join(namespace, uri)
+        path = File.join(namespace, uri, "?repository=#{repo.folder_name}")
         ctx = context("GET", path, json_headers)
         ctx.route_params = {"id" => uri}
         ctx.response.output = io
         Api::Drivers.new(ctx, :index).show
 
-        expected = PlaceOS::Drivers::Helper.commits(URI.decode(uri), "drivers", 50)
+        expected = PlaceOS::Drivers::Helper.commits(URI.decode(uri), "private_drivers", 50)
         result = Array(PlaceOS::Drivers::GitCommands::Commit).from_json(ctx.response.output.to_s)
         result.should eq expected
       end
