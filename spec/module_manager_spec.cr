@@ -25,8 +25,9 @@ module PlaceOS::Core
       end
 
       mod_id = mod.id.as(String)
+      driver_id = driver.id.as(String)
       driver_commit_hash = PlaceOS::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
-      driver_path = PlaceOS::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit_hash)
+      driver_path = PlaceOS::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit_hash, driver_id)
 
       module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL), logger: LOGGER)
 

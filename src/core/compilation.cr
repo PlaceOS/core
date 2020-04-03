@@ -56,12 +56,13 @@ module PlaceOS
       repository = driver.repository.as(Model::Repository)
       repository_name = repository.folder_name.as(String)
 
-      if !driver.commit_changed? && Drivers::Helper.compiled?(file_name, commit)
+      if !driver.commit_changed? && Drivers::Helper.compiled?(file_name, commit, driver_id)
         logger.tag_info(
           message: "commit unchanged and driver already compiled",
           name: name,
           file_name: file_name,
           commit: commit,
+          driver_id: driver_id,
           repository_name: repository_name,
         )
 
@@ -78,7 +79,7 @@ module PlaceOS
         end
       end
 
-      result = Drivers::Helper.compile_driver(file_name, repository_name)
+      result = Drivers::Helper.compile_driver(file_name, repository_name, id: driver_id)
       success = result[:exit_status] == 0
 
       unless success
@@ -139,6 +140,7 @@ module PlaceOS
     #
     protected def self.reload_modules(driver : Model::Driver, logger)
       module_manager = ModuleManager.instance
+      driver_id = driver.id.as(String)
 
       # Set when a module_manager found for stale driver
       stale_path = driver.modules.reduce(nil) do |path, mod|
@@ -157,7 +159,7 @@ module PlaceOS
             module_id: module_id,
             file_name: driver.file_name,
             commit: driver.commit,
-            driver_id: driver.id,
+            driver_id: driver_id,
           )
           module_manager.load_module(mod)
         end
@@ -167,7 +169,7 @@ module PlaceOS
 
       stale_path || driver.commit_was.try { |commit|
         # Try to create a driver path from what the commit used to be
-        Drivers::Helper.driver_binary_path(driver.file_name.as(String), commit)
+        Drivers::Helper.driver_binary_path(driver.file_name.as(String), commit, driver_id)
       }
     end
 
