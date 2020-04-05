@@ -1,4 +1,5 @@
 require "drivers/helper"
+require "redis"
 
 require "./application"
 
@@ -26,10 +27,19 @@ module PlaceOS::Core::Api
       driver = URI.decode(params["id"])
       commit = params["commit"]
       repository = params["repository"]
-      uuid = UUID.random.to_s
-      meta = {repository: repository, driver: driver, commit: commit}
+      meta = {driver: driver, repository: repository, commit: commit}
+
+      cached = Api::Drivers.cached_details?(driver, repository, commit)
+      unless cached.nil?
+        logger.tag_debug("details cache hit!", **meta)
+
+        response.headers["Content-Type"] = "application/json"
+        render text: cached
+      end
 
       logger.tag_info("compiling", **meta)
+
+      uuid = UUID.random.to_s
       compile_result = PlaceOS::Drivers::Helper.compile_driver(driver, repository, commit, id: uuid)
       temporary_driver_path = compile_result[:executable]
 
@@ -65,8 +75,47 @@ module PlaceOS::Core::Api
         }
       end
 
+      begin
+        # Set the details in redis
+        Api::Drivers.cache_details(driver, repository, commit, execute_output)
+      rescue
+        # No drama if the details aren't cached
+        logger.tag_warn("failed to cache driver details", **meta)
+      end
+
       response.headers["Content-Type"] = "application/json"
       render text: execute_output
+    end
+
+    # Caching
+    ###########################################################################
+
+    @@redis : Redis? = nil
+
+    def self.redis : Redis
+      (@@redis ||= Redis.new(url: ENV["REDIS_URL"]?)).as(Redis)
+    end
+
+    # Do a look up in redis for the details
+    def self.cached_details?(file_name : String, repository : String, commit : String)
+      redis.get(redis_key(file_name, repository, commit))
+    rescue
+      nil
+    end
+
+    # Set the details in redis
+    def self.cache_details(
+      file_name : String,
+      repository : String,
+      commit : String,
+      details : String,
+      ttl : Time::Span = 180.days
+    )
+      redis.set(redis_key(file_name, repository, commit), details, ex: ttl.seconds)
+    end
+
+    def self.redis_key(file_name : String, repository : String, commit : String)
+      "#{file_name}-#{commit}-#{repository}"
     end
   end
 end
