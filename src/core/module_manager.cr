@@ -267,7 +267,7 @@ module PlaceOS
         driver_commit = driver.commit.as(String)
 
         # Check if the module is on the current node
-        unless (driver_path = PlaceOS::Drivers::Compiler.is_built?(driver_file_name, driver_commit, driver_id))
+        unless (driver_path = PlaceOS::Drivers::Compiler.is_built?(driver_file_name, driver_commit, id: driver_id))
           logger.tag_error(
             message: "driver does not exist",
             driver_name: driver_name,
