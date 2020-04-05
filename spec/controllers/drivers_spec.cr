@@ -23,6 +23,8 @@ module PlaceOS::Core
           nil
         end
 
+        ctx.response.status_code.should eq 200
+
         result.should eq [SPEC_DRIVER]
       end
     end
@@ -38,6 +40,8 @@ module PlaceOS::Core
         ctx.route_params = {"id" => uri}
         ctx.response.output = io
         Api::Drivers.new(ctx, :index).show
+
+        ctx.response.status_code.should eq 200
 
         expected = PlaceOS::Drivers::Helper.commits(URI.decode(uri), "private_drivers", 50)
         result = Array(PlaceOS::Drivers::GitCommands::Commit).from_json(ctx.response.output.to_s)

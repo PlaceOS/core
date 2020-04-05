@@ -34,6 +34,8 @@ module PlaceOS::Core
 
         command_controller.execute
 
+        ctx.response.status_code.should eq 200
+
         result = begin
           String.from_json(ctx.response.output.to_s)
         rescue
@@ -103,6 +105,8 @@ module PlaceOS::Core
         ctx = context("POST", route, json_headers, EXEC_PAYLOAD)
         ctx.route_params = {"module_id" => mod_id}
         Api::Command.new(ctx, :execute, module_manager).execute
+
+        ctx.response.status_code.should eq 200
 
         # Wait for a message on the debugger
         message = message_channel.receive

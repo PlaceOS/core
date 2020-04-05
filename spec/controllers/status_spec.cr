@@ -21,6 +21,9 @@ module PlaceOS::Core
         ctx = context("GET", namespace, json_headers)
         ctx.response.output = io
         Api::Status.new(ctx).index
+
+        ctx.response.status_code.should eq 200
+
         status = Core::Client::CoreStatus.from_json(ctx.response.output.to_s)
 
         status.compiled_drivers.should contain binary
