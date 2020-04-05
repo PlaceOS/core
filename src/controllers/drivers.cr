@@ -111,11 +111,11 @@ module PlaceOS::Core::Api
       details : String,
       ttl : Time::Span = 180.days
     )
-      redis.set(redis_key(file_name, repository, commit), details, ex: ttl.seconds)
+      redis.set(redis_key(file_name, repository, commit), details, ex: ttl.to_i)
     end
 
     def self.redis_key(file_name : String, repository : String, commit : String)
-      "#{file_name}-#{commit}-#{repository}"
+      "driver-details\\#{file_name}-#{repository}-#{commit}"
     end
   end
 end
