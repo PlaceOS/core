@@ -11,13 +11,15 @@ require "./resource"
 module PlaceOS
   class Core::Compilation < Core::Resource(Model::Driver)
     private getter? startup : Bool = true
+    private getter module_manager : ModuleManager
 
     def initialize(
       @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = true,
       bin_dir : String = Drivers::Compiler.bin_dir,
       drivers_dir : String = Drivers::Compiler.drivers_dir,
-      repository_dir : String = Drivers::Compiler.repository_dir
+      repository_dir : String = Drivers::Compiler.repository_dir,
+      @module_manager : ModuleManager = ModuleManager.instance
     )
       buffer_size = System.cpu_count.to_i
       Drivers::Compiler.bin_dir = bin_dir
@@ -31,7 +33,7 @@ module PlaceOS
       driver = event[:resource]
       case event[:action]
       when Action::Created, Action::Updated
-        success, output = Compilation.compile_driver(driver, startup?, logger)
+        success, output = Compilation.compile_driver(driver, startup?, module_manager, logger)
         errors << {name: driver.name.as(String), reason: output} unless success
         success ? Result::Success : Result::Error
       when Action::Deleted
@@ -46,6 +48,7 @@ module PlaceOS
     def self.compile_driver(
       driver : Model::Driver,
       startup : Bool = false,
+      module_manager : ModuleManager = ModuleManager.instance,
       logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
     ) : Tuple(Bool, String)
       commit = driver.commit.as(String)
@@ -66,7 +69,7 @@ module PlaceOS
           repository_name: repository_name,
         )
 
-        Compilation.reload_modules(driver, logger)
+        Compilation.reload_modules(driver, module_manager, logger)
         return {true, ""}
       end
 
@@ -90,12 +93,13 @@ module PlaceOS
       logger.tag_info(
         message: "compiled driver",
         name: name,
+        executable: result[:executable],
         repository_name: repository_name,
         output: result[:output]
       )
 
       # (Re)load modules onto the newly compiled driver
-      stale_path = Compilation.reload_modules(driver, logger)
+      stale_path = Compilation.reload_modules(driver, module_manager, logger)
 
       # Remove the stale driver if there was one
       remove_stale_driver(
@@ -105,7 +109,7 @@ module PlaceOS
       )
 
       # Bump the commit on the driver post-compilation and module loading
-      if Compilation.pull?(commit) && (startup || ModuleManager.instance.discovery.own_node?(driver_id))
+      if Compilation.pull?(commit) && (startup || module_manager.discovery.own_node?(driver_id))
         update_driver_commit(driver: driver, commit: result[:version], startup: startup, logger: logger)
       end
 
@@ -138,8 +142,11 @@ module PlaceOS
 
     # Returns the stale driver path
     #
-    protected def self.reload_modules(driver : Model::Driver, logger)
-      module_manager = ModuleManager.instance
+    protected def self.reload_modules(
+      driver : Model::Driver,
+      module_manager : ModuleManager,
+      logger
+    )
       driver_id = driver.id.as(String)
 
       # Set when a module_manager found for stale driver

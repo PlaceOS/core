@@ -118,7 +118,7 @@ def setup(fresh : Bool = false)
     driver = PlaceOS::Model::Driver.new(
       name: driver_name,
       role: driver_role,
-      commit: "4be0571",
+      commit: driver_commit,
       module_name: driver_module_name,
       file_name: driver_file_name,
     )

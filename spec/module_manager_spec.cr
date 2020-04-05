@@ -5,9 +5,13 @@ module PlaceOS::Core
     it "load_module" do
       _, repo, driver, mod = setup
 
-      # Clone, compile, etcd
+      module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL), logger: LOGGER)
+
       cloning = Cloning.new(testing: true, logger: LOGGER)
-      resource_manager = ResourceManager.new(cloning: cloning, logger: LOGGER)
+      compilation = Compilation.new(startup: true, module_manager: module_manager, logger: LOGGER)
+
+      # Clone, compile, etcd
+      resource_manager = ResourceManager.new(cloning: cloning, compilation: compilation, logger: LOGGER)
       resource_manager.start { }
 
       repo_folder = repo.folder_name.as(String)
@@ -28,8 +32,6 @@ module PlaceOS::Core
       driver_id = driver.id.as(String)
       driver_commit_hash = PlaceOS::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
       driver_path = PlaceOS::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit_hash, driver_id)
-
-      module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL), logger: LOGGER)
 
       module_manager.load_module(mod)
       module_manager.running_modules.should eq 1

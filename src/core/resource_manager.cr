@@ -45,8 +45,8 @@ module PlaceOS::Core
 
     def start
       return if started?
-
       @started = true
+
       logger.info("cloning Repositories")
       cloning.start
 

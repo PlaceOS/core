@@ -9,16 +9,18 @@ require "../module_manager"
 module PlaceOS::Core
   class Mappings::ControlSystemModules < Resource(Model::ControlSystem)
     private getter? startup : Bool = true
+    private getter module_manager : ModuleManager
 
     def initialize(
       @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
-      @startup : Bool = true
+      @startup : Bool = true,
+      @module_manager : ModuleManager = ModuleManager.instance
     )
       super(@logger)
     end
 
     def process_resource(event) : Resource::Result
-      ControlSystemModules.update_mapping(event[:resource], startup?, logger)
+      ControlSystemModules.update_mapping(event[:resource], startup?, module_manager, logger)
     rescue e
       message = e.try(&.message) || ""
       logger.tag_error("while updating mapping for system", error: message)
@@ -31,16 +33,20 @@ module PlaceOS::Core
     def self.update_mapping(
       system : Model::ControlSystem,
       startup : Bool = false,
+      module_manager : ModuleManager = ModuleManager.instance,
       logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
     ) : Resource::Result
       destroyed = system.destroyed?
-      relevant_node = startup || ModuleManager.instance.discovery.own_node?(system.id.as(String))
-      # Always load mappings during startup
-      needs_update = startup || destroyed || system.modules_changed?
+      relevant_node = startup || module_manager.discovery.own_node?(system.id.as(String))
+
+      #              Always load mappings during startup
+      #              |          Remove mappings
+      #              |          |            Initial mappings     Modules have changed
+      needs_update = startup || destroyed || !system.changed? || system.modules_changed?
 
       return Resource::Result::Skipped unless relevant_node && needs_update
 
-      set_mappings(system)
+      set_mappings(system, nil, logger)
       logger.tag_info("#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system.id)
 
       Resource::Result::Success
@@ -51,7 +57,8 @@ module PlaceOS::Core
     # Pass module_id and updated_name to overrride a lookup
     def self.set_mappings(
       control_system : Model::ControlSystem,
-      mod : Model::Module? = nil
+      mod : Model::Module?,
+      logger
     )
       system_id = control_system.id.as(String)
       storage = Driver::Storage.new(system_id, "system")
@@ -60,7 +67,14 @@ module PlaceOS::Core
       storage.clear
 
       # No mappings to set if ControlSystem has been destroyed
-      return if control_system.destroyed?
+      if control_system.destroyed?
+        logger.tag_info(
+          message: "module mappings deleted",
+          system_id: control_system.id,
+          modules: control_system.modules
+        )
+        return
+      end
 
       module_ids = control_system.modules.as(Array(String))
 
@@ -71,12 +85,19 @@ module PlaceOS::Core
       end
 
       # Index the modules
-      grouped_modules.each do |name, ids|
+      mappings = grouped_modules.each_with_object({} of String => String) do |(name, ids), mapping|
         # Indexes start from 1
         ids.each_with_index(offset: 1) do |id, index|
-          storage["#{name}/#{index}"] = id
+          mapping["#{name}/#{index}"] = id
         end
       end
+
+      # Set the mappings in redis
+      mappings.each do |mapping, module_id|
+        storage[mapping] = module_id
+      end
+
+      logger.tag_info("module mappings set", system_id: control_system.id, mappings: mappings)
 
       # Notify subscribers of a system module ordering change
       Driver::Storage.redis_pool.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)
