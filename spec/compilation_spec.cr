@@ -9,7 +9,7 @@ module PlaceOS::Core
       # Set up a temporary directory
       _, repository, driver, _ = setup
 
-      repository_name = repository.name.as(String)
+      repository_name = repository.folder_name.as(String)
       repository_uri = repository.uri.as(String)
       driver_file = driver.file_name.as(String)
 
