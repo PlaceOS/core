@@ -97,7 +97,7 @@ abstract class PlaceOS::Core::Resource(T)
         resource: change[:value],
       }
 
-      logger.tag_debug("resource event", action: event[:action], id: event[:resource].id)
+      logger.tag_debug("resource event", type: T.name, action: event[:action], id: event[:resource].id)
       event_channel.send(event)
     end
   rescue e
