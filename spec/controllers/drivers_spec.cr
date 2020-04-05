@@ -43,7 +43,7 @@ module PlaceOS::Core
 
         ctx.response.status_code.should eq 200
 
-        expected = PlaceOS::Drivers::Helper.commits(URI.decode(uri), "private_drivers", 50)
+        expected = PlaceOS::Drivers::Helper.commits(URI.decode(uri), repo.folder_name, 50)
         result = Array(PlaceOS::Drivers::GitCommands::Commit).from_json(ctx.response.output.to_s)
         result.should eq expected
       end
