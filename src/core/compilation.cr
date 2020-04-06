@@ -82,7 +82,7 @@ module PlaceOS
         end
       end
 
-      result = Drivers::Helper.compile_driver(file_name, repository_name, id: driver_id)
+      result = Drivers::Helper.compile_driver(file_name, repository_name, commit, id: driver_id)
       success = result[:exit_status] == 0
 
       unless success
@@ -148,13 +148,15 @@ module PlaceOS
       logger
     )
       driver_id = driver.id.as(String)
-
       # Set when a module_manager found for stale driver
       stale_path = driver.modules.reduce(nil) do |path, mod|
         module_id = mod.id.as(String)
 
         # Grab the stale driver path, if there is one
         path = module_manager.path_for?(module_id) unless path
+
+        # Save a lookup
+        mod.driver = driver
 
         # Remove the module running on the stale driver
         module_manager.remove_module(mod)
