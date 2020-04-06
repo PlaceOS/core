@@ -44,6 +44,7 @@ module PlaceOS
       raise Resource::ProcessingError.new(event[:resource].name, "#{e} #{e.message}")
     end
 
+    # ameba:disable Metrics/CyclomaticComplexity
     def self.compile_driver(
       driver : Model::Driver,
       startup : Bool = false,
@@ -58,19 +59,24 @@ module PlaceOS
       repository = driver.repository.as(Model::Repository)
       repository_name = repository.folder_name.as(String)
 
-      if !driver.commit_changed? && Drivers::Helper.compiled?(file_name, commit, driver_id)
-        logger.tag_info(
-          message: "commit unchanged and driver already compiled",
-          name: name,
-          file_name: file_name,
-          commit: commit,
-          driver_id: driver_id,
-          repository_name: repository_name,
-        )
+      force_recompile = driver.recompile_commit?
+      commit = force_recompile unless force_recompile.nil?
 
+      meta = {
+        driver_id:       driver_id,
+        name:            name,
+        file_name:       file_name,
+        repository_name: repository_name,
+        commit:          commit,
+      }
+
+      if !force_recompile && !driver.commit_changed? && Drivers::Helper.compiled?(file_name, commit, driver_id)
+        logger.tag_info("commit unchanged and driver already compiled", **meta)
         Compilation.reload_modules(driver, module_manager, logger)
         return {true, ""}
       end
+
+      logger.tag_info("force recompiling driver", **meta) if force_recompile
 
       # If the commit is `head` then the driver must be recompiled at the latest version
       if Compilation.pull?(commit)
@@ -108,7 +114,7 @@ module PlaceOS
       )
 
       # Bump the commit on the driver post-compilation and module loading
-      if Compilation.pull?(commit) && (startup || module_manager.discovery.own_node?(driver_id))
+      if (Compilation.pull?(commit) || force_recompile) && (startup || module_manager.discovery.own_node?(driver_id))
         update_driver_commit(driver: driver, commit: result[:version], startup: startup, logger: logger)
       end
 
