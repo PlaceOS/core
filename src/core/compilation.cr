@@ -34,15 +34,14 @@ module PlaceOS
       case event[:action]
       when Action::Created, Action::Updated
         success, output = Compilation.compile_driver(driver, startup?, module_manager, logger)
-        errors << {name: driver.name.as(String), reason: output} unless success
-        success ? Result::Success : Result::Error
+        raise Resource::ProcessingError.new(driver.name, output) unless success
+        Result::Success
       when Action::Deleted
         Result::Skipped
       end.as(Result)
     rescue e
       # Add compilation errors
-      errors << {name: event[:resource].name.as(String), reason: e.try &.message || ""}
-      Result::Error
+      raise Resource::ProcessingError.new(event[:resource].name, "#{e} #{e.message}")
     end
 
     def self.compile_driver(
@@ -103,8 +102,8 @@ module PlaceOS
 
       # Remove the stale driver if there was one
       remove_stale_driver(
-        path: stale_path,
         driver_id: driver_id,
+        path: stale_path,
         logger: logger
       )
 
@@ -120,20 +119,20 @@ module PlaceOS
     #
     def self.remove_stale_driver(path : String?, driver_id : String, logger)
       return unless path
-      logger.tag_info("removing stale driver binary", path: path, driver_id: driver_id)
+      logger.tag_info("removing stale driver binary", driver_id: driver_id, path: path)
       File.delete(path) if File.exists?(path)
     rescue
-      logger.tag_error("failed to remove stale driver binary", path: path, driver_id: driver_id)
+      logger.tag_error("failed to remove stale driver binary", driver_id: driver_id, path: path)
     end
 
     def self.update_driver_commit(driver : Model::Driver, commit : String, startup : Bool, logger)
       if startup
         # There's a potential for multiple writers on startup, However this is an eventually consistent operation.
-        logger.tag_warn("updating commit on driver during startup", name: driver.name, id: driver.id, commit: commit)
+        logger.tag_warn("updating commit on driver during startup", id: driver.id, name: driver.name, commit: commit)
       end
 
       driver.update_fields(commit: commit)
-      logger.tag_info("updated commit on driver", name: driver.name, id: driver.id, commit: commit)
+      logger.tag_info("updated commit on driver", id: driver.id, name: driver.name, commit: commit)
     end
 
     protected def self.pull?(commit : String?)
@@ -166,9 +165,9 @@ module PlaceOS
           logger.tag_debug(
             message: "loading module after compilation",
             module_id: module_id,
+            driver_id: driver_id,
             file_name: driver.file_name,
             commit: driver.commit,
-            driver_id: driver_id,
           )
           module_manager.load_module(mod)
         end

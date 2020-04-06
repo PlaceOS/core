@@ -25,12 +25,9 @@ module PlaceOS::Core
         Resource::Result::Skipped
       end
     rescue e
-      message = e.try(&.message) || ""
       mod = event[:resource]
-      logger.tag_error("while updating mapping for module", name: mod.name, custom_name: mod.custom_name, error: message)
-      errors << {name: mod.name.as(String), reason: message}
-
-      Resource::Result::Error
+      logger.tag_error("while updating mapping for module", name: mod.name, custom_name: mod.custom_name, error: e.message)
+      raise Resource::ProcessingError.new(mod.name, "#{e} #{e.message}")
     end
 
     def self.update_module_mapping(

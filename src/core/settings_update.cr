@@ -27,9 +27,7 @@ module PlaceOS
       model = event[:resource]
       name = "Setting<#{model.id}> for #{model.parent_type}<#{model.parent_id}>"
       # Add update errors
-      errors << {name: name, reason: e.try &.message || ""}
-
-      Result::Error
+      raise Resource::ProcessingError.new(name, "#{e} #{e.message}")
     end
 
     def self.update_modules(
