@@ -22,11 +22,8 @@ module PlaceOS::Core
     def process_resource(event) : Resource::Result
       ControlSystemModules.update_mapping(event[:resource], startup?, module_manager, logger)
     rescue e
-      message = e.try(&.message) || ""
-      logger.tag_error("while updating mapping for system", error: message)
-      errors << {name: event[:resource].name.as(String), reason: message}
-
-      Resource::Result::Error
+      logger.tag_error("while updating mapping for system", error: e.message)
+      raise Resource::ProcessingError.new(event[:resource].name, "#{e} #{e.message}")
     end
 
     # Update the mappingg for a ControlSystem

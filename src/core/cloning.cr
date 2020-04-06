@@ -46,9 +46,7 @@ module PlaceOS
       end.as(Result)
     rescue e
       # Add cloning errors
-      errors << {name: event[:resource].name.as(String), reason: "#{e} #{e.message}"}
-
-      Result::Error
+      raise Resource::ProcessingError.new(event[:resource].name, "#{e} #{e.message}")
     end
 
     def self.clone_and_install(

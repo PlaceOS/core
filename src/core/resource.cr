@@ -12,6 +12,18 @@ abstract class PlaceOS::Core::Resource(T)
   alias Error = NamedTuple(name: String, reason: String)
   alias Action = RethinkORM::Changefeed::Event
 
+  class ProcessingError < Exception
+    getter name
+
+    def initialize(@name : String?, @message : String?)
+      super(@message)
+    end
+
+    def to_error
+      {name: name || "", reason: message || ""}
+    end
+  end
+
   # TODO: Add when crystal supports generic aliasing
   # alias Event(T) = NamedTuple(resource: T, action: Action)
 
@@ -23,9 +35,11 @@ abstract class PlaceOS::Core::Resource(T)
   end
 
   # Errors generated while processing resources
-  # NOTE: rw lock?
   getter errors : Array(Error) = [] of Error
 
+  # NOTE: rw lock?
+  # TODO: move away from error array, just throw the error in process resource
+  #       that way it can catch the error and log it. this is currently a memory leak
   private getter channel_buffer_size
   private getter processed_buffer_size
 
@@ -49,8 +63,8 @@ abstract class PlaceOS::Core::Resource(T)
   end
 
   def start : self
-    errors.clear
     processed.clear
+    errors.clear
     @event_channel = Channel(NamedTuple(resource: T, action: Action)).new(channel_buffer_size) if event_channel.closed?
 
     # Listen for changes on the resource table
@@ -125,19 +139,23 @@ abstract class PlaceOS::Core::Resource(T)
   #
   private def _process_event(event : NamedTuple(resource: T, action: Action))
     meta = {
-      type:    T.name,
       id:      event[:resource].id,
+      type:    T.name,
       handler: self.class.name,
     }
 
     logger.tag_debug("processing resource event", **meta)
-    case process_resource(event)
-    when Result::Success
-      processed.push(event)
-      processed.shift if processed.size > @processed_buffer_size
-      logger.tag_info("processed resource event", **meta)
-    when Result::Error   then logger.tag_warn("processing failed", **meta)
-    when Result::Skipped then logger.tag_info("processing skipped", **meta)
+    begin
+      case process_resource(event)
+      when Result::Success
+        processed.push(event)
+        processed.shift if processed.size > @processed_buffer_size
+        logger.tag_info("processed resource event", **meta)
+      when Result::Skipped then logger.tag_info("processing skipped", **meta)
+      end
+    rescue e : ProcessingError
+      logger.tag_warn("processing #{e.name} failed: #{e.message}", **meta)
+      errors << e.to_error
     end
   rescue e
     logger.tag_error("while processing resource event", resource: event[:resource].inspect, error: e.inspect_with_backtrace)
