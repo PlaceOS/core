@@ -38,7 +38,7 @@ shards:
 
   db:
     github: crystal-lang/crystal-db
-    version: 0.8.0
+    version: 0.9.0
 
   debug:
     github: Sija/debug.cr
@@ -50,15 +50,15 @@ shards:
 
   driver:
     github: placeos/driver
-    commit: b91938e148c53fcfb22a14991ed7c7c3bfdd4660
+    commit: d02fde5cddbe1d1a9ed388d84d84c0c858e57d98
 
   drivers:
     github: placeos/drivers
-    commit: 6718d6f4796dd4b16c7e0b1ef99f96302627bc8a
+    commit: 99f530e7de8cf9b29b566c26f1e6c1626bc71409
 
   etcd:
     github: aca-labs/crystal-etcd
-    version: 0.3.1
+    version: 0.3.2
 
   exec_from:
     github: aca-labs/exec_from
@@ -147,6 +147,10 @@ shards:
   rwlock:
     github: spider-gazelle/readers-writer
     version: 1.0.5
+
+  simple_retry:
+    github: spider-gazelle/simple_retry
+    version: 1.0.0
 
   ssh2:
     github: spider-gazelle/ssh2.cr
