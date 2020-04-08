@@ -50,11 +50,11 @@ shards:
 
   driver:
     github: placeos/driver
-    commit: d02fde5cddbe1d1a9ed388d84d84c0c858e57d98
+    commit: 18fc77609af13809ad8887d5680af8aa51a3717c
 
   drivers:
     github: placeos/drivers
-    commit: 99f530e7de8cf9b29b566c26f1e6c1626bc71409
+    commit: d15d9b2660351a0917dccac955aa06ff04ac5bb5
 
   etcd:
     github: aca-labs/crystal-etcd
@@ -150,7 +150,7 @@ shards:
 
   simple_retry:
     github: spider-gazelle/simple_retry
-    version: 1.0.0
+    version: 1.1.0
 
   ssh2:
     github: spider-gazelle/ssh2.cr
