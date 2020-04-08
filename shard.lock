@@ -134,15 +134,11 @@ shards:
 
   rethinkdb:
     github: aca-labs/crystal-rethinkdb
-    version: 0.2.4
+    version: 0.2.5
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
     commit: b7968cf242a4973930ad57042c98b356f82a2bb0
-
-  retriable:
-    github: sija/retriable.cr
-    version: 0.2.0
 
   rwlock:
     github: spider-gazelle/readers-writer
