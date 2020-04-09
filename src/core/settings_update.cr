@@ -41,7 +41,7 @@ module PlaceOS
         if module_manager.proc_manager_by_module?(mod.id.as(String)) && mod.running
           # Start with updates if the module is running
           module_manager.start_module(mod)
-          logger.tag_info("#{mod.running_was == false ? "started" : "updated" } module with new settings", module_id: mod.id, settings_id: settings.id)
+          logger.tag_info("#{mod.running_was == false ? "started" : "updated"} module with new settings", module_id: mod.id, settings_id: settings.id)
         end
       end
 

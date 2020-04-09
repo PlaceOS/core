@@ -18,7 +18,7 @@ shards:
 
   bindata:
     github: spider-gazelle/bindata
-    version: 1.2.0
+    version: 1.2.2
 
   bisect:
     github: spider-gazelle/bisect
