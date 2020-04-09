@@ -11,7 +11,7 @@ dependencies:
 
   clustering:
     github: aca-labs/clustering
-    version: ~> 0.3.1
+    version: ~> 0.3
 
   driver:
     github: placeos/driver
@@ -27,7 +27,7 @@ dependencies:
 
   etcd:
     github: aca-labs/crystal-etcd
-    branch: master
+    version: ~> 0.4
 
   hardware:
     github: crystal-community/hardware
@@ -36,7 +36,8 @@ dependencies:
     github: luckyframework/habitat
 
   hound-dog:
-    github: aca-labs/hound-dog
+    github: place-labs/hound-dog
+    version: ~> 2.0
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm

@@ -1,7 +1,7 @@
-require "models/module"
 require "models/control_system"
-require "models/settings"
 require "models/driver"
+require "models/module"
+require "models/settings"
 
 require "action-controller"
 require "clustering"
@@ -11,6 +11,7 @@ require "drivers/helper"
 require "habitat"
 require "hound-dog"
 require "mutex"
+require "redis"
 require "rethinkdb-orm/utils/changefeed"
 
 module PlaceOS
@@ -32,6 +33,17 @@ module PlaceOS
 
     delegate stop, to: clustering
 
+    # Redis channel that cluster leader publishes stable cluster versions to
+    REDIS_VERSION_CHANNEL = "cluster/cluster_version"
+
+    @redis : Redis?
+
+    # Lazy getter for redis
+    #
+    def redis
+      @redis ||= Redis.new(url: ENV["REDIS_URL"]?)
+    end
+
     # From environment
     @@instance : ModuleManager?
 
@@ -52,7 +64,8 @@ module PlaceOS
       uri : String | URI,
       logger : TaggedLogger? = nil,
       discovery : HoundDog::Discovery? = nil,
-      clustering : Clustering? = nil
+      clustering : Clustering? = nil,
+      @redis : Redis? = nil,
     )
       @uri = uri.is_a?(URI) ? uri : URI.parse(uri)
       ModuleManager.uri = @uri
@@ -110,7 +123,10 @@ module PlaceOS
 
     def start
       # Start clustering process
-      clustering.start { |nodes| stabilize(nodes) }
+      clustering.start(on_stable: ->publish_version(String)) do |nodes|
+        stabilize(nodes)
+      end
+
       # Listen for incoming module changes
       spawn(same_thread: true) { watch_modules }
 
@@ -178,6 +194,14 @@ module PlaceOS
       Model::Module.all.each do |m|
         load_module(m, rendezvous_hash)
       end
+    end
+
+    # Publish cluster version to redis
+    #
+    def publish_version(cluster_version : String)
+      redis.publish(REDIS_VERSION_CHANNEL, cluster_version)
+
+      nil
     end
 
     # Used in `on_exec` for locating the remote module

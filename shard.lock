@@ -10,7 +10,7 @@ shards:
 
   active-model:
     github: spider-gazelle/active-model
-    commit: cfb070793fd53cc20c799761aa5fe8b195e75739
+    version: 1.8.2
 
   ameba:
     github: crystal-ameba/ameba
@@ -26,7 +26,7 @@ shards:
 
   clustering:
     github: aca-labs/clustering
-    version: 0.3.2
+    version: 0.3.3
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -50,7 +50,7 @@ shards:
 
   driver:
     github: placeos/driver
-    commit: 18fc77609af13809ad8887d5680af8aa51a3717c
+    commit: a4e12945ec1c2e30b74a6baf7e4302be5b16a602
 
   drivers:
     github: placeos/drivers
@@ -58,11 +58,11 @@ shards:
 
   etcd:
     github: aca-labs/crystal-etcd
-    version: 0.3.2
+    version: 0.4.0
 
   exec_from:
     github: aca-labs/exec_from
-    commit: 5f92f207a61448c5875ad42010f8c260a3b95d61
+    commit: a7118c27d21183d93c7095a0bcd3e616b86dc82a
 
   faker:
     github: askn/faker
@@ -77,8 +77,8 @@ shards:
     version: 0.5.0
 
   hound-dog:
-    github: aca-labs/hound-dog
-    version: 2.0.2
+    github: place-labs/hound-dog
+    version: 2.1.0
 
   ipaddress:
     github: Sija/ipaddress.cr
@@ -94,7 +94,7 @@ shards:
 
   models:
     github: placeos/models
-    commit: 508da438ad509e3e2563bd3a418810f432bde6ab
+    commit: 190e3abb53f9df82eaff81e877bae6677c48e2c2
 
   murmur3:
     github: aca-labs/murmur3
@@ -126,7 +126,7 @@ shards:
 
   redis:
     github: stefanwille/crystal-redis
-    version: 2.5.3
+    version: 2.6.0
 
   rendezvous-hash:
     github: caspiano/rendezvous-hash
@@ -138,7 +138,7 @@ shards:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: b7968cf242a4973930ad57042c98b356f82a2bb0
+    version: 2.7.3
 
   rwlock:
     github: spider-gazelle/readers-writer
@@ -150,7 +150,7 @@ shards:
 
   ssh2:
     github: spider-gazelle/ssh2.cr
-    version: 1.2.4
+    version: 1.2.6
 
   tasker:
     github: spider-gazelle/tasker
@@ -158,7 +158,7 @@ shards:
 
   telnet:
     github: spider-gazelle/telnet.cr
-    version: 1.0.0
+    version: 1.0.1
 
   tokenizer:
     github: spider-gazelle/tokenizer
