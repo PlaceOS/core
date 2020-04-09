@@ -11,7 +11,7 @@ dependencies:
 
   clustering:
     github: aca-labs/clustering
-    version: ~> 0.3.1
+    branch: master
 
   driver:
     github: placeos/driver
