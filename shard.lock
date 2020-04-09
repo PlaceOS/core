@@ -10,7 +10,7 @@ shards:
 
   active-model:
     github: spider-gazelle/active-model
-    commit: cfb070793fd53cc20c799761aa5fe8b195e75739
+    version: 1.8.2
 
   ameba:
     github: crystal-ameba/ameba
@@ -50,7 +50,7 @@ shards:
 
   driver:
     github: placeos/driver
-    commit: 18fc77609af13809ad8887d5680af8aa51a3717c
+    commit: 13e8912e31ee4de493b95b122fa7d62255ff7a26
 
   drivers:
     github: placeos/drivers
@@ -58,7 +58,7 @@ shards:
 
   etcd:
     github: aca-labs/crystal-etcd
-    version: 0.3.2
+    version: 0.3.3
 
   exec_from:
     github: aca-labs/exec_from
@@ -94,7 +94,7 @@ shards:
 
   models:
     github: placeos/models
-    commit: 508da438ad509e3e2563bd3a418810f432bde6ab
+    commit: 190e3abb53f9df82eaff81e877bae6677c48e2c2
 
   murmur3:
     github: aca-labs/murmur3
@@ -134,15 +134,11 @@ shards:
 
   rethinkdb:
     github: aca-labs/crystal-rethinkdb
-    version: 0.2.4
+    version: 0.2.5
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: b7968cf242a4973930ad57042c98b356f82a2bb0
-
-  retriable:
-    github: sija/retriable.cr
-    version: 0.2.0
+    commit: 8dd9f806cba15f559d6e4803553126e8013ca969
 
   rwlock:
     github: spider-gazelle/readers-writer
