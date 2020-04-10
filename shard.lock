@@ -25,8 +25,8 @@ shards:
     version: 1.2.0
 
   clustering:
-    github: aca-labs/clustering
-    version: 0.3.2
+    github: place-labs/clustering
+    version: 1.0.2
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -50,19 +50,19 @@ shards:
 
   driver:
     github: placeos/driver
-    commit: 13e8912e31ee4de493b95b122fa7d62255ff7a26
+    version: 1.2.0
 
   drivers:
     github: placeos/drivers
-    commit: d15d9b2660351a0917dccac955aa06ff04ac5bb5
+    version: 1.1.0
 
   etcd:
-    github: aca-labs/crystal-etcd
-    version: 0.3.3
+    github: place-labs/crystal-etcd
+    version: 1.0.0
 
   exec_from:
-    github: aca-labs/exec_from
-    commit: 5f92f207a61448c5875ad42010f8c260a3b95d61
+    github: place-labs/exec_from
+    version: 1.2.0
 
   faker:
     github: askn/faker
@@ -77,8 +77,8 @@ shards:
     version: 0.5.0
 
   hound-dog:
-    github: aca-labs/hound-dog
-    version: 2.0.2
+    github: place-labs/hound-dog
+    version: 2.2.1
 
   ipaddress:
     github: Sija/ipaddress.cr
@@ -94,7 +94,7 @@ shards:
 
   models:
     github: placeos/models
-    commit: 190e3abb53f9df82eaff81e877bae6677c48e2c2
+    version: 1.0.0
 
   murmur3:
     github: aca-labs/murmur3
@@ -102,7 +102,7 @@ shards:
 
   neuroplastic:
     github: spider-gazelle/neuroplastic
-    version: 1.3.6
+    version: 1.4.0
 
   openssl_ext:
     github: stakach/openssl_ext
@@ -126,19 +126,19 @@ shards:
 
   redis:
     github: stefanwille/crystal-redis
-    version: 2.5.3
+    version: 2.6.0
 
   rendezvous-hash:
     github: caspiano/rendezvous-hash
     version: 0.3.1
 
   rethinkdb:
-    github: aca-labs/crystal-rethinkdb
-    version: 0.2.5
+    github: place-labs/crystal-rethinkdb
+    version: 1.0.0
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    commit: 8dd9f806cba15f559d6e4803553126e8013ca969
+    version: 2.8.0
 
   rwlock:
     github: spider-gazelle/readers-writer
@@ -150,7 +150,7 @@ shards:
 
   ssh2:
     github: spider-gazelle/ssh2.cr
-    version: 1.2.4
+    version: 1.2.6
 
   tasker:
     github: spider-gazelle/tasker
@@ -158,13 +158,13 @@ shards:
 
   telnet:
     github: spider-gazelle/telnet.cr
-    version: 1.0.0
+    version: 1.0.1
 
   tokenizer:
     github: spider-gazelle/tokenizer
     version: 1.1.0
 
   ulid:
-    github: aca-labs/ulid
+    github: place-labs/ulid
     version: 0.1.2
 
