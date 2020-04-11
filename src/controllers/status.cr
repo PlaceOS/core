@@ -104,6 +104,19 @@ module PlaceOS::Core::Api
       render json: module_manager.loaded_modules
     end
 
+    # Loads if not already loaded
+    # If the module is already running, it will be updated to latest settings.
+    post "/load/:id" do
+      module_id = params["id"]
+
+      mod = Model::Module.find(module_id)
+      head :not_found if mod.nil?
+
+      module_manager.load_module(mod)
+
+      head :ok
+    end
+
     # Overriding initializers for dependency injection
     ###########################################################################
 
