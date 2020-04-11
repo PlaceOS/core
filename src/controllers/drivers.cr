@@ -22,6 +22,15 @@ module PlaceOS::Core::Api
       render json: PlaceOS::Drivers::Helper.commits(driver, repository, count)
     end
 
+    # Boolean check whether driver is compiled
+    get "/:id/compiled" do
+      driver_file = URI.decode(params["id"])
+      commit = params["commit"]
+      tag = params["tag"]
+
+      render json: Drivers::Helper.compiled?(driver_file, commit, tag)
+    end
+
     # Returns the details of a driver
     get "/:id/details" do
       driver = URI.decode(params["id"])

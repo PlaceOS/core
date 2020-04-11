@@ -52,7 +52,8 @@ module PlaceOS
       uri : String | URI,
       logger : TaggedLogger? = nil,
       discovery : HoundDog::Discovery? = nil,
-      clustering : Clustering? = nil
+      clustering : Clustering? = nil,
+      @redis : Redis? = nil
     )
       @uri = uri.is_a?(URI) ? uri : URI.parse(uri)
       ModuleManager.uri = @uri
