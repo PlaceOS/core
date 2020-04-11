@@ -9,6 +9,17 @@ module PlaceOS::Core::Api
       @module_manager || ModuleManager.instance
     end
 
+    # Loads if not already loaded
+    # If the module is already running, it will be updated to latest settings.
+    post "/:module_id/load", :load do
+      mod = Model::Module.find(params["module_id"])
+      head :not_found if mod.nil?
+
+      module_manager.load_module(mod)
+
+      head :ok
+    end
+
     # Executes a command against a module
     post "/:module_id/execute", :execute do
       module_id = params["module_id"]

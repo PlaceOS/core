@@ -28,7 +28,7 @@ module PlaceOS::Core::Api
       commit = params["commit"]
       tag = params["tag"]
 
-      render json: Drivers::Helper.compiled?(driver_file, commit, tag)
+      render json: PlaceOS::Drivers::Helper.compiled?(driver_file, commit, tag)
     end
 
     # Returns the details of a driver
