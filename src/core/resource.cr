@@ -142,6 +142,7 @@ abstract class PlaceOS::Core::Resource(T)
       id:      event[:resource].id,
       type:    T.name,
       handler: self.class.name,
+      action:  event[:action],
     }
 
     logger.tag_debug("processing resource event", **meta)

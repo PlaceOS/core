@@ -1,6 +1,7 @@
 require "action-controller/logger"
 require "drivers/compiler"
 require "drivers/git_commands"
+require "file_utils"
 require "models"
 
 require "./module_manager"
@@ -130,7 +131,7 @@ module PlaceOS
 
       if Dir.exists?(repository_dir)
         begin
-          Cloning.rmdir_r(repository_dir)
+          FileUtils.rm_rf(repository_dir)
           Result::Success
         rescue
           Result::Error
@@ -138,18 +139,6 @@ module PlaceOS
       else
         Result::Skipped
       end
-    end
-
-    def self.rmdir_r(directory)
-      Dir.each_child(directory) do |f|
-        path = File.join(directory, f)
-        if File.directory?(path)
-          rmdir_r(path)
-        else
-          File.delete(path)
-        end
-      end
-      Dir.rmdir(directory)
     end
 
     def start
