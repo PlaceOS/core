@@ -23,7 +23,7 @@ module PlaceOS::Core::Api
     end
 
     # Boolean check whether driver is compiled
-    get "/:id/compiled" do
+    get "/:id/compiled", :compiled do
       driver_file = URI.decode(params["id"])
       commit = params["commit"]
       tag = params["tag"]
@@ -32,7 +32,7 @@ module PlaceOS::Core::Api
     end
 
     # Returns the details of a driver
-    get "/:id/details" do
+    get "/:id/details", :details do
       driver = URI.decode(params["id"])
       commit = params["commit"]
       repository = params["repository"]
