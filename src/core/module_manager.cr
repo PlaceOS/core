@@ -127,6 +127,10 @@ module PlaceOS
         stabilize(nodes)
       end
 
+      Model::Module.all.each do |mod|
+        load_module(mod)
+      end
+
       # Listen for incoming module changes
       spawn(same_thread: true) { watch_modules }
 
