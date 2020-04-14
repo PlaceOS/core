@@ -75,16 +75,31 @@ module PlaceOS::Core
     end
 
     # Returns the metadata for a particular driver
-    def driver_details(driver_id : String, commit : String, repository : String? = nil) : String
-      params = HTTP::Params.new
-      params["commit"] = commit
-      params["repository"] = repository if repository
+    def driver_details(file_name : String, commit : String, repository : String) : String
+      params = HTTP::Params{
+        "commit"     => commit,
+        "repository" => repository,
+      }
 
-      response = get("/drivers/#{URI.encode_www_form(driver_id)}/details?#{params}")
+      response = get("/drivers/#{URI.encode_www_form(file_name)}/details?#{params}")
 
       # Response looks like:
       # https://github.com/placeos/driver/blob/master/docs/command_line_options.md#discovery-and-defaults
       response.body
+    end
+
+    def driver_compiled?(file_name : String, commit : String, repository : String, tag : String)
+      params = HTTP::Params{
+        "commit"     => commit,
+        "repository" => repository,
+        "tag"        => tag,
+      }
+
+      response = get("/drivers/#{URI.encode_www_form(file_name)}/compiled?#{params}")
+
+      # Response looks like:
+      # https://github.com/placeos/driver/blob/master/docs/command_line_options.md#discovery-and-defaults
+      Bool.from_json(response.body)
     end
 
     # Command
@@ -115,6 +130,10 @@ module PlaceOS::Core
 
       socket.on_message(&block)
       socket.run
+    end
+
+    def load(module_id : String)
+      post("/command/#{module_id}/load").success?
     end
 
     # Status
