@@ -155,6 +155,12 @@ module PlaceOS::Core
       post("/command/#{module_id}/load").success?
     end
 
+    # Returns the loaded modules on the node
+    def loaded
+      response = get("/status/loaded")
+      Hash(String, Array(String)).from_json(response.body)
+    end
+
     # Status
     ###########################################################################
 
