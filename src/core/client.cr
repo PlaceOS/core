@@ -197,21 +197,23 @@ module PlaceOS::Core
     end
 
     struct DriverStatus < BaseResponse
-      getter running : Bool
-      getter module_instances : Int32
-      getter last_exit_code : Int32
-      getter launch_count : Int32
-      getter launch_time : Int64
+      getter running : Bool = false
+      getter module_instances : Int32 = -1
+      getter last_exit_code : Int32 = -1
+      getter launch_count : Int32 = -1
+      getter launch_time : Int64 = -1
 
-      getter percentage_cpu : Float64?
-      getter memory_total : Int64?
-      getter memory_usage : Int64?
+      getter percentage_cpu : Float64? = nil
+      getter memory_total : Int64? = nil
+      getter memory_usage : Int64? = nil
     end
 
     # Driver status
     def driver_status(path : String) : DriverStatus
-      response = get("/driver?path=#{path}")
+      response = get("/status/driver?path=#{path}")
       DriverStatus.from_json(response.body)
+    rescue e : Core::ClientError
+      DriverStatus.new
     end
 
     # Chaos
