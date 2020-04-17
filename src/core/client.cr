@@ -1,5 +1,6 @@
 require "http"
 require "json"
+require "mutex"
 require "uri"
 
 require "./error"
@@ -33,8 +34,6 @@ module PlaceOS::Core
       response
     end
 
-    @connection : HTTP::Client?
-
     def initialize(
       uri : URI,
       @request_id : String? = nil,
@@ -57,8 +56,18 @@ module PlaceOS::Core
       @connection = HTTP::Client.new(host: @host, port: @port)
     end
 
+    @connection : HTTP::Client?
+
     protected def connection
       @connection.as(HTTP::Client)
+    end
+
+    protected getter connection_lock : Mutex = Mutex.new
+
+    def close
+      connection_lock.synchronize do
+        connection.close
+      end
     end
 
     # Drivers
@@ -146,6 +155,12 @@ module PlaceOS::Core
       post("/command/#{module_id}/load").success?
     end
 
+    # Returns the loaded modules on the node
+    def loaded
+      response = get("/status/loaded")
+      Hash(String, Array(String)).from_json(response.body)
+    end
+
     # Status
     ###########################################################################
 
@@ -182,21 +197,23 @@ module PlaceOS::Core
     end
 
     struct DriverStatus < BaseResponse
-      getter running : Bool
-      getter module_instances : Int32
-      getter last_exit_code : Int32
-      getter launch_count : Int32
-      getter launch_time : Int64
+      getter running : Bool = false
+      getter module_instances : Int32 = -1
+      getter last_exit_code : Int32 = -1
+      getter launch_count : Int32 = -1
+      getter launch_time : Int64 = -1
 
-      getter percentage_cpu : Float64?
-      getter memory_total : Int64?
-      getter memory_usage : Int64?
+      getter percentage_cpu : Float64? = nil
+      getter memory_total : Int64? = nil
+      getter memory_usage : Int64? = nil
     end
 
     # Driver status
     def driver_status(path : String) : DriverStatus
-      response = get("/driver?path=#{path}")
+      response = get("/status/driver?path=#{path}")
       DriverStatus.from_json(response.body)
+    rescue e : Core::ClientError
+      DriverStatus.new
     end
 
     # Chaos
@@ -217,7 +234,10 @@ module PlaceOS::Core
       # ```
       private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType? = nil)
         path = File.join(BASE_PATH, CORE_VERSION, path)
-        response = connection.{{method.id}}(path, headers, body)
+
+        response = connection_lock.synchronize do
+          connection.{{method.id}}(path, headers, body)
+        end
         raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response) unless response.success?
 
         response
