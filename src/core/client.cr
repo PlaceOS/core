@@ -151,7 +151,6 @@ module PlaceOS::Core
 
     struct CoreStatus < BaseResponse
       alias Error = NamedTuple(name: String, reason: String)
-
       getter compiled_drivers : Array(String)
       getter available_repositories : Array(String)
       getter running_drivers : Int32
@@ -169,11 +168,11 @@ module PlaceOS::Core
     struct CoreLoad < BaseResponse
       getter hostname : String
       getter cpu_count : Int32
-      getter core_cpu : Float32
-      getter total_cpu : Float32
-      getter memory_total : Int32
-      getter memory_usage : Int32
-      getter core_memory : Int32
+      getter core_cpu : Float64
+      getter total_cpu : Float64
+      getter memory_total : Int64
+      getter memory_usage : Int64
+      getter core_memory : Int64
     end
 
     # Details about machine load
@@ -184,14 +183,14 @@ module PlaceOS::Core
 
     struct DriverStatus < BaseResponse
       getter running : Bool
-      getter module_instances : Array(String)
+      getter module_instances : Int32
       getter last_exit_code : Int32
       getter launch_count : Int32
-      getter launch_time : Int32
+      getter launch_time : Int64
 
-      getter percentage_cpu : Float32?
-      getter memory_total : Int32?
-      getter memory_usage : Float32?
+      getter percentage_cpu : Float64?
+      getter memory_total : Int64?
+      getter memory_usage : Int64?
     end
 
     # Driver status
