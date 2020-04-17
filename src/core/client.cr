@@ -21,6 +21,18 @@ module PlaceOS::Core
       include JSON::Serializable
     end
 
+    # A one-shot Core client
+    def self.client(
+      uri : URI,
+      request_id : String? = nil,
+      core_version : String = CORE_VERSION
+    )
+      client = new(uri, request_id, core_version)
+      response = yield client
+      client.connection.close
+      response
+    end
+
     @connection : HTTP::Client?
 
     def initialize(
@@ -45,7 +57,7 @@ module PlaceOS::Core
       @connection = HTTP::Client.new(host: @host, port: @port)
     end
 
-    private def connection
+    protected def connection
       @connection.as(HTTP::Client)
     end
 
@@ -53,17 +65,15 @@ module PlaceOS::Core
     ###########################################################################
 
     # Returns drivers available
-    def drivers(repository : String? = nil) : Array(String)
-      params = HTTP::Params.new
-      params["repository"] = repository if repository
+    def drivers(repository : String) : Array(String)
+      params = HTTP::Params{"repository" => repository}
       response = get("/drivers?#{params}")
       Array(String).from_json(response.body)
     end
 
     # Returns the commits for a particular driver
-    def driver(driver_id : String, repository : String? = nil, count : Int32? = nil)
-      params = HTTP::Params.new
-      params["repository"] = repository if repository
+    def driver(driver_id : String, repository : String, count : Int32? = nil)
+      params = HTTP::Params{"repository" => repository}
       params["count"] = count.to_s if count
 
       response = get("/drivers/#{URI.encode_www_form(driver_id)}?#{params}")
