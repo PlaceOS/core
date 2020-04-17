@@ -1,5 +1,6 @@
 require "http"
 require "json"
+require "mutex"
 require "uri"
 
 require "./error"
@@ -33,8 +34,6 @@ module PlaceOS::Core
       response
     end
 
-    @connection : HTTP::Client?
-
     def initialize(
       uri : URI,
       @request_id : String? = nil,
@@ -57,8 +56,18 @@ module PlaceOS::Core
       @connection = HTTP::Client.new(host: @host, port: @port)
     end
 
+    @connection : HTTP::Client?
+
     protected def connection
       @connection.as(HTTP::Client)
+    end
+
+    protected getter connection_lock : Mutex = Mutex.new
+
+    def close
+      connection_lock.synchronize do
+        connection.close
+      end
     end
 
     # Drivers
@@ -217,7 +226,10 @@ module PlaceOS::Core
       # ```
       private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType? = nil)
         path = File.join(BASE_PATH, CORE_VERSION, path)
-        response = connection.{{method.id}}(path, headers, body)
+
+        response = connection_lock.synchronize do
+          connection.{{method.id}}(path, headers, body)
+        end
         raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response) unless response.success?
 
         response
