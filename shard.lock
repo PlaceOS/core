@@ -78,7 +78,7 @@ shards:
 
   hound-dog:
     github: place-labs/hound-dog
-    version: 2.2.1
+    version: 2.3.1
 
   ipaddress:
     github: Sija/ipaddress.cr

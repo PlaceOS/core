@@ -210,6 +210,9 @@ module PlaceOS::Core
       getter percentage_cpu : Float64? = nil
       getter memory_total : Int64? = nil
       getter memory_usage : Int64? = nil
+
+      def initialize
+      end
     end
 
     # Driver status
