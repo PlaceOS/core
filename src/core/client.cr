@@ -29,8 +29,12 @@ module PlaceOS::Core
       core_version : String = CORE_VERSION
     )
       client = new(uri, request_id, core_version)
-      response = yield client
-      client.connection.close
+      begin
+        response = yield client
+      ensure
+        client.connection.close
+      end
+
       response
     end
 
