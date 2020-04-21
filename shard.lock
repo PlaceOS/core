@@ -94,7 +94,7 @@ shards:
 
   models:
     github: placeos/models
-    version: 1.0.0
+    version: 1.0.3
 
   murmur3:
     github: aca-labs/murmur3
