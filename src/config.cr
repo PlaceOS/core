@@ -24,7 +24,6 @@ require "action-controller/server"
 # Configure Service discovery
 HoundDog.configure do |settings|
   settings.service_namespace = "core"
-  settings.logger = logger
   settings.etcd_host = ENV["ETCD_HOST"]? || "localhost"
   settings.etcd_port = (ENV["ETCD_PORT"]? || 2379).to_i
 end
