@@ -20,7 +20,7 @@ module PlaceOS::Core
       )
 
       # Commence compilation
-      compiler = Compilation.new(logger: LOGGER).start
+      compiler = Compilation.new.start
       compiler.processed.size.should eq 1
       compiler.processed.first[:resource].id.should eq driver.id
 

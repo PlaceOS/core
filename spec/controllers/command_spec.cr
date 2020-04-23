@@ -21,7 +21,7 @@ module PlaceOS::Core
       it "executes a command on a running module" do
         _, _, mod = create_resources
         mod_id = mod.id.as(String)
-        module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL), logger: LOGGER).start
+        module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL)).start
         module_manager.load_module(mod)
 
         route = File.join(namespace, mod_id, "execute")
@@ -56,13 +56,12 @@ module PlaceOS::Core
         clustering_mock = MockClustering.new(
           uri: CORE_URL,
           discovery: discovery_mock,
-          logger: LOGGER
         )
+
         module_manager = ModuleManager.new(
           uri: CORE_URL,
           clustering: clustering_mock,
           discovery: discovery_mock,
-          logger: LOGGER,
         )
 
         # Load module

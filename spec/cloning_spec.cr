@@ -16,7 +16,7 @@ module PlaceOS::Core
       repo.commit_hash = "head"
       repo.save!
 
-      cloner = Cloning.new(testing: true, logger: LOGGER).start
+      cloner = Cloning.new(testing: true).start
 
       full_repository_path = File.join(Drivers::Compiler.repository_dir, folder_name)
 

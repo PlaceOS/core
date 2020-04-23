@@ -1,4 +1,3 @@
-require "action-controller/logger"
 require "driver/storage"
 require "driver/subscriptions"
 require "models/control_system"
@@ -12,17 +11,16 @@ module PlaceOS::Core
     private getter module_manager : ModuleManager
 
     def initialize(
-      @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = true,
       @module_manager : ModuleManager = ModuleManager.instance
     )
-      super(@logger)
+      super()
     end
 
     def process_resource(event) : Resource::Result
-      ControlSystemModules.update_mapping(event[:resource], startup?, module_manager, logger)
+      ControlSystemModules.update_mapping(event[:resource], startup?, module_manager)
     rescue e
-      logger.tag_error("while updating mapping for system", error: e.message)
+      Log.error(exception: e) { {message: "while updating mapping for system"} }
       raise Resource::ProcessingError.new(event[:resource].name, "#{e} #{e.message}")
     end
 
@@ -30,8 +28,7 @@ module PlaceOS::Core
     def self.update_mapping(
       system : Model::ControlSystem,
       startup : Bool = false,
-      module_manager : ModuleManager = ModuleManager.instance,
-      logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
+      module_manager : ModuleManager = ModuleManager.instance
     ) : Resource::Result
       destroyed = system.destroyed?
       relevant_node = startup || module_manager.discovery.own_node?(system.id.as(String))
@@ -43,8 +40,8 @@ module PlaceOS::Core
 
       return Resource::Result::Skipped unless relevant_node && needs_update
 
-      set_mappings(system, nil, logger)
-      logger.tag_info("#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system.id)
+      set_mappings(system, nil)
+      Log.info { {message: "#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system.id} }
 
       Resource::Result::Success
     end
@@ -54,8 +51,7 @@ module PlaceOS::Core
     # Pass module_id and updated_name to overrride a lookup
     def self.set_mappings(
       control_system : Model::ControlSystem,
-      mod : Model::Module?,
-      logger
+      mod : Model::Module?
     )
       system_id = control_system.id.as(String)
       storage = Driver::Storage.new(system_id, "system")
@@ -65,11 +61,11 @@ module PlaceOS::Core
 
       # No mappings to set if ControlSystem has been destroyed
       if control_system.destroyed?
-        logger.tag_info(
-          message: "module mappings deleted",
+        Log.info { {
+          message:   "module mappings deleted",
           system_id: control_system.id,
-          modules: control_system.modules
-        )
+          modules:   control_system.modules,
+        } }
         return
       end
 
@@ -94,7 +90,7 @@ module PlaceOS::Core
         storage[mapping] = module_id
       end
 
-      logger.tag_info("module mappings set", system_id: control_system.id, mappings: mappings)
+      Log.info { {message: "module mappings set", system_id: control_system.id, mappings: mappings} }
 
       # Notify subscribers of a system module ordering change
       Driver::Storage.redis_pool.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)

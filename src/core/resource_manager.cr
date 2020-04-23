@@ -1,5 +1,3 @@
-require "action-controller/logger"
-
 require "./cloning"
 require "./compilation"
 require "./mappings/control_system_modules"
@@ -9,15 +7,11 @@ require "./mappings/module_names"
 #
 module PlaceOS::Core
   class ResourceManager
-    alias TaggedLogger = ActionController::Logger::TaggedLogger
-
-    class_property logger : TaggedLogger = TaggedLogger.new(ActionController::Base.settings.logger)
     getter cloning : Cloning
     getter compilation : Compilation
     getter control_system_modules : Mappings::ControlSystemModules
     getter module_names : Mappings::ModuleNames
     getter settings_updates : SettingsUpdate
-    getter logger : TaggedLogger
     getter? started = false
 
     @@instance : ResourceManager?
@@ -28,41 +22,35 @@ module PlaceOS::Core
 
     def initialize(
       cloning : Cloning? = nil,
-      compilation : Compilation? = nil,
-      control_system_modules : Mappings::ControlSystemModules? = nil,
-      module_names : Mappings::ModuleNames? = nil,
-      settings_updates : SettingsUpdate? = nil,
-      logger : ActionController::Logger::TaggedLogger? = nil,
+      @compilation : Compilation = Compilation.new,
+      @control_system_modules : Mappings::ControlSystemModules = Mappings::ControlSystemModules.new,
+      @module_names : Mappings::ModuleNames = Mappings::ModuleNames.new,
+      @settings_updates : SettingsUpdate = SettingsUpdate.new,
       testing : Bool = false
     )
-      @logger = logger || ResourceManager.logger
-      @cloning = cloning || Cloning.new(testing: testing, logger: @logger)
-      @compilation = compilation || Compilation.new(logger: @logger)
-      @control_system_modules = control_system_modules || Mappings::ControlSystemModules.new(logger: @logger)
-      @module_names = module_names || Mappings::ModuleNames.new(logger: @logger)
-      @settings_updates = settings_updates || SettingsUpdate.new(logger: @logger)
+      @cloning = cloning || Cloning.new(testing: testing)
     end
 
     def start
       return if started?
       @started = true
 
-      logger.info("cloning Repositories")
+      Log.info { "cloning Repositories" }
       cloning.start
 
-      logger.info("compiling Drivers")
+      Log.info { "compiling Drivers" }
       compilation.start
 
       # Run the on-load processes
       yield
 
-      logger.info("maintaining ControlSystem Module redis mappings")
+      Log.info { "maintaining ControlSystem Module redis mappings" }
       control_system_modules.start
 
-      logger.info("synchronising Module name changes with redis mappings")
+      Log.info { "synchronising Module name changes with redis mappings" }
       module_names.start
 
-      logger.info("listening for Module Settings update")
+      Log.info { "listening for Module Settings update" }
       settings_updates.start
     end
 
