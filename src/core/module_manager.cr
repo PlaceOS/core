@@ -3,7 +3,6 @@ require "models/driver"
 require "models/module"
 require "models/settings"
 
-require "action-controller"
 require "clustering"
 require "driver/protocol/management"
 require "drivers/compiler"
@@ -18,15 +17,12 @@ module PlaceOS
   class Core::ModuleManager
     include Drivers::Helper
 
-    alias TaggedLogger = ActionController::Logger::TaggedLogger
-
     # In k8s we can grab the Pod information from the environment
     # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-pod-fields-as-values-for-environment-variables
     CORE_HOST = ENV["CORE_HOST"]? || System.hostname
     CORE_PORT = (ENV["CORE_PORT"]? || "3000").to_i
 
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
-    class_property logger : TaggedLogger = TaggedLogger.new(ActionController::Base.settings.logger)
 
     getter clustering : Clustering
     getter discovery : HoundDog::Discovery
@@ -51,7 +47,7 @@ module PlaceOS
 
     # Class to be used as a singleton
     def self.instance : ModuleManager
-      (@@instance ||= ModuleManager.new(uri: self.uri, logger: self.logger)).as(ModuleManager)
+      (@@instance ||= ModuleManager.new(uri: self.uri)).as(ModuleManager)
     end
 
     # Start up process is as follows..
@@ -62,7 +58,6 @@ module PlaceOS
     # - once load complete, mark in etcd that load is complete
     def initialize(
       uri : String | URI,
-      logger : TaggedLogger? = nil,
       discovery : HoundDog::Discovery? = nil,
       clustering : Clustering? = nil,
       @redis : Redis? = nil
@@ -70,12 +65,10 @@ module PlaceOS
       @uri = uri.is_a?(URI) ? uri : URI.parse(uri)
       ModuleManager.uri = @uri
 
-      @logger = logger if logger
       @discovery = discovery || HoundDog::Discovery.new(service: "core", uri: @uri)
       @clustering = clustering || Clustering.new(
         uri: @uri,
         discovery: @discovery,
-        logger: @logger
       )
     end
 
@@ -134,7 +127,7 @@ module PlaceOS
       # Listen for incoming module changes
       spawn(same_thread: true) { watch_modules }
 
-      logger.tag_info("loaded modules", drivers: running_drivers, modules: running_modules)
+      Log.info { {message: "loaded modules", drivers: running_drivers, modules: running_modules} }
       Fiber.yield
 
       @started = true
@@ -155,7 +148,7 @@ module PlaceOS
       raise ModuleError.new("No protocol manager for #{mod_id}") unless proc_manager
 
       proc_manager.start(mod_id, payload)
-      logger.tag_info("started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name)
+      Log.info { {message: "started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
     end
 
     # Stop module on node
@@ -166,7 +159,7 @@ module PlaceOS
 
       if manager
         manager.stop(mod_id)
-        logger.tag_info("stopped module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name)
+        Log.info { {message: "stopped module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
       end
     end
 
@@ -177,7 +170,7 @@ module PlaceOS
 
       driver_path = path_for?(module_id)
       existing_manager = set_module_proc_manager(module_id, nil)
-      logger.tag_info("removed module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name)
+      Log.info { {message: "removed module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
 
       no_module_references = existing_manager.nil? || proc_manager_lock.synchronize do
         @module_proc_managers.select do |_, manager|
@@ -188,7 +181,7 @@ module PlaceOS
       # Delete driver indexed manager if there are no other module references.
       if driver_path && no_module_references
         set_driver_proc_manager(driver_path, nil)
-        logger.tag_info("removed driver manager", driver: mod.driver.try(&.name), module_name: mod.name)
+        Log.info { {message: "removed driver manager", driver: mod.driver.try(&.name), module_name: mod.name} }
       end
     end
 
@@ -294,61 +287,56 @@ module PlaceOS
         driver_file_name = driver.file_name.as(String)
         driver_commit = driver.commit.as(String)
 
-        # Check if the module is on the current node
-        unless (driver_path = PlaceOS::Drivers::Compiler.is_built?(driver_file_name, driver_commit, id: driver_id))
-          logger.tag_error(
-            message: "driver does not exist for module",
-            module_id: mod_id,
-            driver_id: driver_id,
-            driver_name: driver_name,
+        ::Log.with_context do
+          Log.context.set({
+            module_id:     mod_id,
+            module_name:   mod.name,
+            custom_name:   mod.custom_name,
+            driver_name:   driver_name,
             driver_commit: driver_commit,
-          )
-          return
-        end
+          })
 
-        meta = {
-          module_id:     mod_id,
-          module_name:   mod.name,
-          custom_name:   mod.custom_name,
-          driver_name:   driver_name,
-          driver_commit: driver_commit,
-        }
-
-        if !proc_manager_by_module?(mod_id)
-          if (existing_driver_manager = proc_manager_by_driver?(driver_path))
-            # Use the existing driver protocol manager
-            set_module_proc_manager(mod_id, existing_driver_manager)
-          else
-            # Create a new protocol manager
-            proc_manager = Driver::Protocol::Management.new(driver_path, logger)
-
-            # Hook up the callbacks
-            proc_manager.on_exec = ->(request : Request, response_cb : Proc(Request, Nil)) {
-              on_exec(request, response_cb); nil
-            }
-            proc_manager.on_setting = ->(module_id : String, setting_name : String, setting_value : YAML::Any) {
-              save_setting(module_id, setting_name, setting_value); nil
-            }
-
-            set_module_proc_manager(mod_id, proc_manager)
-            set_driver_proc_manager(driver_path, proc_manager)
+          # Check if the module is on the current node
+          unless (driver_path = PlaceOS::Drivers::Compiler.is_built?(driver_file_name, driver_commit, id: driver_id))
+            Log.error { "driver does not exist for module" }
+            return
           end
 
-          logger.tag_info("loaded module", **meta)
-        else
-          logger.tag_info("module already loaded", **meta)
+          if !proc_manager_by_module?(mod_id)
+            if (existing_driver_manager = proc_manager_by_driver?(driver_path))
+              # Use the existing driver protocol manager
+              set_module_proc_manager(mod_id, existing_driver_manager)
+            else
+              # Create a new protocol manager
+              proc_manager = Driver::Protocol::Management.new(driver_path)
+
+              # Hook up the callbacks
+              proc_manager.on_exec = ->(request : Request, response_cb : Proc(Request, Nil)) {
+                on_exec(request, response_cb); nil
+              }
+              proc_manager.on_setting = ->(module_id : String, setting_name : String, setting_value : YAML::Any) {
+                save_setting(module_id, setting_name, setting_value); nil
+              }
+
+              set_module_proc_manager(mod_id, proc_manager)
+              set_driver_proc_manager(driver_path, proc_manager)
+            end
+
+            Log.info { "loaded module" }
+          else
+            Log.info { "module already loaded" }
+          end
         end
 
         start_module(mod) if mod.running
       elsif proc_manager_by_module?(mod_id)
         # Not on node, but protocol manager exists
-        logger.tag_info("removing module no longer on node", module_id: mod_id)
+        Log.info { {message: "removing module no longer on node", module_id: mod_id} }
         remove_module(mod)
       end
     end
 
     protected getter uri : URI = ModuleManager.uri
-    protected getter logger : TaggedLogger = ModuleManager.logger
 
     # Protocol Managers
     ###########################################################################

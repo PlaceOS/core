@@ -21,8 +21,7 @@ TEMP_DIR = get_temp
 # Set the working directory before specs
 set_temporary_working_directory
 
-LOGGER = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger)
-LOGGER.level = Logger::Severity::DEBUG
+Log.builder.bind("*", backend: PlaceOS::Core::LOG_BACKEND, level: Log::Severity::Debug)
 
 def get_temp
   "#{Dir.tempdir}/core-spec-#{UUID.random.to_s.split('-').first}"

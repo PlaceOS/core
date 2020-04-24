@@ -56,9 +56,9 @@ Signal::TERM.trap &terminate
 
 # Allow signals to change the log level at run-time
 logging = Proc(Signal, Nil).new do |signal|
-  level = signal.usr1? ? Logger::DEBUG : Logger::INFO
+  level = signal.usr1? ? Log::Severity::Debug : Log::Severity::Info
   puts " > Log level changed to #{level}"
-  ActionController::Base.settings.logger.level = level
+  Log.builder.bind "core.*", level, PlaceOS::Core::LOG_BACKEND
   signal.ignore
 end
 
@@ -66,11 +66,6 @@ end
 # Default production log levels (INFO and above) `kill -s USR2 %PID`
 Signal::USR1.trap &logging
 Signal::USR2.trap &logging
-
-logger = ActionController::Logger::TaggedLogger.new(ActionController::Base.settings.logger)
-
-PlaceOS::Core::ResourceManager.logger = logger
-PlaceOS::Core::ModuleManager.logger = logger
 
 PlaceOS::Core.start_managers
 

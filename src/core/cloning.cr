@@ -1,4 +1,3 @@
-require "action-controller/logger"
 require "drivers/compiler"
 require "drivers/git_commands"
 require "file_utils"
@@ -16,11 +15,10 @@ module PlaceOS
       @username : String? = nil,
       @password : String? = nil,
       @working_dir : String = Drivers::Compiler.repository_dir,
-      @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = true,
       @testing : Bool = false
     )
-      super(@logger)
+      super()
     end
 
     def process_resource(event) : Resource::Result
@@ -33,7 +31,6 @@ module PlaceOS
           username: @username,
           password: @password,
           working_dir: @working_dir,
-          logger: @logger,
           startup: startup?,
           testing: testing?,
         )
@@ -42,7 +39,6 @@ module PlaceOS
         Cloning.delete_repository(
           repository: repository,
           working_dir: @working_dir,
-          logger: @logger,
         )
       end.as(Result)
     rescue e
@@ -56,8 +52,7 @@ module PlaceOS
       username : String? = nil,
       password : String? = nil,
       startup : Bool = false,
-      testing : Bool = false,
-      logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
+      testing : Bool = false
     )
       repository_id = repository.id.as(String)
       # NOTE:: we want to use folder name at this level
@@ -80,39 +75,38 @@ module PlaceOS
 
       if current_commit != repository_commit && own_node
         if startup
-          logger.tag_warn(
-            message: "updating commit on repository during startup",
-            current_commit: current_commit,
+          Log.warn { {
+            message:           "updating commit on repository during startup",
+            current_commit:    current_commit,
             repository_commit: repository_commit,
-            folder_name: repository_folder_name
-          )
+            folder_name:       repository_folder_name,
+          } }
         else
-          logger.tag_info(
-            message: "updating commit on repository",
-            current_commit: current_commit,
+          Log.info { {
+            message:           "updating commit on repository",
+            current_commit:    current_commit,
             repository_commit: repository_commit,
-            folder_name: repository_folder_name
-          )
+            folder_name:       repository_folder_name,
+          } }
         end
 
         # Refresh the repository model commit hash
         repository.update_fields(commit_hash: current_commit)
       end
 
-      logger.tag_info(
-        message: "cloned repository",
-        commit: current_commit,
+      Log.info { {
+        message:    "cloned repository",
+        commit:     current_commit,
         repository: repository_folder_name,
-        uri: repository_uri
-      )
+        uri:        repository_uri,
+      } }
 
       Result::Success
     end
 
     def self.delete_repository(
       repository : Model::Repository,
-      working_dir : String = Drivers::Compiler.repository_dir,
-      logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
+      working_dir : String = Drivers::Compiler.repository_dir
     )
       repository_folder_name = repository.is_a?(String) ? repository : repository.folder_name.as(String)
       working_dir = File.expand_path(working_dir)

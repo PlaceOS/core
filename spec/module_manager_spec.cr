@@ -5,13 +5,13 @@ module PlaceOS::Core
     it "load_module" do
       _, repo, driver, mod = setup
 
-      module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL), logger: LOGGER)
+      module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL))
 
-      cloning = Cloning.new(testing: true, logger: LOGGER)
-      compilation = Compilation.new(startup: true, module_manager: module_manager, logger: LOGGER)
+      cloning = Cloning.new(testing: true)
+      compilation = Compilation.new(startup: true, module_manager: module_manager)
 
       # Clone, compile, etcd
-      resource_manager = ResourceManager.new(cloning: cloning, compilation: compilation, logger: LOGGER)
+      resource_manager = ResourceManager.new(cloning: cloning, compilation: compilation)
       resource_manager.start { }
 
       repo_folder = repo.folder_name.as(String)
@@ -58,7 +58,7 @@ module PlaceOS::Core
         Model::Repository.clear
 
         # Start module manager
-        module_manager = ModuleManager.new(uri: CORE_URL, logger: LOGGER)
+        module_manager = ModuleManager.new(uri: CORE_URL)
         module_manager.start
 
         # Check that the node is registered in etcd
@@ -79,14 +79,12 @@ module PlaceOS::Core
         clustering_mock = MockClustering.new(
           uri: CORE_URL,
           discovery: discovery_mock,
-          logger: LOGGER
         )
 
         module_manager = ModuleManager.new(
           uri: CORE_URL,
           clustering: clustering_mock,
           discovery: discovery_mock,
-          logger: LOGGER,
         )
 
         # Start module manager

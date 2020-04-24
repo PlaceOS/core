@@ -7,12 +7,11 @@ module PlaceOS::Core
       setup
 
       # Clone, compile
-      cloning = Cloning.new(testing: true, logger: LOGGER)
-      control_system_modules = Mappings::ControlSystemModules.new(startup: false, logger: LOGGER)
+      cloning = Cloning.new(testing: true)
+      control_system_modules = Mappings::ControlSystemModules.new(startup: false)
       resource_manager = ResourceManager.new(
         cloning: cloning,
         control_system_modules: control_system_modules,
-        logger: LOGGER
       )
 
       called = false

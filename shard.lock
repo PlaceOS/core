@@ -6,7 +6,7 @@ shards:
 
   action-controller:
     github: spider-gazelle/action-controller
-    version: 2.4.0
+    version: 3.0.1
 
   active-model:
     github: spider-gazelle/active-model
@@ -26,7 +26,7 @@ shards:
 
   clustering:
     github: place-labs/clustering
-    version: 1.0.2
+    version: 2.0.0
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -54,11 +54,11 @@ shards:
 
   drivers:
     github: placeos/drivers
-    version: 1.1.0
+    version: 1.2.0
 
   etcd:
     github: place-labs/crystal-etcd
-    version: 1.0.0
+    version: 1.0.1
 
   exec_from:
     github: place-labs/exec_from
@@ -78,7 +78,7 @@ shards:
 
   hound-dog:
     github: place-labs/hound-dog
-    version: 2.3.1
+    version: 2.3.2
 
   ipaddress:
     github: Sija/ipaddress.cr
@@ -91,6 +91,10 @@ shards:
   kilt:
     github: jeromegn/kilt
     version: 0.6.0
+
+  log_helper:
+    github: spider-gazelle/log_helper
+    version: 0.1.2
 
   models:
     github: placeos/models

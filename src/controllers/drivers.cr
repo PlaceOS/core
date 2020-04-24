@@ -36,17 +36,18 @@ module PlaceOS::Core::Api
       driver = URI.decode(params["id"])
       commit = params["commit"]
       repository = params["repository"]
-      meta = {driver: driver, repository: repository, commit: commit}
+
+      Log.context.set(driver: driver, repository: repository, commit: commit)
 
       cached = Api::Drivers.cached_details?(driver, repository, commit)
       unless cached.nil?
-        logger.tag_debug("details cache hit!", **meta)
+        Log.debug { "details cache hit!" }
 
         response.headers["Content-Type"] = "application/json"
         render text: cached
       end
 
-      logger.tag_info("compiling", **meta)
+      Log.info { "compiling" }
 
       uuid = UUID.random.to_s
       compile_result = PlaceOS::Drivers::Helper.compile_driver(driver, repository, commit, id: uuid)
@@ -54,7 +55,7 @@ module PlaceOS::Core::Api
 
       # check driver compiled
       if compile_result[:exit_status] != 0
-        logger.tag_error("failed to compile", **meta)
+        Log.error { "failed to compile" }
         render :internal_server_error, json: compile_result
       end
 
@@ -74,7 +75,7 @@ module PlaceOS::Core::Api
       File.delete(temporary_driver_path) if File.exists?(temporary_driver_path)
 
       if result.exit_code != 0
-        logger.tag_error("failed to execute", **(meta.merge({output: execute_output})))
+        Log.error { {message: "failed to execute", output: execute_output} }
         render :internal_server_error, json: {
           exit_status: result.exit_code,
           output:      execute_output,
@@ -89,7 +90,7 @@ module PlaceOS::Core::Api
         Api::Drivers.cache_details(driver, repository, commit, execute_output)
       rescue e
         # No drama if the details aren't cached
-        logger.tag_warn("failed to cache driver details: #{e.message}", **meta)
+        Log.warn(exception: e) { "failed to cache driver details" }
       end
 
       response.headers["Content-Type"] = "application/json"

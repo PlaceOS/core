@@ -1,6 +1,11 @@
+require "action-controller/logger"
+require "log_helper"
 require "./core/*"
 
 module PlaceOS::Core
+  Log         = ::Log.for(self)
+  LOG_BACKEND = ActionController.default_backend
+
   def self.start_managers
     resource_manager = ResourceManager.instance
     module_manager = ModuleManager.instance

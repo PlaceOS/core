@@ -1,4 +1,3 @@
-require "action-controller/logger"
 require "deque"
 require "rethinkdb-orm"
 
@@ -48,13 +47,9 @@ abstract class PlaceOS::Core::Resource(T)
   getter processed : Deque(NamedTuple(resource: T, action: Action))
   private getter event_channel : Channel(NamedTuple(resource: T, action: Action))
 
-  alias TaggedLogger = ActionController::Logger::TaggedLogger
-  private getter logger : TaggedLogger
-
   abstract def process_resource(event : NamedTuple(resource: T, action: Action)) : Result
 
   def initialize(
-    @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
     @processed_buffer_size : Int32 = 64,
     @channel_buffer_size : Int32 = 64
   )
@@ -111,12 +106,12 @@ abstract class PlaceOS::Core::Resource(T)
         resource: change[:value],
       }
 
-      logger.tag_debug("resource event", type: T.name, action: event[:action], id: event[:resource].id)
+      Log.debug { {message: "resource event", type: T.name, action: event[:action].to_s, id: event[:resource].id} }
       event_channel.send(event)
     end
   rescue e
     unless e.is_a?(Channel::ClosedError)
-      logger.tag_error("error while watching for resources", error: e.inspect_with_backtrace)
+      Log.error(exception: e) { {message: "error while watching for resources"} }
       watch_resources
     end
   end
@@ -130,7 +125,7 @@ abstract class PlaceOS::Core::Resource(T)
     end
   rescue e
     unless e.is_a?(Channel::ClosedError)
-      logger.tag_error("error while consuming resource queue", error: e.inspect_with_backtrace)
+      Log.error(exception: e) { {message: "error while consuming resource queue"} }
       watch_processing
     end
   end
@@ -138,27 +133,26 @@ abstract class PlaceOS::Core::Resource(T)
   # Process the event, place into the processed buffer
   #
   private def _process_event(event : NamedTuple(resource: T, action: Action))
-    meta = {
-      id:      event[:resource].id,
-      type:    T.name,
-      handler: self.class.name,
-      action:  event[:action],
-    }
+    Log.context.set({
+      resource_type:    T.name,
+      resource_handler: self.class.name,
+      resource_action:  event[:action].to_s,
+    })
 
-    logger.tag_debug("processing resource event", **meta)
+    Log.debug { "processing resource event" }
     begin
       case process_resource(event)
       when Result::Success
         processed.push(event)
         processed.shift if processed.size > @processed_buffer_size
-        logger.tag_info("processed resource event", **meta)
-      when Result::Skipped then logger.tag_info("processing skipped", **meta)
+        Log.info { "processed resource event" }
+      when Result::Skipped then Log.info { "resource processing skipped" }
       end
     rescue e : ProcessingError
-      logger.tag_warn("processing #{e.name} failed: #{e.message}", **meta)
+      Log.warn { {message: "resource processing failed", error: "#{e.name} failed with #{e.message}"} }
       errors << e.to_error
     end
   rescue e
-    logger.tag_error("while processing resource event", resource: event[:resource].inspect, error: e.inspect_with_backtrace)
+    Log.error(exception: e) { {message: "while processing resource event", resource: event[:resource].inspect} }
   end
 end

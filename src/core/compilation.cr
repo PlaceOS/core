@@ -1,4 +1,3 @@
-require "action-controller/logger"
 require "drivers/compiler"
 require "drivers/helper"
 require "models/driver"
@@ -14,7 +13,6 @@ module PlaceOS
     private getter module_manager : ModuleManager
 
     def initialize(
-      @logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT)),
       @startup : Bool = true,
       bin_dir : String = Drivers::Compiler.bin_dir,
       drivers_dir : String = Drivers::Compiler.drivers_dir,
@@ -26,14 +24,14 @@ module PlaceOS
       Drivers::Compiler.drivers_dir = drivers_dir
       Drivers::Compiler.repository_dir = repository_dir
 
-      super(@logger, buffer_size)
+      super(buffer_size)
     end
 
     def process_resource(event) : Resource::Result
       driver = event[:resource]
       case event[:action]
       when Action::Created, Action::Updated
-        success, output = Compilation.compile_driver(driver, startup?, module_manager, logger)
+        success, output = Compilation.compile_driver(driver, startup?, module_manager)
         raise Resource::ProcessingError.new(driver.name, output) unless success
         Result::Success
       when Action::Deleted
@@ -48,8 +46,7 @@ module PlaceOS
     def self.compile_driver(
       driver : Model::Driver,
       startup : Bool = false,
-      module_manager : ModuleManager = ModuleManager.instance,
-      logger : TaggedLogger = TaggedLogger.new(Logger.new(STDOUT))
+      module_manager : ModuleManager = ModuleManager.instance
     ) : Tuple(Bool, String)
       commit = driver.commit.as(String)
       driver_id = driver.id.as(String)
@@ -62,21 +59,23 @@ module PlaceOS
       force_recompile = driver.recompile_commit?
       commit = force_recompile unless force_recompile.nil?
 
-      meta = {
-        driver_id:       driver_id,
-        name:            name,
-        file_name:       file_name,
-        repository_name: repository_name,
-        commit:          commit,
-      }
+      ::Log.with_context do
+        Log.context.set({
+          driver_id:       driver_id,
+          name:            name,
+          file_name:       file_name,
+          repository_name: repository_name,
+          commit:          commit,
+        })
 
-      if !force_recompile && !driver.commit_changed? && Drivers::Helper.compiled?(file_name, commit, driver_id)
-        logger.tag_info("commit unchanged and driver already compiled", **meta)
-        Compilation.reload_modules(driver, module_manager, logger)
-        return {true, ""}
+        if !force_recompile && !driver.commit_changed? && Drivers::Helper.compiled?(file_name, commit, driver_id)
+          Log.info { "commit unchanged and driver already compiled" }
+          Compilation.reload_modules(driver, module_manager)
+          return {true, ""}
+        end
+
+        Log.info { "force recompiling driver" } if force_recompile
       end
-
-      logger.tag_info("force recompiling driver", **meta) if force_recompile
 
       # If the commit is `head` then the driver must be recompiled at the latest version
       if Compilation.pull?(commit)
@@ -91,31 +90,30 @@ module PlaceOS
       success = result[:exit_status] == 0
 
       unless success
-        logger.tag_error("failed to compile driver: #{result[:output]}", repository_name: repository_name)
+        Log.error { {message: "failed to compile driver", output: result[:output], repository_name: repository_name} }
         return {false, "failed to compile #{name} from #{repository_name}: #{result[:output]}"}
       end
 
-      logger.tag_info(
-        message: "compiled driver",
-        name: name,
-        executable: result[:executable],
+      Log.info { {
+        message:         "compiled driver",
+        name:            name,
+        executable:      result[:executable],
         repository_name: repository_name,
-        output: result[:output]
-      )
+        output:          result[:output],
+      } }
 
       # (Re)load modules onto the newly compiled driver
-      stale_path = Compilation.reload_modules(driver, module_manager, logger)
+      stale_path = Compilation.reload_modules(driver, module_manager)
 
       # Remove the stale driver if there was one
       remove_stale_driver(
         driver_id: driver_id,
         path: stale_path,
-        logger: logger
       )
 
       # Bump the commit on the driver post-compilation and module loading
       if (Compilation.pull?(commit) || force_recompile) && (startup || module_manager.discovery.own_node?(driver_id))
-        update_driver_commit(driver: driver, commit: result[:version], startup: startup, logger: logger)
+        update_driver_commit(driver: driver, commit: result[:version], startup: startup)
       end
 
       {success, ""}
@@ -123,22 +121,22 @@ module PlaceOS
 
     # Remove the stale driver binary if there was one
     #
-    def self.remove_stale_driver(path : String?, driver_id : String, logger)
+    def self.remove_stale_driver(path : String?, driver_id : String)
       return unless path
-      logger.tag_info("removing stale driver binary", driver_id: driver_id, path: path)
+      Log.info { {message: "removing stale driver binary", driver_id: driver_id, path: path} }
       File.delete(path) if File.exists?(path)
     rescue
-      logger.tag_error("failed to remove stale driver binary", driver_id: driver_id, path: path)
+      Log.error { {message: "failed to remove stale binary", driver_id: driver_id, path: path} }
     end
 
-    def self.update_driver_commit(driver : Model::Driver, commit : String, startup : Bool, logger)
+    def self.update_driver_commit(driver : Model::Driver, commit : String, startup : Bool)
       if startup
         # There's a potential for multiple writers on startup, However this is an eventually consistent operation.
-        logger.tag_warn("updating commit on driver during startup", id: driver.id, name: driver.name, commit: commit)
+        Log.warn { {message: "updating commit on driver during startup", id: driver.id, name: driver.name, commit: commit} }
       end
 
       driver.update_fields(commit: commit)
-      logger.tag_info("updated commit on driver", id: driver.id, name: driver.name, commit: commit)
+      Log.info { {message: "updated commit on driver", id: driver.id, name: driver.name, commit: commit} }
     end
 
     protected def self.pull?(commit : String?)
@@ -149,8 +147,7 @@ module PlaceOS
     #
     protected def self.reload_modules(
       driver : Model::Driver,
-      module_manager : ModuleManager,
-      logger
+      module_manager : ModuleManager
     )
       driver_id = driver.id.as(String)
       # Set when a module_manager found for stale driver
@@ -168,13 +165,13 @@ module PlaceOS
 
         if module_manager.started?
           # Reload module on new driver binary
-          logger.tag_debug(
-            message: "loading module after compilation",
+          Log.debug { {
+            message:   "loading module after compilation",
             module_id: module_id,
             driver_id: driver_id,
             file_name: driver.file_name,
-            commit: driver.commit,
-          )
+            commit:    driver.commit,
+          } }
           module_manager.load_module(mod)
         end
 

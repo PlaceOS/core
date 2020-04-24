@@ -26,13 +26,13 @@ module PlaceOS::Core::Api
       protocol_manager = module_manager.proc_manager_by_module?(module_id)
 
       unless protocol_manager
-        logger.info { "module_id=#{module_id} message=module not loaded" }
+        Log.info { {module_id: module_id, message: "module not loaded"} }
         head :not_found
       end
 
       body = request.body
       unless body
-        logger.info { "message=no request body" }
+        Log.info { "no request body" }
         head :not_acceptable
       end
 
@@ -42,7 +42,7 @@ module PlaceOS::Core::Api
       begin
         render json: protocol_manager.execute(module_id, exec_request)
       rescue error : PlaceOS::Driver::RemoteException
-        logger.error { "error=#{error.message} backtrace=\"#{error.backtrace?}\" message=execute errored" }
+        Log.error(exception: error) { "execute errored" }
         render :non_authoritative_information, json: {
           message:   error.message,
           backtrace: error.backtrace?,
