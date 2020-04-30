@@ -23,6 +23,10 @@ module PlaceOS
 
     def process_resource(event) : Resource::Result
       repository = event[:resource]
+
+      # Ignore interface repositories
+      return Result::Skipped if repository.repo_type == Model::Repository::Type::Interface
+
       case event[:action]
       when Action::Created, Action::Updated
         # Clone and install the repository
