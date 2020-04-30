@@ -1,5 +1,5 @@
 require "hardware"
-require "drivers/helper"
+require "compiler/drivers/helper"
 
 require "./application"
 require "../core/module_manager"

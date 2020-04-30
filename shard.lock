@@ -6,7 +6,7 @@ shards:
 
   action-controller:
     github: spider-gazelle/action-controller
-    version: 3.0.1
+    version: 3.0.2
 
   active-model:
     github: spider-gazelle/active-model
@@ -27,6 +27,10 @@ shards:
   clustering:
     github: place-labs/clustering
     version: 2.0.0
+
+  compiler:
+    github: placeos/compiler
+    commit: d5c29f8bf5ebbec36ef70293301ce51cfd15c537
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -50,10 +54,6 @@ shards:
 
   driver:
     github: placeos/driver
-    version: 1.2.0
-
-  drivers:
-    github: placeos/drivers
     version: 1.2.0
 
   etcd:
@@ -98,7 +98,7 @@ shards:
 
   models:
     github: placeos/models
-    version: 1.0.3
+    version: 1.0.4
 
   murmur3:
     github: aca-labs/murmur3
@@ -159,10 +159,6 @@ shards:
   tasker:
     github: spider-gazelle/tasker
     version: 1.2.2
-
-  telnet:
-    github: spider-gazelle/telnet.cr
-    version: 1.0.1
 
   tokenizer:
     github: spider-gazelle/tokenizer

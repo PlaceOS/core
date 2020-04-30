@@ -1,4 +1,4 @@
-require "drivers/helper"
+require "compiler/drivers/helper"
 require "redis"
 
 require "./application"

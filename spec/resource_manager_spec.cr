@@ -1,5 +1,5 @@
 require "./helper"
-require "drivers/helper"
+require "compiler/drivers/helper"
 
 module PlaceOS::Core
   describe ResourceManager, tags: "resource" do
