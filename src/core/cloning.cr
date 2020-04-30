@@ -1,5 +1,5 @@
-require "drivers/compiler"
-require "drivers/git_commands"
+require "compiler/drivers/compiler"
+require "compiler/drivers/git_commands"
 require "file_utils"
 require "models"
 

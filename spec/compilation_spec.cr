@@ -1,5 +1,5 @@
-require "drivers/compiler"
-require "drivers/helper"
+require "compiler/drivers/compiler"
+require "compiler/drivers/helper"
 
 require "./helper"
 

@@ -1,7 +1,8 @@
 require "deque"
 require "rethinkdb-orm"
 
-require "drivers/helper"
+require "compiler/drivers"
+require "compiler/drivers/helper"
 
 # Internally abstracts data event streams.
 #
