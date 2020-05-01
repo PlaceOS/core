@@ -148,6 +148,7 @@ abstract class PlaceOS::Core::Resource(T)
         processed.shift if processed.size > @processed_buffer_size
         Log.info { "processed resource event" }
       when Result::Skipped then Log.info { "resource processing skipped" }
+      when Result::Error   then Log.warn { {message: "resource processing failed", resource: event[:resource].to_json} }
       end
     rescue e : ProcessingError
       Log.warn { {message: "resource processing failed", error: "#{e.name} failed with #{e.message}"} }
