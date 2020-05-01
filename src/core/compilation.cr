@@ -140,7 +140,7 @@ module PlaceOS
     end
 
     protected def self.pull?(commit : String?)
-      commit == "head"
+      commit.try(&.upcase) == "HEAD"
     end
 
     # Returns the stale driver path

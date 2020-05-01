@@ -13,7 +13,7 @@ module PlaceOS::Core
       repo.uri = "https://github.com/placeos/private-drivers"
       repo.name = "drivers"
       repo.folder_name = folder_name
-      repo.commit_hash = "head"
+      repo.commit_hash = "HEAD"
       repo.save!
 
       cloner = Cloning.new(testing: true).start

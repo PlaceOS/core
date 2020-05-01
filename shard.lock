@@ -68,6 +68,10 @@ shards:
     github: askn/faker
     version: 0.4.0
 
+  future:
+    github: crystal-community/future.cr
+    version: 0.1.0
+
   habitat:
     github: luckyframework/habitat
     version: 0.4.3
@@ -158,7 +162,7 @@ shards:
 
   tasker:
     github: spider-gazelle/tasker
-    version: 1.2.2
+    version: 1.3.0
 
   tokenizer:
     github: spider-gazelle/tokenizer
