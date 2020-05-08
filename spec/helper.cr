@@ -92,7 +92,7 @@ def setup(fresh : Bool = false)
   driver_file_name = "drivers/place/private_helper.cr"
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
-  driver_commit = "4be0571"
+  driver_commit = "1b2de89"
   driver_role = PlaceOS::Model::Driver::Role::Logic
 
   existing_repo = PlaceOS::Model::Repository.where(uri: repository_uri).first?

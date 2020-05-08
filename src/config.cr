@@ -7,7 +7,6 @@ abstract class PlaceOS::Driver; end
 class PlaceOS::Driver::Protocol; end
 
 # Application code
-require "driver/protocol/management"
 require "./constants"
 require "./core"
 require "./controllers/*"

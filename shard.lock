@@ -18,7 +18,7 @@ shards:
 
   bindata:
     github: spider-gazelle/bindata
-    version: 1.4.0
+    version: 1.5.1
 
   bisect:
     github: spider-gazelle/bisect
@@ -30,7 +30,7 @@ shards:
 
   compiler:
     github: placeos/compiler
-    commit: d5c29f8bf5ebbec36ef70293301ce51cfd15c537
+    version: 1.2.1
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
@@ -54,7 +54,7 @@ shards:
 
   driver:
     github: placeos/driver
-    version: 1.2.0
+    version: 2.0.3
 
   etcd:
     github: place-labs/crystal-etcd
@@ -106,7 +106,7 @@ shards:
 
   neuroplastic:
     github: spider-gazelle/neuroplastic
-    version: 1.4.0
+    version: 1.4.1
 
   openssl_ext:
     github: stakach/openssl_ext
