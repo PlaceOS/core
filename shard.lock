@@ -54,7 +54,7 @@ shards:
 
   driver:
     github: placeos/driver
-    version: 2.0.3
+    version: 2.0.4
 
   etcd:
     github: place-labs/crystal-etcd
@@ -98,7 +98,7 @@ shards:
 
   models:
     github: placeos/models
-    version: 1.0.4
+    version: 1.0.6
 
   murmur3:
     github: aca-labs/murmur3
@@ -142,7 +142,7 @@ shards:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    version: 2.8.0
+    version: 2.8.2
 
   rwlock:
     github: spider-gazelle/readers-writer
