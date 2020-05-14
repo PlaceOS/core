@@ -227,7 +227,7 @@ module PlaceOS::Core
     ###########################################################################
 
     def terminate(path : String) : Bool
-      post("/terminate?path=#{path}").success?
+      post("/chaos/terminate?path=#{path}").success?
     end
 
     # API modem
