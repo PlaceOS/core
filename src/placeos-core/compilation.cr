@@ -1,7 +1,7 @@
 require "compiler/drivers/compiler"
 require "compiler/drivers/helper"
-require "models/driver"
-require "models/repository"
+require "placeos-models/driver"
+require "placeos-models/repository"
 
 require "./cloning"
 require "./module_manager"

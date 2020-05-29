@@ -4,10 +4,10 @@ require "../lib/action-controller/spec/curl_context"
 
 # Application config
 require "../src/config"
-require "../src/core"
-require "../src/core/*"
+require "../src/placeos-core"
+require "../src/placeos-core/*"
 
-require "models/spec/generator"
+require "placeos-models/spec/generator"
 
 SPEC_DRIVER = "drivers/place/private_helper.cr"
 

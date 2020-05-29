@@ -1,7 +1,7 @@
-require "models/control_system"
-require "models/driver"
-require "models/module"
-require "models/settings"
+require "placeos-models/control_system"
+require "placeos-models/driver"
+require "placeos-models/module"
+require "placeos-models/settings"
 
 require "clustering"
 require "driver/protocol/management"

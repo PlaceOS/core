@@ -1,7 +1,7 @@
 require "driver/storage"
 require "driver/subscriptions"
-require "models/control_system"
-require "models/module"
+require "placeos-models/control_system"
+require "placeos-models/module"
 
 require "../module_manager"
 

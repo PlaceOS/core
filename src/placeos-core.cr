@@ -1,6 +1,6 @@
 require "action-controller/logger"
 require "log_helper"
-require "./core/*"
+require "./placeos-core/*"
 
 module PlaceOS::Core
   Log         = ::Log.for(self)
