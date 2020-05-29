@@ -2,8 +2,8 @@ require "hardware"
 require "compiler/drivers/helper"
 
 require "./application"
-require "../core/module_manager"
-require "../core/resource_manager"
+require "../placeos-core/module_manager"
+require "../placeos-core/resource_manager"
 
 module PlaceOS::Core::Api
   class Status < Application

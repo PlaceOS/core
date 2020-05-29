@@ -1,5 +1,5 @@
-name: core
-version: 1.2.7
+name: placeos-core
+version: 1.3.0
 
 targets:
   core:
@@ -23,9 +23,9 @@ dependencies:
   log_helper:
     github: spider-gazelle/log_helper
 
-  models:
+  placeos-models:
     github: placeos/models
-    version: ~> 1.0
+    version: ~> 2.0
 
   hardware:
     github: crystal-community/hardware

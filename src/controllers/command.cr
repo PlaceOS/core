@@ -1,5 +1,5 @@
 require "./application"
-require "../core/module_manager"
+require "../placeos-core/module_manager"
 
 module PlaceOS::Core::Api
   class Command < Application

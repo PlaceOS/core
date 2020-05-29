@@ -1,7 +1,7 @@
 require "compiler/drivers/compiler"
 require "compiler/drivers/git_commands"
 require "file_utils"
-require "models"
+require "placeos-models"
 
 require "./module_manager"
 require "./resource"

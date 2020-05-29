@@ -8,7 +8,7 @@ class PlaceOS::Driver::Protocol; end
 
 # Application code
 require "./constants"
-require "./core"
+require "./placeos-core"
 require "./controllers/*"
 
 # Server required after application controllers

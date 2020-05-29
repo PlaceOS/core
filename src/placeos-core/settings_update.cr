@@ -1,4 +1,4 @@
-require "models/settings"
+require "placeos-models/settings"
 
 require "./resource"
 
