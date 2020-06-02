@@ -81,8 +81,10 @@ module PlaceOS
         when RethinkORM::Changefeed::Event::Deleted
           remove_module(mod)
         when RethinkORM::Changefeed::Event::Updated
-          # Running state of the module has changed
-          if mod.running_changed? && discovery.own_node?(mod.id.as(String))
+          if ModuleManager.needs_restart?(mod)
+            mod.running ? restart_module(mod) : stop_module(mod)
+          elsif mod.running_changed? && discovery.own_node?(mod.id.as(String))
+            # Running state of the module has changed
             mod.running ? start_module(mod) : stop_module(mod)
           end
         end
@@ -149,6 +151,19 @@ module PlaceOS
 
       proc_manager.start(mod_id, payload)
       Log.info { {message: "started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+    end
+
+    def restart_module(mod : Model::Module)
+      mod_id = mod.id.as(String)
+      manager = proc_manager_by_module?(mod_id)
+
+      if manager
+        manager.stop(mod_id)
+        start_module(mod)
+        Log.info { {message: "restarted module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+      else
+        Log.error { {message: "missing protocol manager on restart", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+      end
     end
 
     # Stop module on node
@@ -337,6 +352,13 @@ module PlaceOS
     end
 
     protected getter uri : URI = ModuleManager.uri
+
+    # Helpers
+    ###########################################################################
+
+    def self.needs_restart?(mod : Model::Module) : Bool
+      mod.ip_changed? || mod.port_changed? || mod.tls_changed? || mod.udp_changed? || mod.makebreak_changed? || mod.uri_changed?
+    end
 
     # Protocol Managers
     ###########################################################################
