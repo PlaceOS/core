@@ -81,11 +81,13 @@ module PlaceOS
         when RethinkORM::Changefeed::Event::Deleted
           remove_module(mod)
         when RethinkORM::Changefeed::Event::Updated
-          if ModuleManager.needs_restart?(mod)
-            mod.running ? restart_module(mod) : stop_module(mod)
-          elsif mod.running_changed? && discovery.own_node?(mod.id.as(String))
-            # Running state of the module has changed
-            mod.running ? start_module(mod) : stop_module(mod)
+          if discovery.own_node?(mod.id.as(String))
+            if ModuleManager.needs_restart?(mod)
+              mod.running ? restart_module(mod) : stop_module(mod)
+            elsif mod.running_changed?
+              # Running state of the module has changed
+              mod.running ? start_module(mod) : stop_module(mod)
+            end
           end
         end
       end
@@ -158,9 +160,9 @@ module PlaceOS
       manager = proc_manager_by_module?(mod_id)
 
       if manager
+        Log.info { {message: "restarting module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
         manager.stop(mod_id)
         start_module(mod)
-        Log.info { {message: "restarted module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
       else
         Log.error { {message: "missing protocol manager on restart", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
       end
