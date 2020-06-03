@@ -13,8 +13,10 @@ require "mutex"
 require "redis"
 require "rethinkdb-orm/utils/changefeed"
 
+require "./resource"
+
 module PlaceOS
-  class Core::ModuleManager
+  class Core::ModuleManager < Core::Resource(Model::Module)
     include Drivers::Helper
 
     # In k8s we can grab the Pod information from the environment
@@ -70,27 +72,33 @@ module PlaceOS
         uri: @uri,
         discovery: @discovery,
       )
+      super()
     end
 
-    def watch_modules
-      Model::Module.changes.each do |change|
-        mod = change[:value]
-        case change[:event]
-        when RethinkORM::Changefeed::Event::Created
-          load_module(mod)
-        when RethinkORM::Changefeed::Event::Deleted
-          remove_module(mod)
-        when RethinkORM::Changefeed::Event::Updated
-          if discovery.own_node?(mod.id.as(String))
-            if ModuleManager.needs_restart?(mod)
-              mod.running ? restart_module(mod) : stop_module(mod)
-            elsif mod.running_changed?
-              # Running state of the module has changed
-              mod.running ? start_module(mod) : stop_module(mod)
-            end
-          end
+    def process_resource(event) : Resource::Result
+      mod = event[:resource]
+      case event[:action]
+      when Resource::Action::Created
+        load_module(mod)
+        Resource::Result::Success
+      when Resource::Action::Deleted
+        remove_module(mod)
+        Resource::Result::Success
+      when Resource::Action::Updated
+        return Resource::Result::Skipped unless discovery.own_node?(mod.id.as(String))
+
+        if ModuleManager.needs_restart?(mod)
+          # Changes to Module state which requires a restart
+          mod.running ? restart_module(mod) : stop_module(mod)
+          Resource::Result::Success
+        elsif mod.running_changed?
+          # Running state of the module has changed
+          mod.running ? start_module(mod) : stop_module(mod)
+          Resource::Result::Success
+        else
+          Resource::Result::Skipped
         end
-      end
+      end.as(Resource::Result)
     end
 
     # The number of drivers loaded on current node
@@ -109,13 +117,15 @@ module PlaceOS
 
     # Map reduce the querying of what modules are loaded on running drivers
     def loaded_modules : Hash(String, Array(String))
-      Promise.all(@driver_proc_managers.map { |driver, manager|
-        Promise.defer { {driver, manager.info} }
-      }).then { |driver_info|
-        loaded = {} of String => Array(String)
-        driver_info.each { |(driver, info)| loaded[driver] = info }
-        loaded
-      }.get
+      proc_manager_lock.synchronize do
+        Promise.all(@driver_proc_managers.map { |driver, manager|
+          Promise.defer { {driver, manager.info} }
+        }).then { |driver_info|
+          loaded = {} of String => Array(String)
+          driver_info.each { |(driver, info)| loaded[driver] = info }
+          loaded
+        }.get
+      end
     end
 
     def start
@@ -124,27 +134,24 @@ module PlaceOS
         stabilize(nodes)
       end
 
-      Model::Module.all.each do |mod|
-        load_module(mod)
-      end
-
-      # Listen for incoming module changes
-      spawn(same_thread: true) { watch_modules }
-
-      Log.info { {message: "loaded modules", drivers: running_drivers, modules: running_modules} }
-      Fiber.yield
+      super
 
       @started = true
-
       self
     end
 
     def start_module(mod : Model::Module)
+      begin
+        # Merge module settings
+        merged_settings = mod.merge_settings
+      rescue e
+        raise ModuleError.new("Failed to merge module settings")
+      end
+
       # Start format
       payload = mod.to_json.rchop
-
       # The settings object needs to be unescaped
-      payload = %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{mod.merge_settings}})
+      payload = %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{merged_settings}})
 
       mod_id = mod.id.as(String)
       proc_manager = proc_manager_by_module?(mod_id)
@@ -206,7 +213,11 @@ module PlaceOS
       # create a one off rendezvous hash with nodes from the stabilization event
       rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
       Model::Module.all.each do |m|
-        load_module(m, rendezvous_hash)
+        begin
+          load_module(m, rendezvous_hash)
+        rescue e
+          Log.error(exception: e) { {message: "failed to load module during stabilization", module_id: m.id, name: m.name, custom_name: m.custom_name} }
+        end
       end
     end
 
