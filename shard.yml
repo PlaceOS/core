@@ -1,5 +1,5 @@
 name: placeos-core
-version: 2.2.0
+version: 2.3.0
 
 targets:
   core:
@@ -13,11 +13,11 @@ dependencies:
     github: place-labs/clustering
     version: ~> 2.0
 
-  driver:
+  placeos-driver:
     github: placeos/driver
-    version: ~> 2.0
+    version: ~> 3.0
 
-  compiler:
+  placeos-compiler:
     github: placeos/compiler
 
   log_helper:
@@ -28,7 +28,8 @@ dependencies:
     version: ~> 2.0
 
   hardware:
-    github: crystal-community/hardware
+    github: caspiano/hardware
+    version: ~> 0.6
 
   habitat:
     github: luckyframework/habitat

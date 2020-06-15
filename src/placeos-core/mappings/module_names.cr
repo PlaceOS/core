@@ -1,5 +1,5 @@
-require "driver/storage"
-require "driver/subscriptions"
+require "placeos-driver/storage"
+require "placeos-driver/subscriptions"
 require "placeos-models/control_system"
 require "placeos-models/module"
 

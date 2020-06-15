@@ -1,8 +1,8 @@
 require "deque"
 require "rethinkdb-orm"
 
-require "compiler/drivers"
-require "compiler/drivers/helper"
+require "placeos-compiler/drivers"
+require "placeos-compiler/drivers/helper"
 
 # Internally abstracts data event streams.
 #

@@ -1,5 +1,5 @@
-require "compiler/drivers/compiler"
-require "compiler/drivers/helper"
+require "placeos-compiler/drivers/compiler"
+require "placeos-compiler/drivers/helper"
 require "placeos-models/driver"
 require "placeos-models/repository"
 

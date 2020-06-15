@@ -69,11 +69,9 @@ def set_temporary_working_directory(fresh : Bool = false) : String
   PlaceOS::Drivers::Compiler.drivers_dir = "#{temp_dir}/repositories/private-drivers"
   PlaceOS::Drivers::Compiler.repository_dir = "#{temp_dir}/repositories"
 
-  parallel(
-    Dir.mkdir_p(PlaceOS::Drivers::Compiler.bin_dir),
-    Dir.mkdir_p(PlaceOS::Drivers::Compiler.drivers_dir),
-    Dir.mkdir_p(PlaceOS::Drivers::Compiler.repository_dir),
-  )
+  Dir.mkdir_p(PlaceOS::Drivers::Compiler.bin_dir)
+  Dir.mkdir_p(PlaceOS::Drivers::Compiler.drivers_dir)
+  Dir.mkdir_p(PlaceOS::Drivers::Compiler.repository_dir)
 
   temp_dir
 end
@@ -92,7 +90,7 @@ def setup(fresh : Bool = false)
   driver_file_name = "drivers/place/private_helper.cr"
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
-  driver_commit = "1b2de89"
+  driver_commit = "c7c35b18d39394fc8fb82aca5144a06326219407"
   driver_role = PlaceOS::Model::Driver::Role::Logic
 
   existing_repo = PlaceOS::Model::Repository.where(uri: repository_uri).first?

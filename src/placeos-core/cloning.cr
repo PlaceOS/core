@@ -1,5 +1,5 @@
-require "compiler/drivers/compiler"
-require "compiler/drivers/git_commands"
+require "placeos-compiler/drivers/compiler"
+require "placeos-compiler/drivers/git_commands"
 require "file_utils"
 require "placeos-models"
 
