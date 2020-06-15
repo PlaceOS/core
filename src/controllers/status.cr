@@ -1,5 +1,5 @@
 require "hardware"
-require "compiler/drivers/helper"
+require "placeos-compiler/drivers/helper"
 
 require "./application"
 require "../placeos-core/module_manager"

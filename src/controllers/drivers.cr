@@ -1,4 +1,4 @@
-require "compiler/drivers/helper"
+require "placeos-compiler/drivers/helper"
 require "redis"
 
 require "./application"
