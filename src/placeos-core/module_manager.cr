@@ -4,7 +4,7 @@ require "placeos-models/module"
 require "placeos-models/settings"
 
 require "clustering"
-require "driver/protocol/management"
+require "placeos-driver/protocol/management"
 require "placeos-compiler/drivers/compiler"
 require "placeos-compiler/drivers/helper"
 require "habitat"

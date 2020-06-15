@@ -73,8 +73,8 @@ shards:
     version: 0.4.3
 
   hardware:
-    git: https://github.com/crystal-community/hardware.git
-    version: 0.5.0
+    git: https://github.com/caspiano/hardware.git
+    version: 0.6.0
 
   hound-dog:
     git: https://github.com/place-labs/hound-dog.git
@@ -114,7 +114,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 3.2.0
+    version: 3.3.0
 
   placeos-models:
     git: https://github.com/placeos/models.git
