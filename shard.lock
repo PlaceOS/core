@@ -118,7 +118,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 2.0.2
+    version: 2.0.3
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
@@ -154,7 +154,7 @@ shards:
 
   rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 2.9.0
+    version: 2.9.1
 
   rwlock:
     git: https://github.com/spider-gazelle/readers-writer.git
