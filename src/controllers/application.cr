@@ -4,7 +4,7 @@ require "action-controller"
 module PlaceOS::Core::Api
   abstract class Application < ActionController::Base
     Log = ::PlaceOS::Core::Log.for("controller")
-  
+
     before_action :set_request_id
 
     # This makes it simple to match client requests with server side logs.

@@ -1,4 +1,5 @@
 require "deque"
+require "promise"
 require "rethinkdb-orm"
 
 require "placeos-compiler/drivers"
@@ -65,10 +66,10 @@ abstract class PlaceOS::Core::Resource(T)
 
     # Listen for changes on the resource table
     spawn(same_thread: true) { watch_resources }
+
     # Load all the resources into a channel
-    initial_resource_count = load_resources
-    # TODO: Defer using a form of Promise.all
-    initial_resource_count.times { _process_event(consume_event) }
+    load_resources
+
     # Begin background processing
     spawn(same_thread: true) { watch_processing }
     Fiber.yield
@@ -87,14 +88,15 @@ abstract class PlaceOS::Core::Resource(T)
 
   # Load all resources from the database, push into a channel
   #
-  private def load_resources
-    count = 0
-    T.all.each do |resource|
-      event_channel.send({resource: resource, action: Action::Created})
-      count += 1
+  private def load_resources : Nil
+    waiting = [] of Promise::DeferredPromise(Nil)
+    all(T).in_groups_of(channel_buffer_size).each do |resources|
+      resources.each do |resource|
+        waiting << Promise.defer { _process_event({resource: resource, action: Action::Created}) }
+      end
+      Promise.all(waiting).get
+      waiting.clear
     end
-
-    count
   end
 
   # Listen to changes on the resource table
@@ -133,7 +135,7 @@ abstract class PlaceOS::Core::Resource(T)
 
   # Process the event, place into the processed buffer
   #
-  private def _process_event(event : NamedTuple(resource: T, action: Action))
+  private def _process_event(event : NamedTuple(resource: T, action: Action)) : Nil
     Log.context.set({
       resource_type:    T.name,
       resource_handler: self.class.name,
