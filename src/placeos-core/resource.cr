@@ -92,7 +92,8 @@ abstract class PlaceOS::Core::Resource(T)
     waiting = [] of Promise::DeferredPromise(Nil)
     T.all(runopts: {"read_mode" => "majority"}).in_groups_of(channel_buffer_size).each do |resources|
       resources.each do |resource|
-        waiting << Promise.defer { _process_event({resource: resource, action: Action::Created}) }
+        next unless resource
+        waiting << Promise.defer { _process_event({resource: resource.not_nil!, action: Action::Created}) }
       end
       Promise.all(waiting).get
       waiting.clear
