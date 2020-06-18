@@ -41,3 +41,5 @@ ActionController::Server.before(
 # Configure logging
 log_level = PROD ? Log::Severity::Info : Log::Severity::Debug
 ::Log.setup "*", log_level, PlaceOS::Core::LOG_BACKEND
+::Log.builder.bind "action-controller.*", log_level, PlaceOS::Core::LOG_BACKEND
+::Log.builder.bind "core.*", log_level, PlaceOS::Core::LOG_BACKEND
