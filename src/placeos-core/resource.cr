@@ -90,7 +90,7 @@ abstract class PlaceOS::Core::Resource(T)
   #
   private def load_resources : Nil
     waiting = [] of Promise::DeferredPromise(Nil)
-    all(T).in_groups_of(channel_buffer_size).each do |resources|
+    T.all(runopts: {"read_mode" => "majority"}).in_groups_of(channel_buffer_size).each do |resources|
       resources.each do |resource|
         waiting << Promise.defer { _process_event({resource: resource, action: Action::Created}) }
       end
