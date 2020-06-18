@@ -3,7 +3,7 @@ require "action-controller"
 
 module PlaceOS::Core::Api
   abstract class Application < ActionController::Base
-    Log = ::App::Log.for("controller")
+    Log = ::PlaceOS::Core::Log.for("controller")
   
     before_action :set_request_id
 
