@@ -41,6 +41,9 @@ dependencies:
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
 
+  promise:
+    github: spider-gazelle/promise
+
 development_dependencies:
   faker:
     github: askn/faker
