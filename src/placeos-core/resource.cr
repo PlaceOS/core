@@ -89,8 +89,10 @@ abstract class PlaceOS::Core::Resource(T)
   # Load all resources from the database, push into a channel
   #
   private def load_resources : Nil
+    count = 0_u64
     waiting = [] of Promise::DeferredPromise(Nil)
     T.all(runopts: {"read_mode" => "majority"}).in_groups_of(channel_buffer_size).each do |resources|
+      count += resources.size
       resources.each do |resource|
         next unless resource
         event = {resource: resource, action: Action::Created}
@@ -99,6 +101,7 @@ abstract class PlaceOS::Core::Resource(T)
       Promise.all(waiting).get
       waiting.clear
     end
+    Log.info { "loaded #{count} #{T} resources" }
   end
 
   # Listen to changes on the resource table
