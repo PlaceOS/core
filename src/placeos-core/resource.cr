@@ -36,11 +36,11 @@ abstract class PlaceOS::Core::Resource(T)
   end
 
   # Errors generated while processing resources
-  getter errors : Array(Error) = [] of Error
-
   # NOTE: rw lock?
   # TODO: move away from error array, just throw the error in process resource
-  #       that way it can catch the error and log it. this is currently a memory leak
+  #       that way it can catch the error and log it. This _is_ currently a memory leak.
+  getter errors : Array(Error) = [] of Error
+
   private getter channel_buffer_size
   private getter processed_buffer_size
 
