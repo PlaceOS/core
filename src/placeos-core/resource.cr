@@ -36,10 +36,9 @@ abstract class PlaceOS::Core::Resource(T)
   end
 
   # Errors generated while processing resources
-  # NOTE: rw lock?
-  # TODO: move away from error array, just throw the error in process resource
-  #       that way it can catch the error and log it. This _is_ currently a memory leak.
+  # Mainly for inspection while testing.
   getter errors : Array(Error) = [] of Error
+  private getter error_buffer_size = 50
 
   private getter channel_buffer_size
   private getter processed_buffer_size
@@ -92,11 +91,13 @@ abstract class PlaceOS::Core::Resource(T)
     count = 0_u64
     waiting = [] of Promise::DeferredPromise(Nil)
     T.all(runopts: {"read_mode" => "majority"}).in_groups_of(channel_buffer_size).each do |resources|
-      count += resources.size
       resources.each do |resource|
         next unless resource
         event = {resource: resource, action: Action::Created}
-        waiting << Promise.defer(same_thread: true) { _process_event(event) }
+        waiting << Promise.defer(same_thread: true) do
+          count += 1
+          _process_event(event)
+        end
       end
       Promise.all(waiting).get
       waiting.clear
@@ -158,7 +159,10 @@ abstract class PlaceOS::Core::Resource(T)
       when Result::Error   then Log.warn { {message: "resource processing failed", resource: event[:resource].to_json} }
       end
     rescue e : ProcessingError
-      Log.warn { {message: "resource processing failed", error: "#{e.name} failed with #{e.message}"} }
+      Log.warn(exception: e) { {message: "resource processing failed", error: "#{e.name} failed with #{e.message}"} }
+      while errors.size >= error_buffer_size
+        errors.shift?
+      end
       errors << e.to_error
     end
   rescue e
