@@ -5,7 +5,7 @@ module PlaceOS::Core
   API_VERSION = "v1"
   VERSION     = {{ `shards version "#{__DIR__}"`.chomp.stringify.downcase }}
 
-  REPOS = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
+  REPOS   = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
   DRIVERS = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Drivers::Compiler.repository_dir, "drivers")
 
   ETCD_HOST = ENV["ETCD_HOST"]? || "localhost"
@@ -18,4 +18,11 @@ module PlaceOS::Core
   def self.production?
     PROD
   end
+
+  # NOTE:: these are used in files that are included in other projects
+  # ENV["CORE_HOST"]
+  # ENV["CORE_PORT"]
+  # ENV["REDIS_URL"]
+  # ./placeos-core/module_manager.cr
+  # ./placeos-core/client.cr
 end
