@@ -103,7 +103,7 @@ module PlaceOS::Core::Api
     @@redis : Redis? = nil
 
     def self.redis : Redis
-      (@@redis ||= Redis.new(url: ENV["REDIS_URL"]?)).as(Redis)
+      (@@redis ||= Redis.new(url: PlaceOS::Core::REDIS_URL)).as(Redis)
     end
 
     # Do a look up in redis for the details

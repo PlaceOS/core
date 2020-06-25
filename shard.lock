@@ -102,7 +102,7 @@ shards:
 
   neuroplastic:
     git: https://github.com/spider-gazelle/neuroplastic.git
-    version: 1.5.0
+    version: 1.6.0
 
   openssl_ext:
     git: https://github.com/stakach/openssl_ext.git
@@ -114,7 +114,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 3.4.0
+    version: 3.4.1
 
   placeos-models:
     git: https://github.com/placeos/models.git
@@ -159,6 +159,10 @@ shards:
   rwlock:
     git: https://github.com/spider-gazelle/readers-writer.git
     version: 1.0.5
+
+  secrets-env:
+    git: https://github.com/place-labs/secrets-env.git
+    version: 1.0.0
 
   simple_retry:
     git: https://github.com/spider-gazelle/simple_retry.git

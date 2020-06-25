@@ -15,31 +15,28 @@ require "./controllers/*"
 require "action-controller/server"
 
 # Path to driver repositories
-PlaceOS::Drivers::Compiler.repository_dir = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
+PlaceOS::Drivers::Compiler.repository_dir = PlaceOS::Core::REPOS
 # Path to default drivers repository
-PlaceOS::Drivers::Compiler.drivers_dir = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Drivers::Compiler.repository_dir, "drivers")
+PlaceOS::Drivers::Compiler.drivers_dir = PlaceOS::Core::DRIVERS
 
 # Configure Service discovery
 HoundDog.configure do |settings|
   settings.service_namespace = "core"
-  settings.etcd_host = ENV["ETCD_HOST"]? || "localhost"
-  settings.etcd_port = (ENV["ETCD_PORT"]? || 2379).to_i
+  settings.etcd_host = PlaceOS::Core::ETCD_HOST
+  settings.etcd_port = PlaceOS::Core::ETCD_PORT
 end
-
-PROD = ENV["SG_ENV"]? == "production"
 
 # Filter out sensitive params that shouldn't be logged
 filter_params = ["password", "bearer_token"]
 
 # Add handlers that should run before your application
 ActionController::Server.before(
-  HTTP::ErrorHandler.new(PROD),
-  ActionController::LogHandler.new(PROD ? filter_params : nil),
-  HTTP::CompressHandler.new
+  HTTP::ErrorHandler.new(PlaceOS::Core.production?),
+  ActionController::LogHandler.new(filter_params)
 )
 
 # Configure logging
-log_level = PROD ? Log::Severity::Info : Log::Severity::Debug
+log_level = PlaceOS::Core.production? ? Log::Severity::Info : Log::Severity::Debug
 ::Log.setup "*", log_level, PlaceOS::Core::LOG_BACKEND
 ::Log.builder.bind "action-controller.*", log_level, PlaceOS::Core::LOG_BACKEND
 ::Log.builder.bind "core.*", log_level, PlaceOS::Core::LOG_BACKEND
