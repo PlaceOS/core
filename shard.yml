@@ -45,6 +45,9 @@ dependencies:
   promise:
     github: spider-gazelle/promise
 
+  secrets-env:
+    github: place-labs/secrets-env
+
 development_dependencies:
   faker:
     github: askn/faker

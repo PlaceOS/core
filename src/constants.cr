@@ -1,5 +1,21 @@
+require "secrets-env"
+
 module PlaceOS::Core
   APP_NAME    = "core"
   API_VERSION = "v1"
   VERSION     = {{ `shards version "#{__DIR__}"`.chomp.stringify.downcase }}
+
+  REPOS = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
+  DRIVERS = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Drivers::Compiler.repository_dir, "drivers")
+
+  ETCD_HOST = ENV["ETCD_HOST"]? || "localhost"
+  ETCD_PORT = (ENV["ETCD_PORT"]? || 2379).to_i
+
+  REDIS_URL = ENV["REDIS_URL"]?
+
+  PROD = ENV["SG_ENV"]? == "production"
+
+  def self.production?
+    PROD
+  end
 end
