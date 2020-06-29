@@ -41,6 +41,7 @@ dependencies:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
+    version: ~> 2.9, >= 2.9.2
 
   promise:
     github: spider-gazelle/promise

@@ -70,7 +70,7 @@ shards:
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
-    version: 0.4.3
+    version: 0.4.4
 
   hardware:
     git: https://github.com/caspiano/hardware.git
@@ -110,7 +110,7 @@ shards:
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
-    version: 2.0.3
+    version: 2.0.4
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
@@ -118,7 +118,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 2.1.1
+    version: 2.1.2
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
@@ -149,12 +149,16 @@ shards:
     version: 0.3.1
 
   rethinkdb:
-    git: https://github.com/aca-labs/crystal-rethinkdb.git
-    version: 1.0.0
+    git: https://github.com/kingsleyh/crystal-rethinkdb.git
+    version: 0.2.0
 
   rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 2.9.1
+    version: 2.9.2
+
+  retriable:
+    git: https://github.com/sija/retriable.cr.git
+    version: 0.2.2
 
   rwlock:
     git: https://github.com/spider-gazelle/readers-writer.git
