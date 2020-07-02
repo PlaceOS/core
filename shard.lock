@@ -6,7 +6,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 3.1.6
+    version: 3.3.0
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -47,10 +47,6 @@ shards:
   debug:
     git: https://github.com/Sija/debug.cr.git
     version: 1.1.0
-
-  delimiter_tree:
-    git: https://github.com/drujensen/delimiter_tree.git
-    version: 0.1.4
 
   etcd:
     git: https://github.com/place-labs/crystal-etcd.git
@@ -96,6 +92,10 @@ shards:
     git: https://github.com/spider-gazelle/log_helper.git
     version: 1.0.2
 
+  lucky_router:
+    git: https://github.com/luckyframework/lucky_router.git
+    version: 0.3.0
+
   murmur3:
     git: https://github.com/aca-labs/murmur3.git
     version: 0.1.1+git.commit.7cbe25c0ca8d052c9d98c377c824dcb0e038c790
@@ -118,7 +118,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 2.1.2
+    version: 3.0.0
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
@@ -154,7 +154,7 @@ shards:
 
   rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 2.9.2
+    version: 2.10.1
 
   retriable:
     git: https://github.com/sija/retriable.cr.git
