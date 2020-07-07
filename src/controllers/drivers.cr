@@ -1,4 +1,4 @@
-require "placeos-compiler/drivers/helper"
+require "placeos-compiler/helper"
 require "redis"
 
 require "./application"
@@ -10,7 +10,7 @@ module PlaceOS::Core::Api
     # The drivers available, returns Array(String)
     def index
       repository = params["repository"]
-      render json: PlaceOS::Drivers::Helper.drivers(repository)
+      render json: PlaceOS::Compiler::Helper.drivers(repository)
     end
 
     # Returns the list of commits for a particular driver
@@ -19,7 +19,7 @@ module PlaceOS::Core::Api
       repository = params["repository"]
       count = (params["count"]? || 50).to_i
 
-      render json: PlaceOS::Drivers::Helper.commits(driver, repository, count)
+      render json: PlaceOS::Compiler::Helper.commits(driver, repository, count)
     end
 
     # Boolean check whether driver is compiled
@@ -28,7 +28,7 @@ module PlaceOS::Core::Api
       commit = params["commit"]
       tag = params["tag"]
 
-      render json: PlaceOS::Drivers::Helper.compiled?(driver_file, commit, tag)
+      render json: PlaceOS::Compiler::Helper.compiled?(driver_file, commit, tag)
     end
 
     # Returns the details of a driver
@@ -50,7 +50,7 @@ module PlaceOS::Core::Api
       Log.info { "compiling" }
 
       uuid = UUID.random.to_s
-      compile_result = PlaceOS::Drivers::Helper.compile_driver(driver, repository, commit, id: uuid)
+      compile_result = PlaceOS::Compiler::Helper.compile_driver(driver, repository, commit, id: uuid)
       temporary_driver_path = compile_result[:executable]
 
       # check driver compiled
@@ -59,7 +59,7 @@ module PlaceOS::Core::Api
         render :internal_server_error, json: compile_result
       end
 
-      executable_path = PlaceOS::Drivers::Helper.driver_binary_path(driver, commit, uuid)
+      executable_path = PlaceOS::Compiler::Helper.driver_binary_path(driver, commit, uuid)
       io = IO::Memory.new
       result = Process.run(
         executable_path,

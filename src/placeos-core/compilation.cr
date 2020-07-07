@@ -1,5 +1,5 @@
-require "placeos-compiler/drivers/compiler"
-require "placeos-compiler/drivers/helper"
+require "placeos-compiler/compiler"
+require "placeos-compiler/helper"
 require "placeos-models/driver"
 require "placeos-models/repository"
 
@@ -14,15 +14,15 @@ module PlaceOS
 
     def initialize(
       @startup : Bool = true,
-      bin_dir : String = Drivers::Compiler.bin_dir,
-      drivers_dir : String = Drivers::Compiler.drivers_dir,
-      repository_dir : String = Drivers::Compiler.repository_dir,
+      bin_dir : String = Compiler.bin_dir,
+      drivers_dir : String = Compiler.drivers_dir,
+      repository_dir : String = Compiler.repository_dir,
       @module_manager : ModuleManager = ModuleManager.instance
     )
       buffer_size = System.cpu_count.to_i
-      Drivers::Compiler.bin_dir = bin_dir
-      Drivers::Compiler.drivers_dir = drivers_dir
-      Drivers::Compiler.repository_dir = repository_dir
+      Compiler.bin_dir = bin_dir
+      Compiler.drivers_dir = drivers_dir
+      Compiler.repository_dir = repository_dir
 
       super(buffer_size)
     end
@@ -68,7 +68,7 @@ module PlaceOS
           commit:          commit,
         })
 
-        if !force_recompile && !driver.commit_changed? && Drivers::Helper.compiled?(file_name, commit, driver_id)
+        if !force_recompile && !driver.commit_changed? && Compiler::Helper.compiled?(file_name, commit, driver_id)
           Log.info { "commit unchanged and driver already compiled" }
           Compilation.reload_modules(driver, module_manager)
           return {true, ""}
@@ -86,7 +86,7 @@ module PlaceOS
         end
       end
 
-      result = Drivers::Helper.compile_driver(file_name, repository_name, commit, id: driver_id)
+      result = Compiler::Helper.compile_driver(file_name, repository_name, commit, id: driver_id)
       success = result[:exit_status] == 0
 
       unless success
@@ -180,7 +180,7 @@ module PlaceOS
 
       stale_path || driver.commit_was.try { |commit|
         # Try to create a driver path from what the commit used to be
-        Drivers::Helper.driver_binary_path(driver.file_name.as(String), commit, driver_id)
+        Compiler::Helper.driver_binary_path(driver.file_name.as(String), commit, driver_id)
       }
     end
 

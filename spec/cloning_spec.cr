@@ -18,7 +18,7 @@ module PlaceOS::Core
 
       cloner = Cloning.new(testing: true).start
 
-      full_repository_path = File.join(Drivers::Compiler.repository_dir, folder_name)
+      full_repository_path = File.join(Compiler.repository_dir, folder_name)
 
       # Check repository has been processed
       cloner.processed.size.should eq 1
@@ -27,7 +27,7 @@ module PlaceOS::Core
       # Check the cloning took place
       Dir.exists?(full_repository_path).should be_true
 
-      commit_hash = Drivers::Helper.repository_commit_hash(folder_name)
+      commit_hash = Compiler::Helper.repository_commit_hash(folder_name)
       Model::Repository.find!(repo.id.as(String)).commit_hash.should eq commit_hash
 
       repo.destroy

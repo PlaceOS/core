@@ -1,5 +1,5 @@
-require "placeos-compiler/drivers/compiler"
-require "placeos-compiler/drivers/helper"
+require "placeos-compiler/compiler"
+require "placeos-compiler/helper"
 
 require "./helper"
 
@@ -14,7 +14,7 @@ module PlaceOS::Core
       driver_file = driver.file_name.as(String)
 
       # Clone driver repository
-      PlaceOS::Drivers::Compiler.clone_and_install(
+      PlaceOS::Compiler.clone_and_install(
         repository: repository_name,
         repository_uri: repository_uri,
       )
@@ -26,7 +26,7 @@ module PlaceOS::Core
 
       driver.reload!
 
-      PlaceOS::Drivers::Helper.compiled?(driver_file, driver.commit.not_nil!, driver.id.not_nil!).should be_true
+      PlaceOS::Compiler::Helper.compiled?(driver_file, driver.commit.not_nil!, driver.id.not_nil!).should be_true
 
       compiler.stop
     end

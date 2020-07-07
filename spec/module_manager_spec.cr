@@ -18,8 +18,8 @@ module PlaceOS::Core
       driver_file_name = driver.file_name.as(String)
 
       begin
-        repo_commit_hash = PlaceOS::Drivers::Helper.repository_commit_hash(repo_folder)
-        driver_commit_hash = PlaceOS::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
+        repo_commit_hash = PlaceOS::Compiler::Helper.repository_commit_hash(repo_folder)
+        driver_commit_hash = PlaceOS::Compiler::Helper.file_commit_hash(driver_file_name, repo_folder)
         driver.update_fields(commit: driver_commit_hash)
         repo.update_fields(commit_hash: repo_commit_hash)
         sleep 0.2
@@ -30,8 +30,8 @@ module PlaceOS::Core
 
       mod_id = mod.id.as(String)
       driver_id = driver.id.as(String)
-      driver_commit_hash = PlaceOS::Drivers::Helper.file_commit_hash(driver_file_name, repo_folder)
-      driver_path = PlaceOS::Drivers::Helper.driver_binary_path(driver_file_name, driver_commit_hash, driver_id)
+      driver_commit_hash = PlaceOS::Compiler::Helper.file_commit_hash(driver_file_name, repo_folder)
+      driver_path = PlaceOS::Compiler::Helper.driver_binary_path(driver_file_name, driver_commit_hash, driver_id)
 
       module_manager.load_module(mod)
       module_manager.running_modules.should eq 1

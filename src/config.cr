@@ -15,9 +15,9 @@ require "./controllers/*"
 require "action-controller/server"
 
 # Path to driver repositories
-PlaceOS::Drivers::Compiler.repository_dir = PlaceOS::Core::REPOS
+PlaceOS::Compiler.repository_dir = PlaceOS::Core::REPOS
 # Path to default drivers repository
-PlaceOS::Drivers::Compiler.drivers_dir = PlaceOS::Core::DRIVERS
+PlaceOS::Compiler.drivers_dir = PlaceOS::Core::DRIVERS
 
 # Configure Service discovery
 HoundDog.configure do |settings|
