@@ -6,7 +6,7 @@ module PlaceOS::Core
   VERSION     = {{ `shards version "#{__DIR__}"`.chomp.stringify.downcase }}
 
   REPOS   = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
-  DRIVERS = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Drivers::Compiler.repository_dir, "drivers")
+  DRIVERS = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Compiler.repository_dir, "drivers")
 
   ETCD_HOST = ENV["ETCD_HOST"]? || "localhost"
   ETCD_PORT = (ENV["ETCD_PORT"]? || 2379).to_i

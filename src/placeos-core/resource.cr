@@ -2,14 +2,12 @@ require "deque"
 require "promise"
 require "rethinkdb-orm"
 
-require "placeos-compiler/drivers"
-require "placeos-compiler/drivers/helper"
+require "placeos-compiler"
+require "placeos-compiler/helper"
 
 # Internally abstracts data event streams.
 #
 abstract class PlaceOS::Core::Resource(T)
-  include PlaceOS::Drivers::Helper
-
   alias Error = NamedTuple(name: String, reason: String)
   alias Action = RethinkORM::Changefeed::Event
 

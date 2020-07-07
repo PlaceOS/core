@@ -1,5 +1,5 @@
 name: placeos-core
-version: 2.4.0
+version: 2.5.0
 crystal: 0.35.1
 
 targets:
@@ -9,6 +9,7 @@ targets:
 dependencies:
   action-controller:
     github: spider-gazelle/action-controller
+    version: ~> 3.3
 
   clustering:
     github: place-labs/clustering
@@ -20,18 +21,19 @@ dependencies:
 
   placeos-compiler:
     github: placeos/compiler
-    version: ~> 2.0
+    version: ~> 3.0
 
   log_helper:
     github: spider-gazelle/log_helper
+    version: ~> 1
 
   placeos-models:
     github: placeos/models
-    version: ~> 3.0
+    version: ~> 3.0, >= 3.0.6
 
   hardware:
-    github: caspiano/hardware
-    version: ~> 0.6
+    github: crystal-community/hardware
+    version: ~> 0.5
 
   habitat:
     github: luckyframework/habitat
@@ -46,9 +48,11 @@ dependencies:
 
   promise:
     github: spider-gazelle/promise
+    version: ~> 2
 
   secrets-env:
     github: place-labs/secrets-env
+    version: ~> 1
 
 development_dependencies:
   faker:

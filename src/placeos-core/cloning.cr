@@ -1,6 +1,7 @@
-require "placeos-compiler/drivers/compiler"
-require "placeos-compiler/drivers/git_commands"
 require "file_utils"
+require "placeos-compiler/compiler"
+require "placeos-compiler/git_commands"
+require "placeos-compiler/helper"
 require "placeos-models"
 
 require "./module_manager"
@@ -14,7 +15,7 @@ module PlaceOS
     def initialize(
       @username : String? = nil,
       @password : String? = nil,
-      @working_dir : String = Drivers::Compiler.repository_dir,
+      @working_dir : String = Compiler.repository_dir,
       @startup : Bool = true,
       @testing : Bool = false
     )
@@ -52,7 +53,7 @@ module PlaceOS
 
     def self.clone_and_install(
       repository : Model::Repository,
-      working_dir : String = Drivers::Compiler.repository_dir,
+      working_dir : String = Compiler.repository_dir,
       username : String? = nil,
       password : String? = nil,
       startup : Bool = false,
@@ -64,7 +65,7 @@ module PlaceOS
       repository_uri = repository.uri.as(String)
       repository_commit = repository.commit_hash.as(String)
 
-      Drivers::Compiler.clone_and_install(
+      Compiler.clone_and_install(
         repository: repository_folder_name,
         repository_uri: repository_uri,
         username: repository.username || username,
@@ -74,7 +75,7 @@ module PlaceOS
       )
 
       # Update commit hash if repository id maps to current node, or during startup
-      current_commit = Drivers::Helper.repository_commit_hash(repository_folder_name)
+      current_commit = Compiler::Helper.repository_commit_hash(repository_folder_name)
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
 
       if current_commit != repository_commit && own_node
@@ -110,7 +111,7 @@ module PlaceOS
 
     def self.delete_repository(
       repository : Model::Repository,
-      working_dir : String = Drivers::Compiler.repository_dir
+      working_dir : String = Compiler.repository_dir
     )
       repository_folder_name = repository.is_a?(String) ? repository : repository.folder_name.as(String)
       working_dir = File.expand_path(working_dir)

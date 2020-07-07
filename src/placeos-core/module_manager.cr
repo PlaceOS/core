@@ -1,12 +1,12 @@
+require "placeos-compiler/compiler"
+require "placeos-compiler/helper"
+require "placeos-driver/protocol/management"
 require "placeos-models/control_system"
 require "placeos-models/driver"
 require "placeos-models/module"
 require "placeos-models/settings"
 
 require "clustering"
-require "placeos-driver/protocol/management"
-require "placeos-compiler/drivers/compiler"
-require "placeos-compiler/drivers/helper"
 require "habitat"
 require "hound-dog"
 require "mutex"
@@ -17,7 +17,7 @@ require "./resource"
 
 module PlaceOS
   class Core::ModuleManager < Core::Resource(Model::Module)
-    include Drivers::Helper
+    include Compiler::Helper
 
     # In k8s we can grab the Pod information from the environment
     # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-pod-fields-as-values-for-environment-variables
@@ -325,7 +325,7 @@ module PlaceOS
           })
 
           # Check if the module is on the current node
-          unless (driver_path = PlaceOS::Drivers::Compiler.is_built?(driver_file_name, driver_commit, id: driver_id))
+          unless (driver_path = PlaceOS::Compiler.is_built?(driver_file_name, driver_commit, id: driver_id))
             Log.error { "driver does not exist for module" }
             return
           end

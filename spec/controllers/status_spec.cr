@@ -16,7 +16,7 @@ module PlaceOS::Core
         driver_file = driver.file_name.as(String)
         driver_id = driver.id.as(String)
         commit = driver.commit.as(String)
-        binary = Drivers::Compiler.executable_name(driver_file, commit, driver_id)
+        binary = Compiler.executable_name(driver_file, commit, driver_id)
         io = IO::Memory.new
         ctx = context("GET", namespace, json_headers)
         ctx.response.output = io

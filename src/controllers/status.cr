@@ -1,9 +1,9 @@
 require "hardware"
-require "placeos-compiler/drivers/helper"
+require "placeos-compiler/helper"
 
-require "./application"
 require "../placeos-core/module_manager"
 require "../placeos-core/resource_manager"
+require "./application"
 
 module PlaceOS::Core::Api
   class Status < Application
@@ -21,8 +21,8 @@ module PlaceOS::Core::Api
     # General statistics related to the process
     def index
       render json: {
-        compiled_drivers:         PlaceOS::Drivers::Helper.compiled_drivers,
-        available_repositories:   PlaceOS::Drivers::Helper.repositories,
+        compiled_drivers:         PlaceOS::Compiler::Helper.compiled_drivers,
+        available_repositories:   PlaceOS::Compiler::Helper.repositories,
         running_drivers:          module_manager.running_drivers,
         module_instances:         module_manager.running_modules,
         unavailable_repositories: resource_manager.cloning.errors,
