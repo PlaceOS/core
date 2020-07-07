@@ -40,7 +40,8 @@ module PlaceOS::Core::Api
       exec_request = body.gets_to_end
 
       begin
-        render json: protocol_manager.execute(module_id, exec_request)
+        response.content_type = "application/json"
+        render text: protocol_manager.execute(module_id, exec_request)
       rescue error : PlaceOS::Driver::RemoteException
         Log.error(exception: error) { "execute errored" }
         render :non_authoritative_information, json: {
