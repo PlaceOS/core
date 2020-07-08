@@ -37,7 +37,7 @@ module PlaceOS::Core
         ctx.response.status_code.should eq 200
 
         result = begin
-          String.from_json(ctx.response.output.to_s)
+          ctx.response.output.to_s
         rescue
           nil
         end
