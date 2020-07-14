@@ -1,16 +1,15 @@
-dist: xenial
 language: crystal
 services:
   - docker
   - redis-server
 
 env:
-  - SG_ENV=production TRAVIS_TEST=true
+  - SG_ENV=production
 
 before_install:
   # Configure git
   - git config --global user.name "PlaceOS"
-  - git config --global user.email support@acaprojects.com
+  - git config --global user.email support@place.technology
   # Add rethinkdb 2.4
   - docker run --net="host" -p "29015:29015" -p "28015:28015" -d rethinkdb:2.4
   # Add etcd 3.3.13
@@ -38,6 +37,7 @@ before_script:
 script:
   # Specs
   - crystal spec --error-trace -v
+  - crystal spec -Dpreview_mt --error-trace -v
   # Linter
   - bin/ameba
   # Formatter

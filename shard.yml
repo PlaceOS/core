@@ -1,6 +1,6 @@
 name: placeos-core
 version: 2.5.0
-crystal: 0.35.1
+crystal: ~> 0.35
 
 targets:
   core:
@@ -29,7 +29,7 @@ dependencies:
 
   placeos-models:
     github: placeos/models
-    version: ~> 3.0, >= 3.0.6
+    version: ~> 3.1
 
   hardware:
     github: crystal-community/hardware
