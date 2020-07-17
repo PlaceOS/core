@@ -1,6 +1,7 @@
 require "deque"
 require "promise"
 require "rethinkdb-orm"
+require "simple_retry"
 
 require "placeos-compiler"
 require "placeos-compiler/helper"
@@ -107,20 +108,24 @@ abstract class PlaceOS::Core::Resource(T)
   # Listen to changes on the resource table
   #
   private def watch_resources
-    T.changes.each do |change|
-      break if event_channel.closed?
-      event = {
-        action:   change[:event],
-        resource: change[:value],
-      }
+    SimpleRetry.try_to do
+      begin
+        T.changes.each do |change|
+          break if event_channel.closed?
 
-      Log.debug { {message: "resource event", type: T.name, action: event[:action].to_s, id: event[:resource].id} }
-      event_channel.send(event)
-    end
-  rescue e
-    unless e.is_a?(Channel::ClosedError)
-      Log.error(exception: e) { {message: "error while watching for resources"} }
-      watch_resources
+          event = {
+            action:   change[:event],
+            resource: change[:value],
+          }
+
+          Log.debug { {message: "resource event", type: T.name, action: event[:action].to_s, id: event[:resource].id} }
+          event_channel.send(event)
+        end
+      rescue Channel::ClosedError
+      rescue e
+        Log.error(exception: e) { "error while watching for #{T.name} changes" }
+        raise e
+      end
     end
   end
 
