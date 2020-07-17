@@ -1,5 +1,5 @@
 name: placeos-core
-version: 2.5.1
+version: 2.5.2
 crystal: ~> 0.35
 
 targets:
@@ -35,9 +35,6 @@ dependencies:
     github: crystal-community/hardware
     version: ~> 0.5
 
-  habitat:
-    github: luckyframework/habitat
-
   hound-dog:
     github: place-labs/hound-dog
     version: ~> 2.5
@@ -49,6 +46,10 @@ dependencies:
   promise:
     github: spider-gazelle/promise
     version: ~> 2
+
+  simple_retry:
+    github: spider-gazelle/simple_retry
+    version: ~> 1
 
   secrets-env:
     github: place-labs/secrets-env
