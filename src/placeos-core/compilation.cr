@@ -30,13 +30,13 @@ module PlaceOS
     def process_resource(event) : Resource::Result
       driver = event[:resource]
       case event[:action]
-      when Action::Created, Action::Updated
+      in Action::Created, Action::Updated
         success, output = Compilation.compile_driver(driver, startup?, module_manager)
         raise Resource::ProcessingError.new(driver.name, output) unless success
         Result::Success
-      when Action::Deleted
+      in Action::Deleted
         Result::Skipped
-      end.as(Result)
+      end
     rescue e
       # Add compilation errors
       raise Resource::ProcessingError.new(event[:resource].name, "#{e} #{e.message}")
@@ -48,27 +48,22 @@ module PlaceOS
       startup : Bool = false,
       module_manager : ModuleManager = ModuleManager.instance
     ) : Tuple(Bool, String)
-      commit = driver.commit.as(String)
       driver_id = driver.id.as(String)
-      file_name = driver.file_name.as(String)
-      name = driver.name.as(String)
-
-      repository = driver.repository.as(Model::Repository)
-      repository_name = repository.folder_name.as(String)
+      repository = driver.repository!
 
       force_recompile = driver.recompile_commit?
-      commit = force_recompile unless force_recompile.nil?
+      commit = force_recompile.nil? ? driver.commit : force_recompile
 
       ::Log.with_context do
         Log.context.set({
           driver_id:       driver_id,
-          name:            name,
-          file_name:       file_name,
-          repository_name: repository_name,
+          name:            driver.name,
+          file_name:       driver.file_name,
+          repository_name: repository.folder_name,
           commit:          commit,
         })
 
-        if !force_recompile && !driver.commit_changed? && Compiler::Helper.compiled?(file_name, commit, driver_id)
+        if !force_recompile && !driver.commit_changed? && Compiler::Helper.compiled?(driver.file_name, commit, driver_id)
           Log.info { "commit unchanged and driver already compiled" }
           Compilation.reload_modules(driver, module_manager)
           return {true, ""}
@@ -82,23 +77,23 @@ module PlaceOS
         begin
           Cloning.clone_and_install(repository)
         rescue e
-          return {false, "failed to pull and install #{repository_name}: #{e.try &.message}"}
+          return {false, "failed to pull and install #{repository.folder_name}: #{e.try &.message}"}
         end
       end
 
-      result = Compiler::Helper.compile_driver(file_name, repository_name, commit, id: driver_id)
+      result = Compiler::Helper.compile_driver(driver.file_name, repository.folder_name, commit, id: driver_id)
       success = result[:exit_status] == 0
 
       unless success
-        Log.error { {message: "failed to compile driver", output: result[:output], repository_name: repository_name} }
-        return {false, "failed to compile #{name} from #{repository_name}: #{result[:output]}"}
+        Log.error { {message: "failed to compile driver", output: result[:output], repository_name: repository.folder_name} }
+        return {false, "failed to compile #{driver.name} from #{repository.folder_name}: #{result[:output]}"}
       end
 
       Log.info { {
         message:         "compiled driver",
-        name:            name,
+        name:            driver.name,
         executable:      result[:executable],
-        repository_name: repository_name,
+        repository_name: repository.folder_name,
         output:          result[:output],
       } }
 
@@ -180,7 +175,7 @@ module PlaceOS
 
       stale_path || driver.commit_was.try { |commit|
         # Try to create a driver path from what the commit used to be
-        Compiler::Helper.driver_binary_path(driver.file_name.as(String), commit, driver_id)
+        Compiler::Helper.driver_binary_path(driver.file_name, commit, driver_id)
       }
     end
 

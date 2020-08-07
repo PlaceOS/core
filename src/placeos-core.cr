@@ -17,5 +17,7 @@ module PlaceOS::Core
         module_manager.start
       end
     end
+
+    Log.debug { "" }
   end
 end

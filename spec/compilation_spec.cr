@@ -9,14 +9,10 @@ module PlaceOS::Core
       # Set up a temporary directory
       _, repository, driver, _ = setup
 
-      repository_name = repository.folder_name.as(String)
-      repository_uri = repository.uri.as(String)
-      driver_file = driver.file_name.as(String)
-
       # Clone driver repository
       PlaceOS::Compiler.clone_and_install(
-        repository: repository_name,
-        repository_uri: repository_uri,
+        repository: repository.folder_name,
+        repository_uri: repository.uri,
       )
 
       # Commence compilation
@@ -26,7 +22,7 @@ module PlaceOS::Core
 
       driver.reload!
 
-      PlaceOS::Compiler::Helper.compiled?(driver_file, driver.commit.not_nil!, driver.id.not_nil!).should be_true
+      PlaceOS::Compiler::Helper.compiled?(driver.file_name, driver.commit, driver.id.not_nil!).should be_true
 
       compiler.stop
     end

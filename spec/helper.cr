@@ -127,7 +127,7 @@ def setup(fresh : Bool = false)
     mod.running = true
     mod.save!
 
-    control_system = mod.control_system.as(PlaceOS::Model::ControlSystem)
+    control_system = mod.control_system!
     control_system.modules = [mod.id.as(String)]
     control_system.save!
   end

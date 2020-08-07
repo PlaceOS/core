@@ -34,8 +34,8 @@ module PlaceOS::Core
         uri = URI.encode_www_form(SPEC_DRIVER)
 
         params = HTTP::Params{
-          "repository" => repo.folder_name.as(String),
-          "commit"     => driver.commit.as(String),
+          "repository" => repo.folder_name,
+          "commit"     => driver.commit,
           "tag"        => driver.id.as(String),
         }
 

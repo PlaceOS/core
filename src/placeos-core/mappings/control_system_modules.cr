@@ -69,12 +69,10 @@ module PlaceOS::Core
         return
       end
 
-      module_ids = control_system.modules.as(Array(String))
-
       # Construct a hash of resolved module name to ordered module ids
-      grouped_modules = module_ids.group_by do |id|
+      grouped_modules = control_system.modules.group_by do |id|
         # Save a lookup if a module passed
-        (mod && id == mod.id ? mod : Model::Module.find!(id)).resolved_name.as(String)
+        (mod && id == mod.id ? mod : Model::Module.find!(id)).resolved_name
       end
 
       # Index the modules
