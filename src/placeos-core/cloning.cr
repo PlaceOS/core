@@ -29,7 +29,7 @@ module PlaceOS
       return Result::Skipped if repository.repo_type == Model::Repository::Type::Interface
 
       case event[:action]
-      when Action::Created, Action::Updated
+      in Action::Created, Action::Updated
         # Clone and install the repository
         Cloning.clone_and_install(
           repository: repository,
@@ -39,13 +39,13 @@ module PlaceOS
           startup: startup?,
           testing: testing?,
         )
-      when Action::Deleted
+      in Action::Deleted
         # Delete the repository folder
         Cloning.delete_repository(
           repository: repository,
           working_dir: @working_dir,
         )
-      end.as(Result)
+      end
     rescue e
       # Add cloning errors
       raise Resource::ProcessingError.new(event[:resource].name, "#{e} #{e.message}")
@@ -61,13 +61,10 @@ module PlaceOS
     )
       repository_id = repository.id.as(String)
       # NOTE:: we want to use folder name at this level
-      repository_folder_name = repository.folder_name.as(String)
-      repository_uri = repository.uri.as(String)
-      repository_commit = repository.commit_hash.as(String)
 
       Compiler.clone_and_install(
-        repository: repository_folder_name,
-        repository_uri: repository_uri,
+        repository: repository.folder_name,
+        repository_uri: repository.uri,
         username: repository.username || username,
         password: repository.password || password,
         working_dir: working_dir,
@@ -75,10 +72,10 @@ module PlaceOS
       )
 
       # Update commit hash if repository id maps to current node, or during startup
-      current_commit = Compiler::Helper.repository_commit_hash(repository_folder_name)
+      current_commit = Compiler::Helper.repository_commit_hash(repository.folder_name)
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
 
-      if current_commit != repository_commit && own_node
+      if current_commit != repository.commit && own_node
         if startup
           Log.warn { {
             message:           "updating commit on repository during startup",
@@ -113,7 +110,7 @@ module PlaceOS
       repository : Model::Repository,
       working_dir : String = Compiler.repository_dir
     )
-      repository_folder_name = repository.is_a?(String) ? repository : repository.folder_name.as(String)
+      repository_folder_name = repository.is_a?(String) ? repository : repository.folder_name
       working_dir = File.expand_path(working_dir)
       repository_dir = File.expand_path(File.join(working_dir, repository_folder_name))
 

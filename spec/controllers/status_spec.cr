@@ -13,10 +13,7 @@ module PlaceOS::Core
 
         driver.reload!
 
-        driver_file = driver.file_name.as(String)
-        driver_id = driver.id.as(String)
-        commit = driver.commit.as(String)
-        binary = Compiler.executable_name(driver_file, commit, driver_id)
+        binary = Compiler.executable_name(driver.file_name, driver.commit, driver.id.as(String))
         io = IO::Memory.new
         ctx = context("GET", namespace, json_headers)
         ctx.response.output = io

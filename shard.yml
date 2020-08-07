@@ -1,5 +1,5 @@
 name: placeos-core
-version: 2.5.1
+version: 2.5.2
 crystal: ~> 0.35
 
 targets:
@@ -15,48 +15,52 @@ dependencies:
     github: place-labs/clustering
     version: ~> 2.0
 
-  placeos-driver:
-    github: placeos/driver
-    version: ~> 3.0
-
-  placeos-compiler:
-    github: placeos/compiler
-    version: ~> 3.0
-
-  log_helper:
-    github: spider-gazelle/log_helper
-    version: ~> 1
-
-  placeos-models:
-    github: placeos/models
-    version: ~> 3.1
+  habitat:
+    github: luckyframework/habitat
 
   hardware:
     github: crystal-community/hardware
     version: ~> 0.5
 
-  habitat:
-    github: luckyframework/habitat
-
   hound-dog:
     github: place-labs/hound-dog
     version: ~> 2.5
 
-  rethinkdb-orm:
-    github: spider-gazelle/rethinkdb-orm
-    version: ~> 2.10
+  log_helper:
+    github: spider-gazelle/log_helper
+    version: ~> 1
+
+  placeos-compiler:
+    github: placeos/compiler
+    version: ~> 3.0
+
+  placeos-driver:
+    github: placeos/driver
+    version: ~> 3.0
+
+  placeos-models:
+    github: placeos/models
+    version: ">= 3.1"
+
+  placeos-resource:
+    github: place-labs/resource
+    version: ~> 1
 
   promise:
     github: spider-gazelle/promise
     version: ~> 2
+
+  rethinkdb-orm:
+    github: spider-gazelle/rethinkdb-orm
+    version: ">= 2.10"
 
   secrets-env:
     github: place-labs/secrets-env
     version: ~> 1
 
 development_dependencies:
-  faker:
-    github: askn/faker
-
   ameba:
     github: crystal-ameba/ameba
+
+  faker:
+    github: askn/faker

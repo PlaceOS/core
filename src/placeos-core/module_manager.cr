@@ -78,13 +78,13 @@ module PlaceOS
     def process_resource(event) : Resource::Result
       mod = event[:resource]
       case event[:action]
-      when Resource::Action::Created
+      in Resource::Action::Created
         load_module(mod)
         Resource::Result::Success
-      when Resource::Action::Deleted
+      in Resource::Action::Deleted
         remove_module(mod)
         Resource::Result::Success
-      when Resource::Action::Updated
+      in Resource::Action::Updated
         return Resource::Result::Skipped unless discovery.own_node?(mod.id.as(String))
 
         if ModuleManager.needs_restart?(mod)
@@ -98,7 +98,7 @@ module PlaceOS
         else
           Resource::Result::Skipped
         end
-      end.as(Resource::Result)
+      end
     end
 
     # The number of drivers loaded on current node
@@ -309,23 +309,20 @@ module PlaceOS
       end
 
       if module_uri == uri
-        driver = mod.driver.as(Model::Driver)
-        driver_name = driver.name.as(String)
+        driver = mod.driver!
         driver_id = driver.id.as(String)
-        driver_file_name = driver.file_name.as(String)
-        driver_commit = driver.commit.as(String)
 
         ::Log.with_context do
           Log.context.set({
             module_id:     mod_id,
             module_name:   mod.name,
             custom_name:   mod.custom_name,
-            driver_name:   driver_name,
-            driver_commit: driver_commit,
+            driver_name:   driver.name,
+            driver_commit: driver.commit,
           })
 
           # Check if the module is on the current node
-          unless (driver_path = PlaceOS::Compiler.is_built?(driver_file_name, driver_commit, id: driver_id))
+          unless (driver_path = PlaceOS::Compiler.is_built?(driver.file_name, driver.commit, id: driver_id))
             Log.error { "driver does not exist for module" }
             return
           end
