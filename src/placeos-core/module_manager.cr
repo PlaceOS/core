@@ -7,7 +7,6 @@ require "placeos-models/module"
 require "placeos-models/settings"
 
 require "clustering"
-require "habitat"
 require "hound-dog"
 require "mutex"
 require "redis"

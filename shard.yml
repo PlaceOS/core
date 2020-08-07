@@ -54,6 +54,10 @@ dependencies:
     github: spider-gazelle/rethinkdb-orm
     version: ">= 2.10"
 
+  simple_retry:
+    github: spider-gazelle/simple_retry
+    version: ~> 1
+
   secrets-env:
     github: place-labs/secrets-env
     version: ~> 1
