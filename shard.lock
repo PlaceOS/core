@@ -126,7 +126,7 @@ shards:
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 1.0.1
+    version: 1.0.2
 
   pool:
     git: https://github.com/ysbaddaden/pool.git

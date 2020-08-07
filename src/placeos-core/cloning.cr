@@ -75,20 +75,20 @@ module PlaceOS
       current_commit = Compiler::Helper.repository_commit_hash(repository.folder_name)
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
 
-      if current_commit != repository.commit && own_node
+      if current_commit != repository.commit_hash && own_node
         if startup
           Log.warn { {
             message:           "updating commit on repository during startup",
             current_commit:    current_commit,
-            repository_commit: repository_commit,
-            folder_name:       repository_folder_name,
+            repository_commit: repository.commit_hash,
+            folder_name:       repository.folder_name,
           } }
         else
           Log.info { {
             message:           "updating commit on repository",
             current_commit:    current_commit,
-            repository_commit: repository_commit,
-            folder_name:       repository_folder_name,
+            repository_commit: repository.commit_hash,
+            folder_name:       repository.folder_name,
           } }
         end
 
@@ -99,8 +99,8 @@ module PlaceOS
       Log.info { {
         message:    "cloned repository",
         commit:     current_commit,
-        repository: repository_folder_name,
-        uri:        repository_uri,
+        repository: repository.folder_name,
+        uri:        repository.uri,
       } }
 
       Result::Success
