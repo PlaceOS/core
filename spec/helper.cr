@@ -21,8 +21,6 @@ TEMP_DIR = get_temp
 # Set the working directory before specs
 set_temporary_working_directory
 
-Log.builder.bind("*", backend: PlaceOS::Core::LOG_BACKEND, level: Log::Severity::Debug)
-
 def get_temp
   "#{Dir.tempdir}/core-spec-#{UUID.random.to_s.split('-').first}"
 end
@@ -50,12 +48,15 @@ macro around_suite(block)
   end
 end
 
-Spec.before_suite &->teardown
-
 around_suite ->{
   clear_tables
   HoundDog::Service.clear_namespace
 }
+
+Spec.before_suite do
+  Log.builder.bind("*", backend: PlaceOS::Core::LOG_BACKEND, level: Log::Severity::Debug)
+  teardown
+end
 
 Spec.after_suite do
   PlaceOS::Core::ResourceManager.instance.stop
