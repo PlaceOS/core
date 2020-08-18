@@ -44,6 +44,7 @@ dependencies:
 
   placeos-resource:
     github: place-labs/resource
+    branch: master
     version: ~> 1
 
   promise:

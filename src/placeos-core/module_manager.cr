@@ -74,9 +74,8 @@ module PlaceOS
       super()
     end
 
-    def process_resource(event) : Resource::Result
-      mod = event[:resource]
-      case event[:action]
+    def process_resource(action : Action, mod : Model::Module) : Resource::Result
+      case action
       in Resource::Action::Created
         load_module(mod)
         Resource::Result::Success

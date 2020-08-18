@@ -16,14 +16,13 @@ module PlaceOS::Core
       super()
     end
 
-    def process_resource(event) : Resource::Result
-      if event[:action] == Action::Updated
-        ModuleNames.update_module_mapping(event[:resource], module_manager)
+    def process_resource(action : Action, mod : Model::Module) : Resource::Result
+      if action == Action::Updated
+        ModuleNames.update_module_mapping(mod, module_manager)
       else
         Resource::Result::Skipped
       end
     rescue e
-      mod = event[:resource]
       Log.error(exception: e) { {message: "while updating mapping for module", name: mod.name, custom_name: mod.custom_name} }
       raise Resource::ProcessingError.new(mod.name, "#{e} #{e.message}")
     end

@@ -12,9 +12,7 @@ module PlaceOS
       super()
     end
 
-    def process_resource(event) : Resource::Result
-      settings = event[:resource]
-
+    def process_resource(_action : Action, settings : Model::Settings) : Resource::Result
       # Ignore versions
       if settings.is_version?
         Log.debug { {message: "skipping settings version", settings_id: settings.id, parent_id: settings.settings_id} }
@@ -23,8 +21,7 @@ module PlaceOS
 
       SettingsUpdate.update_modules(settings: settings, module_manager: module_manager)
     rescue e
-      model = event[:resource]
-      name = "Setting<#{model.id}> for #{model.parent_type}<#{model.parent_id}>"
+      name = "Setting<#{settings.id}> for #{settings.parent_type}<#{settings.parent_id}>"
       # Add update errors
       raise Resource::ProcessingError.new(name, "#{e} #{e.message}")
     end

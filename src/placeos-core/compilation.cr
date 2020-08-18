@@ -27,9 +27,8 @@ module PlaceOS
       super(buffer_size)
     end
 
-    def process_resource(event) : Resource::Result
-      driver = event[:resource]
-      case event[:action]
+    def process_resource(action : Action, driver : Model::Driver) : Resource::Result
+      case action
       in Action::Created, Action::Updated
         success, output = Compilation.compile_driver(driver, startup?, module_manager)
         raise Resource::ProcessingError.new(driver.name, output) unless success
@@ -39,7 +38,7 @@ module PlaceOS
       end
     rescue e
       # Add compilation errors
-      raise Resource::ProcessingError.new(event[:resource].name, "#{e} #{e.message}")
+      raise Resource::ProcessingError.new(driver.name, "#{e} #{e.message}")
     end
 
     # ameba:disable Metrics/CyclomaticComplexity
