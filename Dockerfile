@@ -2,6 +2,9 @@ FROM crystallang/crystal:0.35.1-alpine
 
 WORKDIR /app
 
+# Set the commit through a build arg
+ARG PLACE_COMMIT="DEV"
+
 # Install the latest version of LibSSH2
 RUN apk add --no-cache libssh2 libssh2-dev
 
@@ -26,7 +29,8 @@ RUN adduser \
 
 COPY shard.yml /app
 COPY shard.lock /app
-RUN shards install --production
+RUN PLACE_COMMIT=$PLACE_COMMIT \
+    shards install --production
 
 # Add source last for efficient caching
 COPY src /app/src
