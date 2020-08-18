@@ -37,7 +37,7 @@ OptionParser.parse(ARGV.dup) do |parser|
 end
 
 # Load the routes
-puts "Launching #{PlaceOS::Core::APP_NAME} v#{PlaceOS::Core::VERSION}"
+puts "Launching #{PlaceOS::Core::APP_NAME} v#{PlaceOS::Core::VERSION} (#{PlaceOS::Core::BUILD_COMMIT} @ #{PlaceOS::Core::BUILD_TIME})"
 server = ActionController::Server.new(port, host)
 
 # Start clustering

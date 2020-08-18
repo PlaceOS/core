@@ -1,9 +1,11 @@
 require "secrets-env"
 
 module PlaceOS::Core
-  APP_NAME    = "core"
-  API_VERSION = "v1"
-  VERSION     = {{ `shards version "#{__DIR__}"`.chomp.stringify.downcase }}
+  APP_NAME     = "core"
+  API_VERSION  = "v1"
+  VERSION      = {{ `shards version "#{__DIR__}"`.chomp.stringify.downcase }}
+  BUILD_TIME   = {{ system("date -u").stringify }}
+  BUILD_COMMIT = {{ env("PLACE_COMMIT") || "DEV" }}
 
   REPOS   = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
   DRIVERS = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Compiler.repository_dir, "drivers")
