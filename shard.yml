@@ -1,5 +1,5 @@
 name: placeos-core
-version: 2.5.3
+version: 2.5.4
 crystal: ~> 0.35
 
 targets:

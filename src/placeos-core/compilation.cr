@@ -20,6 +20,7 @@ module PlaceOS
       @module_manager : ModuleManager = ModuleManager.instance
     )
       buffer_size = System.cpu_count.to_i
+
       Compiler.bin_dir = bin_dir
       Compiler.drivers_dir = drivers_dir
       Compiler.repository_dir = repository_dir
@@ -27,15 +28,14 @@ module PlaceOS
       super(buffer_size)
     end
 
-    def process_resource(action : RethinkORM::Changefeed::Event, resource : PlaceOS::Model::Driver) : Resource::Result
+    def process_resource(action : Resource::Action, resource : Model::Driver) : Resource::Result
       driver = resource
-
       case action
-      in Action::Created, Action::Updated
+      in Resource::Action::Created, Resource::Action::Updated
         success, output = Compilation.compile_driver(driver, startup?, module_manager)
         raise Resource::ProcessingError.new(driver.name, output) unless success
-        Result::Success
-      in Action::Deleted
+        Resource::Result::Success
+      in Resource::Action::Deleted
         Result::Skipped
       end
     rescue e
