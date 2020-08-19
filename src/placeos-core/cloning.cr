@@ -22,13 +22,13 @@ module PlaceOS
       super()
     end
 
-    def process_resource(event) : Resource::Result
-      repository = event[:resource]
+    def process_resource(action : RethinkORM::Changefeed::Event, resource : PlaceOS::Model::Repository) : Resource::Result
+      repository = resource
 
       # Ignore interface repositories
       return Result::Skipped if repository.repo_type == Model::Repository::Type::Interface
 
-      case event[:action]
+      case action
       in Action::Created, Action::Updated
         # Clone and install the repository
         Cloning.clone_and_install(
@@ -48,7 +48,7 @@ module PlaceOS
       end
     rescue e
       # Add cloning errors
-      raise Resource::ProcessingError.new(event[:resource].name, "#{e} #{e.message}")
+      raise Resource::ProcessingError.new(resource.name, "#{e} #{e.message}")
     end
 
     def self.clone_and_install(

@@ -12,8 +12,8 @@ module PlaceOS
       super()
     end
 
-    def process_resource(event) : Resource::Result
-      settings = event[:resource]
+    def process_resource(action : RethinkORM::Changefeed::Event, resource : PlaceOS::Model::Settings) : Resource::Result
+      settings = resource
 
       # Ignore versions
       if settings.is_version?
@@ -23,8 +23,7 @@ module PlaceOS
 
       SettingsUpdate.update_modules(settings: settings, module_manager: module_manager)
     rescue e
-      model = event[:resource]
-      name = "Setting<#{model.id}> for #{model.parent_type}<#{model.parent_id}>"
+      name = "Setting<#{resource.id}> for #{resource.parent_type}<#{resource.parent_id}>"
       # Add update errors
       raise Resource::ProcessingError.new(name, "#{e} #{e.message}")
     end
