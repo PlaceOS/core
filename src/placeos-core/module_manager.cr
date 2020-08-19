@@ -74,7 +74,9 @@ module PlaceOS
       super()
     end
 
-    def process_resource(action : Action, mod : Model::Module) : Resource::Result
+    def process_resource(action : RethinkORM::Changefeed::Event, resource : PlaceOS::Model::Module) : Resource::Result
+      mod = resource
+
       case action
       in Resource::Action::Created
         load_module(mod)
