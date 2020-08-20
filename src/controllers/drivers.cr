@@ -100,11 +100,7 @@ module PlaceOS::Core::Api
     # Caching
     ###########################################################################
 
-    @@redis : Redis? = nil
-
-    def self.redis : Redis
-      (@@redis ||= Redis.new(url: PlaceOS::Core::REDIS_URL)).as(Redis)
-    end
+    class_getter redis : Redis { Redis.new(url: PlaceOS::Core::REDIS_URL) }
 
     # Do a look up in redis for the details
     def self.cached_details?(file_name : String, repository : String, commit : String)

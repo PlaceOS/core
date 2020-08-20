@@ -30,26 +30,15 @@ module PlaceOS
 
     delegate stop, to: clustering
 
+    getter? started = false
+
     # Redis channel that cluster leader publishes stable cluster versions to
     REDIS_VERSION_CHANNEL = "cluster/cluster_version"
 
-    @redis : Redis?
+    getter redis : Redis { Redis.new(url: ENV["REDIS_URL"]?) }
 
-    # Lazy getter for redis
-    #
-    def redis
-      @redis ||= Redis.new(url: ENV["REDIS_URL"]?)
-    end
-
-    # From environment
-    @@instance : ModuleManager?
-
-    getter? started = false
-
-    # Class to be used as a singleton
-    def self.instance : ModuleManager
-      (@@instance ||= ModuleManager.new(uri: self.uri)).as(ModuleManager)
-    end
+    # Singleton configured from environment
+    class_getter instance : ModuleManager { ModuleManager.new(uri: self.uri) }
 
     # Start up process is as follows..
     # - registered
