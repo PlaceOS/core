@@ -5,8 +5,8 @@ WORKDIR /app
 # Set the commit through a build arg
 ARG PLACE_COMMIT="DEV"
 
-# Install the latest version of LibSSH2
-RUN apk add --no-cache libssh2 libssh2-dev
+# Install the latest version of LibSSH2, ping
+RUN apk add --no-cache libssh2 libssh2-dev iputils
 
 # Add trusted CAs for communicating with external services
 RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
