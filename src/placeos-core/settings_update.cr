@@ -1,9 +1,8 @@
 require "placeos-models/settings"
-
-require "./resource"
+require "placeos-resource"
 
 module PlaceOS
-  class Core::SettingsUpdate < Core::Resource(Model::Settings)
+  class Core::SettingsUpdate < Resource(Model::Settings)
     private getter module_manager : ModuleManager
 
     def initialize(
@@ -24,7 +23,6 @@ module PlaceOS
       SettingsUpdate.update_modules(settings: settings, module_manager: module_manager)
     rescue e
       name = "Setting<#{resource.id}> for #{resource.parent_type}<#{resource.parent_id}>"
-      # Add update errors
       raise Resource::ProcessingError.new(name, "#{e} #{e.message}")
     end
 

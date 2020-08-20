@@ -2,13 +2,13 @@ require "placeos-compiler/compiler"
 require "placeos-compiler/helper"
 require "placeos-models/driver"
 require "placeos-models/repository"
+require "placeos-resource"
 
 require "./cloning"
 require "./module_manager"
-require "./resource"
 
 module PlaceOS
-  class Core::Compilation < Core::Resource(Model::Driver)
+  class Core::Compilation < Resource(Model::Driver)
     private getter? startup : Bool = true
     private getter module_manager : ModuleManager
 

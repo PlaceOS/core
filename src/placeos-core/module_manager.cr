@@ -5,17 +5,15 @@ require "placeos-models/control_system"
 require "placeos-models/driver"
 require "placeos-models/module"
 require "placeos-models/settings"
+require "placeos-resource"
 
 require "clustering"
 require "hound-dog"
 require "mutex"
 require "redis"
-require "rethinkdb-orm/utils/changefeed"
-
-require "./resource"
 
 module PlaceOS
-  class Core::ModuleManager < Core::Resource(Model::Module)
+  class Core::ModuleManager < Resource(Model::Module)
     include Compiler::Helper
 
     # In k8s we can grab the Pod information from the environment
