@@ -3,12 +3,12 @@ require "placeos-compiler/compiler"
 require "placeos-compiler/git_commands"
 require "placeos-compiler/helper"
 require "placeos-models"
+require "placeos-resource"
 
 require "./module_manager"
-require "./resource"
 
 module PlaceOS
-  class Core::Cloning < Core::Resource(Model::Repository)
+  class Core::Cloning < Resource(Model::Repository)
     private getter? startup : Bool = true
     private getter? testing : Bool = false # Prevent redundant pulls/installs
 
