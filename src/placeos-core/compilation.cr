@@ -19,6 +19,7 @@ module PlaceOS
       repository_dir : String = Compiler.repository_dir,
       @module_manager : ModuleManager = ModuleManager.instance
     )
+      @compiler_lock = Mutex.new
       buffer_size = System.cpu_count.to_i
 
       Compiler.bin_dir = bin_dir
@@ -32,7 +33,7 @@ module PlaceOS
       driver = resource
       case action
       in Resource::Action::Created, Resource::Action::Updated
-        success, output = Compilation.compile_driver(driver, startup?, module_manager)
+        success, output = @compiler_lock.synchronize { Compilation.compile_driver(driver, startup?, module_manager) }
         raise Resource::ProcessingError.new(driver.name, output) unless success
         Resource::Result::Success
       in Resource::Action::Deleted

@@ -14,7 +14,7 @@ shards:
 
   ameba:
     git: https://github.com/crystal-ameba/ameba.git
-    version: 0.13.1
+    version: 0.13.2
 
   bindata:
     git: https://github.com/spider-gazelle/bindata.git
@@ -118,7 +118,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 3.5.6
+    version: 3.5.8
 
   placeos-models:
     git: https://github.com/placeos/models.git
@@ -126,7 +126,7 @@ shards:
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 1.0.4+git.commit.94969834251376493da26c61a3d94d9b963ba5d7
+    version: 1.0.5+git.commit.4802b74dee0e6ce520f5ab2d30efc882a9769321
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
