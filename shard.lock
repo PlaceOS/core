@@ -26,7 +26,7 @@ shards:
 
   clustering:
     git: https://github.com/place-labs/clustering.git
-    version: 2.0.1
+    version: 2.0.2
 
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
@@ -50,7 +50,7 @@ shards:
 
   etcd:
     git: https://github.com/place-labs/crystal-etcd.git
-    version: 1.0.1
+    version: 1.0.2
 
   exec_from:
     git: https://github.com/place-labs/exec_from.git
@@ -74,7 +74,7 @@ shards:
 
   hound-dog:
     git: https://github.com/place-labs/hound-dog.git
-    version: 2.5.1
+    version: 2.5.2
 
   http-params-serializable:
     git: https://github.com/vladfaust/http-params-serializable.git
@@ -98,7 +98,7 @@ shards:
 
   lucky_router:
     git: https://github.com/luckyframework/lucky_router.git
-    version: 0.3.0
+    version: 0.3.1
 
   murmur3:
     git: https://github.com/aca-labs/murmur3.git
@@ -114,15 +114,15 @@ shards:
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
-    version: 3.0.1
+    version: 3.1.0
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 3.5.8
+    version: 3.5.10
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 4.2.3
+    version: 4.2.5
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
