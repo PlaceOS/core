@@ -32,10 +32,7 @@ module PlaceOS
     )
       # Find each module affected by the Settings change
       settings.dependent_modules.each do |mod|
-        # Update running modules to the latest settings
-        if module_manager.proc_manager_by_module?(mod.id.as(String)) && mod.running
-          # Start with updates if the module is running
-          module_manager.start_module(mod)
+        if module_manager.refresh_module(mod)
           Log.info { {message: "#{mod.running_was == false ? "started" : "updated"} module with new settings", module_id: mod.id, settings_id: settings.id} }
         end
       end
