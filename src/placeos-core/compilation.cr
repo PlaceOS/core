@@ -32,11 +32,11 @@ module PlaceOS
     def process_resource(action : Resource::Action, resource : Model::Driver) : Resource::Result
       driver = resource
       case action
-      in Resource::Action::Created, Resource::Action::Updated
+      in .created?, .updated?
         success, output = @compiler_lock.synchronize { Compilation.compile_driver(driver, startup?, module_manager) }
         raise Resource::ProcessingError.new(driver.name, output) unless success
         Resource::Result::Success
-      in Resource::Action::Deleted
+      in .deleted?
         Result::Skipped
       end
     rescue e

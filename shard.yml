@@ -17,6 +17,7 @@ dependencies:
 
   habitat:
     github: luckyframework/habitat
+    version: ~> 0.4
 
   hardware:
     github: crystal-community/hardware
@@ -40,7 +41,7 @@ dependencies:
 
   placeos-models:
     github: placeos/models
-    version: ">= 3.1"
+    version: ~> 4
 
   placeos-resource:
     github: place-labs/resource
@@ -53,7 +54,7 @@ dependencies:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    version: ">= 2.10"
+    version: ~> 3
 
   simple_retry:
     github: spider-gazelle/simple_retry

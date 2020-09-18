@@ -1,3 +1,8 @@
+require "clustering"
+require "hound-dog"
+require "mutex"
+require "redis"
+
 require "placeos-compiler/compiler"
 require "placeos-compiler/helper"
 require "placeos-driver/protocol/management"
@@ -7,19 +12,11 @@ require "placeos-models/module"
 require "placeos-models/settings"
 require "placeos-resource"
 
-require "clustering"
-require "hound-dog"
-require "mutex"
-require "redis"
+require "../constants"
 
 module PlaceOS
   class Core::ModuleManager < Resource(Model::Module)
     include Compiler::Helper
-
-    # In k8s we can grab the Pod information from the environment
-    # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-pod-fields-as-values-for-environment-variables
-    CORE_HOST = ENV["CORE_HOST"]? || System.hostname
-    CORE_PORT = (ENV["CORE_PORT"]? || "3000").to_i
 
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
 
@@ -33,7 +30,7 @@ module PlaceOS
     # Redis channel that cluster leader publishes stable cluster versions to
     REDIS_VERSION_CHANNEL = "cluster/cluster_version"
 
-    getter redis : Redis { Redis.new(url: ENV["REDIS_URL"]?) }
+    getter redis : Redis { Redis.new(url: REDIS_URL) }
 
     # Singleton configured from environment
     class_getter instance : ModuleManager { ModuleManager.new(uri: self.uri) }
@@ -64,13 +61,13 @@ module PlaceOS
     def process_resource(action : Resource::Action, resource : Model::Module) : Resource::Result
       mod = resource
       case action
-      in Resource::Action::Created
+      in .created?
         load_module(mod)
         Resource::Result::Success
-      in Resource::Action::Deleted
+      in .deleted?
         remove_module(mod)
         Resource::Result::Success
-      in Resource::Action::Updated
+      in .updated?
         return Resource::Result::Skipped unless discovery.own_node?(mod.id.as(String))
 
         if ModuleManager.needs_restart?(mod)
