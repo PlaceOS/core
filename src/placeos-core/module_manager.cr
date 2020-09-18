@@ -351,8 +351,9 @@ module PlaceOS
         # Start with updates if the module is running
         start_module(mod)
         true
+      else
+        false
       end
-      false
     end
 
     protected getter uri : URI = ModuleManager.uri
