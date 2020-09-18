@@ -344,6 +344,17 @@ module PlaceOS
       end
     end
 
+    # Update/start modules with new configuration
+    #
+    def refresh_module(mod : Model::Module)
+      if proc_manager_by_module?(mod.id.as(String)) && mod.running
+        # Start with updates if the module is running
+        start_module(mod)
+        true
+      end
+      false
+    end
+
     protected getter uri : URI = ModuleManager.uri
 
     # Helpers

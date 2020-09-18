@@ -43,9 +43,28 @@ module PlaceOS::Core
       return Resource::Result::Skipped unless relevant_node && needs_update
 
       set_mappings(system, nil)
+
+      update_child_modules(system, module_manager)
+
       Log.info { {message: "#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system.id} }
 
       Resource::Result::Success
+    end
+
+    # Update child logic Modules for a ControlSystem
+    #
+    def self.update_child_modules(
+      system : Model::ControlSystem,
+      module_manager : ModuleManager = ModuleManager.instance
+    )
+      return if system.destroyed?
+
+      control_system_id = system.id.as(String)
+      Model::Module.logic_for(control_system_id).each do |mod|
+        if module_manager.refresh_module(mod)
+          Log.info { {message: "#{mod.running_was == false ? "started" : "updated"} system logic module", module_id: mod.id, control_system_id: control_system_id} }
+        end
+      end
     end
 
     # Set the module mappings for a ControlSystem
