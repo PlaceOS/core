@@ -34,37 +34,47 @@ module PlaceOS::Core
       destroyed = system.destroyed?
       relevant_node = startup || module_manager.discovery.own_node?(system.id.as(String))
 
-      #              Always load mappings during startup
-      #              |          Remove mappings
-      #              |          |            Initial mappings    Modules have changed
-      #              |          |            |                   |
-      needs_update = startup || destroyed || !system.changed? || system.modules_changed?
+      return Resource::Result::Skipped unless relevant_node
 
-      return Resource::Result::Skipped unless relevant_node && needs_update
+      #                      Always load mappings during startup
+      #                      |          Remove mappings
+      #                      |          |            Initial mappings    Modules have changed
+      #                      |          |            |                   |
+      mappings_need_update = startup || destroyed || !system.changed? || system.modules_changed?
 
-      set_mappings(system, nil)
+      updated_logic_modules = update_logic_modules(system, module_manager)
 
-      update_child_modules(system, module_manager)
+      if mappings_need_update
+        set_mappings(system, nil)
+        Log.info { {message: "#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system.id} }
+      end
 
-      Log.info { {message: "#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system.id} }
-
-      Resource::Result::Success
+      mappings_need_update || updated_logic_modules ? Resource::Result::Success : Resource::Result::Skipped
     end
 
-    # Update child logic Modules for a ControlSystem
+    # Update logic Module children for a ControlSystem
     #
-    def self.update_child_modules(
+    def self.update_logic_modules(
       system : Model::ControlSystem,
       module_manager : ModuleManager = ModuleManager.instance
     )
-      return if system.destroyed?
+      return false if system.destroyed?
 
       control_system_id = system.id.as(String)
-      Model::Module.logic_for(control_system_id).each do |mod|
+      updated = Model::Module.logic_for(control_system_id).reduce(0) do |updates, mod|
         if module_manager.refresh_module(mod)
           Log.info { {message: "#{mod.running_was == false ? "started" : "updated"} system logic module", module_id: mod.id, control_system_id: control_system_id} }
+          updates + 1
+        else
+          updates
         end
       end
+
+      updated_modules = updated > 0
+
+      Log.info { {message: "configured #{updated} control_system logic modules", control_system_id: control_system_id} } if updated_modules
+
+      updated_modules
     end
 
     # Set the module mappings for a ControlSystem
