@@ -36,7 +36,8 @@ module PlaceOS::Core
 
       #              Always load mappings during startup
       #              |          Remove mappings
-      #              |          |            Initial mappings     Modules have changed
+      #              |          |            Initial mappings    Modules have changed
+      #              |          |            |                   |
       needs_update = startup || destroyed || !system.changed? || system.modules_changed?
 
       return Resource::Result::Skipped unless relevant_node && needs_update

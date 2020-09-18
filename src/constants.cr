@@ -15,16 +15,15 @@ module PlaceOS::Core
 
   REDIS_URL = ENV["REDIS_URL"]?
 
+  # `core` self-registers to etcd with this information.
+  # In k8s we can grab the Pod information from the environment
+  # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-pod-fields-as-values-for-environment-variables
+  CORE_HOST = ENV["CORE_HOST"]? || System.hostname
+  CORE_PORT = (ENV["CORE_PORT"]? || "3000").to_i
+
   PROD = ENV["SG_ENV"]? == "production"
 
   def self.production?
     PROD
   end
-
-  # NOTE:: these are used in files that are included in other projects
-  # ENV["CORE_HOST"]
-  # ENV["CORE_PORT"]
-  # ENV["REDIS_URL"]
-  # ./placeos-core/module_manager.cr
-  # ./placeos-core/client.cr
 end
