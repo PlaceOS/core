@@ -6,9 +6,7 @@ module PlaceOS::Core::Api
   class Chaos < Application
     base "/api/core/v1/chaos/"
 
-    def module_manager
-      @module_manager || ModuleManager.instance
-    end
+    getter module_manager : ModuleManager { ModuleManager.instance }
 
     # terminate a process
     post "/terminate", :terminate do
@@ -25,8 +23,6 @@ module PlaceOS::Core::Api
 
     # Overriding initializers for dependency injection
     ###########################################################################
-
-    @module_manager : ModuleManager? = nil
 
     def initialize(@context, @action_name = :index, @__head_request__ = false)
       super(@context, @action_name, @__head_request__)

@@ -2,8 +2,10 @@
 require "action-controller"
 
 # Required to convince Crystal this class is not a module
+# :nodoc:
 abstract class PlaceOS::Driver; end
 
+# :nodoc:
 class PlaceOS::Driver::Protocol; end
 
 # Application code

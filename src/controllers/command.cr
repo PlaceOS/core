@@ -5,9 +5,7 @@ module PlaceOS::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
-    def module_manager
-      @module_manager || ModuleManager.instance
-    end
+    getter module_manager : ModuleManager { ModuleManager.instance }
 
     # Loads if not already loaded
     # If the module is already running, it will be updated to latest settings.
@@ -74,8 +72,6 @@ module PlaceOS::Core::Api
 
     # Overriding initializers for dependency injection
     ###########################################################################
-
-    @module_manager : ModuleManager? = nil
 
     def initialize(@context, @action_name = :index, @__head_request__ = false)
       super(@context, @action_name, @__head_request__)
