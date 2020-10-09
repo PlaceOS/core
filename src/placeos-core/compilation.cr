@@ -157,8 +157,8 @@ module PlaceOS
         # Save a lookup
         mod.driver = driver
 
-        # Remove the module running on the stale driver
-        module_manager.remove_module(mod)
+        # Unload the module running on the stale driver
+        module_manager.unload_module(mod)
 
         if module_manager.started?
           # Reload module on new driver binary

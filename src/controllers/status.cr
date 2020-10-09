@@ -16,10 +16,13 @@ module PlaceOS::Core::Api
     # General statistics related to the process
     def index
       render json: {
-        compiled_drivers:         PlaceOS::Compiler::Helper.compiled_drivers,
-        available_repositories:   PlaceOS::Compiler::Helper.repositories,
-        running_drivers:          module_manager.running_drivers,
-        module_instances:         module_manager.running_modules,
+        compiled_drivers:       PlaceOS::Compiler::Helper.compiled_drivers,
+        available_repositories: PlaceOS::Compiler::Helper.repositories,
+        running_drivers:        module_manager.local_processes.running_drivers,
+        module_instances:       module_manager.local_processes.running_modules,
+        # TODO: When edge managers implemented
+        # edge_drivers:             module_manager.edge_processes.running_drivers,
+        # edge_modules:             module_manager.edge_processes.running_drivers,
         unavailable_repositories: resource_manager.cloning.errors,
         unavailable_drivers:      resource_manager.compilation.errors,
       }
