@@ -11,9 +11,9 @@ before_install:
   - git config --global user.name "PlaceOS"
   - git config --global user.email support@place.technology
   # Add rethinkdb 2.4
-  - docker run --net="host" -p "29015:29015" -p "28015:28015" -d rethinkdb:2.4
+  - docker run -p "29015:29015" -p "28015:28015" -d rethinkdb:2.4
   # Add etcd 3.3.13
-  - docker run --net="host" -p "2379:2379" -p "2380:2380" -e ALLOW_NONE_AUTHENTICATION=yes -d bitnami/etcd:3.3.13
+  - docker run -p "2379:2379" -p "2380:2380" -e ALLOW_NONE_AUTHENTICATION=yes -d bitnami/etcd:3.3.13
 
 install:
   # Install the latest version of LibSSH2
