@@ -1,0 +1,40 @@
+version: "3.7"
+
+services:
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+  rethinkdb:
+    image: rethinkdb:2.4
+    container_name: rethindkb
+    ports:
+      - "127.0.0.1:29015:29015"
+      - "127.0.0.1:28015:28015"
+    depends_on: 
+      - redis
+  etcd:
+    image: bitnami/etcd:3.3.13
+    container_name: etcd
+    environment: 
+      ALLOW_NONE_AUTHENTICATION: "yes"
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    depends_on: 
+      - redis
+  core:
+    build:
+      context: ./
+      dockerfile: Dockerfile.test
+    container_name: core
+    restart: always
+    environment:
+      SG_ENV: production
+    depends_on:
+      - redis
+      - rethinkdb
+      - etcd
+    ports:
+      - 3000:3000
