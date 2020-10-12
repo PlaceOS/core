@@ -1,40 +1,70 @@
 version: "3.7"
 
+# YAML Anchors
+
+x-deployment-env: &deployment-env
+  ENV: ${ENV:-development}
+  SG_ENV: ${SG_ENV:-development}
+  TZ: $TZ
+
+x-redis-client-env: &redis-client-env
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+
+x-rethinkdb-client-env: &rethinkdb-client-env
+  RETHINKDB_HOST: ${RETHINKDB_HOST:-rethink}
+  RETHINKDB_PORT: ${RETHINKDB_PORT:-28015}
+  RETHINKDB_DB: ${RETHINKDB_DB:-place_development}
+
+x-etcd-client-env: &etcd-client-env
+  ETCD_HOST: ${ETCD_HOST:-etcd}
+  ETCD_PORT: ${ETCD_PORT:-2379}
+
 services:
   redis:
-    image: redis
+    image: eqalpha/keydb
+    restart: always
     container_name: redis
-    ports:
-      - "6379:6379"
-  rethinkdb:
-    image: rethinkdb:2.4
-    container_name: rethindkb
-    ports:
-      - "127.0.0.1:29015:29015"
-      - "127.0.0.1:28015:28015"
-    depends_on: 
-      - redis
+    hostname: redis
+    volumes:
+      - ./data/redis-data:/data:Z
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:Z
+    environment:
+      TZ: $TZ
+
+  rethink:
+    image: rethinkdb:${RETHINKDB_VERSION:-2.4}
+    restart: always
+    container_name: rethink
+    hostname: rethink
+    volumes:
+      - ./data/rethink-data:/data/rethinkdb_data/:Z
+    environment:
+      TZ: $TZ
+
   etcd:
-    image: bitnami/etcd:3.3.13
+    image: bitnami/etcd:${ETCD_VERSION:-3.3.13}
+    restart: always
     container_name: etcd
-    environment: 
+    hostname: etcd
+    environment:
       ALLOW_NONE_AUTHENTICATION: "yes"
-    ports:
-      - "2379:2379"
-      - "2380:2380"
-    depends_on: 
-      - redis
+      TZ: $TZ
+
   core:
     build:
       context: ./
       dockerfile: Dockerfile.test
     container_name: core
+    hostname: core
     restart: always
     environment:
-      SG_ENV: production
+      # Service Hosts
+      << : *etcd-client-env
+      << : *redis-client-env
+      << : *rethinkdb-client-env
+      # Environment
+      << : *deployment-env
     depends_on:
       - redis
-      - rethinkdb
+      - rethink
       - etcd
-    ports:
-      - 3000:3000

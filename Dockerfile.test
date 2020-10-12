@@ -40,6 +40,4 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 RUN chown appuser:appuser -R /src
 USER appuser:appuser
 
-# Run the app binding on port 3000
-EXPOSE 3000
 CMD ["crystal", "spec", "--error-trace", "-v"]
