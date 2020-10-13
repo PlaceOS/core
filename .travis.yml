@@ -4,4 +4,4 @@ services:
   - docker
 
 script:
-  - TZ=australia/sydney docker-compose up --build --exit-code-from web
+  - TZ=australia/sydney docker-compose up --build --exit-code-from core
