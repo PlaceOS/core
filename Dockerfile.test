@@ -1,7 +1,6 @@
 FROM crystallang/crystal:0.35.1-alpine
 
-ADD . /src
-WORKDIR /src
+WORKDIR /
 
 # Set the commit through a build arg
 ARG PLACE_COMMIT="DEV"
@@ -12,32 +11,13 @@ RUN apk add --no-cache libssh2 libssh2-dev iputils
 # Add trusted CAs for communicating with external services
 RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
 
-# Create a non-privileged user
-# defaults are appuser:10001
-ARG IMAGE_UID="10001"
-ENV UID=$IMAGE_UID
-ENV USER=appuser
-
-# See https://stackoverflow.com/a/55757473/12429735RUN
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    "${USER}"
-
 RUN PLACE_COMMIT=$PLACE_COMMIT \
     shards install
+
 RUN crystal tool format --check
 RUN crystal lib/ameba/bin/ameba.cr
 
 # These provide certificate chain validation where communicating with external services over TLS
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-# Use an unprivileged user.
-RUN chown appuser:appuser -R /src
-USER appuser:appuser
-
-CMD ["crystal", "spec", "--error-trace", "-v"]
+ENTRYPOINT "crystal spec --error-trace -v"
