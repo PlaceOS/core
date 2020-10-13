@@ -2,4 +2,5 @@ services:
   - docker
 
 script:
-  - TZ=australia/sydney docker-compose up --build
+  - docker-compose build
+  - TZ=australia/sydney docker-compose run --rm core
