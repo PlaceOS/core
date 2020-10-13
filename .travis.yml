@@ -2,4 +2,4 @@ services:
   - docker
 
 script:
-  - TZ=australia/sydney docker-compose up
+  - TZ=australia/sydney docker-compose up --build
