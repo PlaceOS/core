@@ -1,6 +1,6 @@
 FROM crystallang/crystal:0.35.1-alpine
 
-WORKDIR /
+WORKDIR /app
 
 # Set the commit through a build arg
 ARG PLACE_COMMIT="DEV"
@@ -11,8 +11,14 @@ RUN apk add --no-cache libssh2 libssh2-dev iputils
 # Add trusted CAs for communicating with external services
 RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
 
+COPY shard.yml /app
+COPY shard.lock /app
 RUN PLACE_COMMIT=$PLACE_COMMIT \
     shards install
+
+COPY src /app/src
+COPY spec /app/spec
+RUN mkdir -p /app/bin/drivers
 
 RUN crystal tool format --check
 RUN crystal lib/ameba/bin/ameba.cr
