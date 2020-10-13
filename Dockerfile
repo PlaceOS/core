@@ -49,4 +49,4 @@ USER appuser:appuser
 # Run the app binding on port 3000
 EXPOSE 3000
 HEALTHCHECK CMD wget -qO- http://localhost:3000/api/core/v1
-CMD ["crystal", "spec", "--error-trace", "-v"]
+CMD ["/app/bin/core", "-b", "0.0.0.0", "-p", "3000"]
