@@ -1,7 +1,5 @@
-language: crystal
-
 services:
   - docker
 
 script:
-  - TZ=australia/sydney docker-compose up --build --exit-code-from core
+  - TZ=australia/sydney docker-compose up
