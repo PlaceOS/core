@@ -159,10 +159,12 @@ module PlaceOS::Core
       post("/command/#{module_id}/load").success?
     end
 
+    alias Loaded = NamedTuple(edge: Hash(String, Array(String)), local: Hash(String, Array(String)))
+
     # Returns the loaded modules on the node
     def loaded
       response = get("/status/loaded")
-      Hash(String, Array(String)).from_json(response.body)
+      Loaded.from_json(response.body)
     end
 
     # Status
@@ -184,7 +186,12 @@ module PlaceOS::Core
       CoreStatus.from_json(response.body)
     end
 
-    struct CoreLoad < BaseResponse
+    struct Load < BaseResponse
+      getter local : SystemLoad
+      getter edge : Array(NamedTuple(edge: String, load: SystemLoad))
+    end
+
+    struct SystemLoad < BaseResponse
       getter hostname : String
       getter cpu_count : Int32
       getter core_cpu : Float64
@@ -197,7 +204,7 @@ module PlaceOS::Core
     # Details about machine load
     def core_load : CoreLoad
       response = get("/status/load")
-      CoreLoad.from_json(response.body)
+      Load.from_json(response.body)
     end
 
     struct DriverStatus < BaseResponse

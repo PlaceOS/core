@@ -20,6 +20,8 @@ module PlaceOS::Core
 
     abstract def ignore(module_id : String, &on_message : String ->)
 
+    abstract def kill(driver_path : String)
+
     def ignore(module_id : String)
       ignore(module_id) { }
     end
@@ -50,9 +52,46 @@ module PlaceOS::Core
     # Metadata
     ###############################################################################################
 
+    record(
+      DriverStatus,
+      running : Bool,
+      module_instances : Int32,
+      last_exit_code : Int32,
+      launch_count : Int32,
+      launch_time : Int64,
+      percentage_cpu : Float64?,
+      memory_total : Int64?,
+      memory_usage : Int64?
+    ) { include JSON::Serializable }
+
+    # Generate a system status report
+    #
+    abstract def driver_status(driver_path) : DriverStatus
+
+    record(
+      SystemStatus,
+      hostname : String,
+      cpu_count : Int64,
+      # Percentage of the total CPU available
+      core_cpu : Float64,
+      total_cpu : Float64,
+      # Memory in KB
+      memory_total : Int32,
+      memory_usage : Int32,
+      core_memory : Int32
+    ) { include JSON::Serializable }
+
+    # Generate a system status report
+    #
+    abstract def system_status : Status
+
     # Check for the presence of a module on a ProcessManager
     #
     abstract def module_loaded?(module_id) : Bool
+
+    # Check for the presence of a running driver on a ProcessManager
+    #
+    abstract def driver_loaded?(driver_path) : Bool
 
     # Number of unique drivers running on a ProcessManager
     #

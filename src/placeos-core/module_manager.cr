@@ -26,8 +26,10 @@ module PlaceOS::Core
 
     delegate stop, to: clustering
 
-    # Todo: remove
+    # TODO: remove
     delegate path_for?, to: local_processes
+
+    delegate :own_node?, to: discovery
 
     getter? started = false
 
@@ -78,7 +80,7 @@ module PlaceOS::Core
         unload_module(mod)
         Resource::Result::Success
       in .updated?
-        return Resource::Result::Skipped unless discovery.own_node?(mod.id.as(String))
+        return Resource::Result::Skipped unless own_node?(mod.id.as(String))
 
         if ModuleManager.needs_restart?(mod)
           # Changes to Module state which requires a restart
@@ -95,7 +97,7 @@ module PlaceOS::Core
     end
 
     def on_managed_edge?(mod : Model::Module)
-      mod.on_edge? && discovery.own_node?(mod.edge_id.as(String))
+      mod.on_edge? && own_node?(mod.edge_id.as(String))
     end
 
     def start

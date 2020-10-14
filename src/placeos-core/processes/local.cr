@@ -1,3 +1,4 @@
+require "hardware"
 require "./process_manager"
 
 module PlaceOS::Core
@@ -85,6 +86,13 @@ module PlaceOS::Core
       end
     end
 
+    def kill(driver_path : String)
+      proc_manager_by_driver?(driver_path).try do |manager|
+        pid = manager.pid.to_s
+        Process.run("kill", {"-9", pid})
+      end
+    end
+
     # Callbacks
     ###############################################################################################
 
@@ -110,6 +118,60 @@ module PlaceOS::Core
 
     # Metadata
     ###############################################################################################
+
+    def system_status
+      process = Hardware::PID.new
+      memory = Hardware::Memory.new
+      cpu = Hardware::CPU.new
+
+      core_cpu = process.stat.cpu_usage!
+      total_cpu = cpu.usage!
+
+      # 0 utilization for NaNs
+      core_cpu = 0_f64 if core_cpu.nan?
+      total_cpu = 0_f64 if total_cpu.nan?
+      core_cpu = 100_f64 if core_cpu.infinite?
+      total_cpu = 100_f64 if total_cpu.infinite?
+
+      SystemStatus.new(
+        hostname: System.hostname,
+        cpu_count: System.cpu_count,
+        core_cpu: core_cpu,
+        total_cpu: total_cpu,
+        memory_total: memory.total,
+        memory_usage: memory.used,
+        core_memory: memory.used,
+      )
+    end
+
+    def driver_status(driver_path : String) : DriverStatus?
+      manager = proc_manager_by_driver(driver_path)
+      return if manager.nil?
+
+      # Obtain process statistics - anything that might be useful for debugging
+      if manager.running?
+        process = Hardware::PID.new(manager.pid)
+        memory = Hardware::Memory.new
+
+        percentage_cpu = process.stat.cpu_usage!
+        # 0 utilization for NaNs
+        percentage_cpu = 0_f64 if percentage_cpu.nan?
+        percentage_cpu = 100_f64 if percentage_cpu.infinite?
+        memory_total = memory.total
+        memory_usage = process.memory
+      end
+
+      DriverStatus.new(
+        running: manager.running?,
+        module_instances: manager.module_instances,
+        last_exit_code: manager.last_exit_code,
+        launch_count: manager.launch_count,
+        launch_time: manager.launch_time,
+        percentage_cpu: percentage_cpu,
+        memory_total: memory_total,
+        memory_usage: memory_usage,
+      )
+    end
 
     def module_loaded?(module_id : String) : Bool
       !proc_manager_by_module?(module_id).nil?
