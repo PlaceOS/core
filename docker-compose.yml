@@ -1,0 +1,64 @@
+version: "3.7"
+
+# YAML Anchors
+
+x-deployment-env: &deployment-env
+  ENV: ${ENV:-development}
+  SG_ENV: ${SG_ENV:-development}
+  TZ: $TZ
+
+x-etcd-client-env: &etcd-client-env
+  ETCD_HOST: ${ETCD_HOST:-etcd}
+  ETCD_PORT: ${ETCD_PORT:-2379}
+
+x-redis-client-env: &redis-client-env
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+
+x-rethinkdb-client-env: &rethinkdb-client-env
+  RETHINKDB_HOST: ${RETHINKDB_HOST:-rethink}
+  RETHINKDB_PORT: ${RETHINKDB_PORT:-28015}
+  RETHINKDB_DB: ${RETHINKDB_DB:-place_development}
+
+services:
+  redis:
+    image: eqalpha/keydb
+    restart: always
+    container_name: redis
+    hostname: redis
+    environment:
+      TZ: $TZ
+
+  rethink:
+    image: rethinkdb:${RETHINKDB_VERSION:-2.4}
+    restart: always
+    container_name: rethink
+    hostname: rethink
+    environment:
+      TZ: $TZ
+
+  etcd:
+    image: bitnami/etcd:${ETCD_VERSION:-3.3.13}
+    restart: always
+    container_name: etcd
+    hostname: etcd
+    environment:
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      TZ: $TZ
+
+  core: # Module coordinator
+    build:
+      context: ./
+      dockerfile: Dockerfile.test
+    container_name: core
+    hostname: core
+    depends_on:
+      - etcd
+      - redis
+      - rethink
+    environment:
+      # Service Hosts
+      << : *etcd-client-env
+      << : *redis-client-env
+      << : *rethinkdb-client-env
+      # Environment
+      << : *deployment-env
