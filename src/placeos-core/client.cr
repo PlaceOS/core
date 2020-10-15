@@ -202,7 +202,7 @@ module PlaceOS::Core
     end
 
     # Details about machine load
-    def core_load : CoreLoad
+    def core_load : Load
       response = get("/status/load")
       Load.from_json(response.body)
     end
