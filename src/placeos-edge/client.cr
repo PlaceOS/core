@@ -63,6 +63,7 @@ module PlaceOS::Edge
       end
     end
 
+    # :ditto:
     def start
       start { }
     end

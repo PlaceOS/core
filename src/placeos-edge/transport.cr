@@ -41,14 +41,20 @@ module PlaceOS::Edge
       end
     end
 
+    def close
+      responses.write &.each(&.close)
+      @socket.close
+    end
+
     def send_response(message : Protocol::Response)
       socket_channel.send(message)
     end
 
     def send_request(message : Protocol::Request) : Protocol::Response?
       id = sequence_id
+
       response_channel = Channel(Protocol::Message)
-      response_lock.synchronize do
+      response_lock.write do
         responses[id] = response_channel
       end
 
@@ -56,7 +62,7 @@ module PlaceOS::Edge
 
       response = response_channel.receive?
 
-      response_lock.synchronize do
+      response_lock.write do
         responses.delete(id)
       end
 
@@ -78,7 +84,7 @@ module PlaceOS::Edge
     private def handle_message(message : Protocol::Message)
       case message
       in Response
-        response_lock.synchronise do
+        response_lock.read do
           if channel = responses[message.sequence_id]?
             channel.send(message)
           else
