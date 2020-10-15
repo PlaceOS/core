@@ -1,7 +1,6 @@
 require "./protocol"
 
 module PlaceOS::Edge
-
   # WebSocket Transport
   #
   class Transport

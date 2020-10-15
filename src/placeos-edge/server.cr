@@ -2,43 +2,59 @@ require "http"
 require "rwlock"
 
 require "./protocol"
+require "./transport"
 
 module PlaceOS::Edge
   class Server
-    private getter sockets = {} of String => HTTP::WebSocket
-    private getter sockets_lock = RWLock.new
+    Log = ::Log.for(self)
 
-    def on_message(edge_id, message)
-      handle_message(edge_id, Text.from_json(message))
-    rescue e : JSON::ParseException
-      Log.error(exception: e) { {
-        edge_id: edge_id,
-        message: "failed to parse incoming message from an edge",
-      } }
+    private getter edges = {} of String => Transport
+    private getter edges_lock = RWLock.new
+
+    def initialize
     end
 
-    def on_close(edge_id)
-      sockets_lock.write do
-        sockets.delete(edge_id)
+    def start
+    end
+
+    # Fulfil requests from an edge node
+    def handle_request(edge_id : String, message : Protocol::Request)
+    end
+
+    def send_request(edge_id : String, message : Protocol::Request) : Protocol::Response?
+      transport_for?(edge_id) do |transport|
+        transport.send_request(message)
+      end
+    end
+
+    def send_response(edge_id : String, message : Protocol::Response)
+      transport_for?(edge_id) do |transport|
+        transport.send_response(message)
       end
     end
 
     def add_edge(edge_id : String, socket : HTTP::WebSocket)
-      socket.on_close { on_close(edge_id) }
-
-      socket.on_message do |payload|
-        on_message(edge_id, payload)
+      socket.on_close do
+        edges_lock.write do
+          edges.delete(edge_id)
+        end
       end
 
-      sockets_lock.write do
-        sockets[edge_id] = socket
+      socket.request do |request|
+        handle_request(edge_id, request)
+      end
+
+      edges_lock.write do
+        edges[edge_id] = socket
       end
     end
 
-    def handle_message(edge_id : String, message : Protocol::Text)
-    end
-
-    protected def start_event_loop
+    def transport_for?(edge_id : String, & : Transport)
+      if edge = edges_lock.read { edges[edge_id]? }
+        yield edge
+      else
+        Log.error { "no transport found for edge #{edge_id}" }
+      end
     end
   end
 end
