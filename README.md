@@ -4,6 +4,18 @@
 
 The coordination service for running drivers on [PlaceOS](https://place.technology).
 
+## Testing
+
+- `$ ./test`
+- `$ docker-compose down` when you are done with development work for the day
+
+### Dependencies
+
+These will need to be installed prior to running `./install`:
+- [docker](https://www.docker.com/)
+- [docker-compose](https://github.com/docker/compose)
+- [git](https://git-scm.com/)
+
 ## Implementation
 
 ### Cloning
