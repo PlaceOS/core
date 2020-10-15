@@ -58,6 +58,9 @@ dependencies:
     github: spider-gazelle/rethinkdb-orm
     version: ~> 3
 
+  rwlock:
+    github: spider-gazelle/readers-writer
+
   simple_retry:
     github: spider-gazelle/simple_retry
     version: ~> 1

@@ -8,22 +8,8 @@ module PlaceOS::Edge
     private getter sockets = {} of String => HTTP::WebSocket
     private getter sockets_lock = RWLock.new
 
-    def initialiaze
-      handshake
-      start_event_loop
-    end
-
-    def add_edge(edge_id : String, socket : HTTP::WebSocket)
-      socket.on_close { remove_edge(edge_id) }
-      socket.on_message { |message| handle_edge_message(edge_id, message) }
-
-      sockets_lock.write do
-        sockets[edge_id] = socket
-      end
-    end
-
-    def handle_edge_message(edge_id : String, message : String)
-
+    def on_message(edge_id, message)
+      handle_message(edge_id, Text.from_json(message))
     rescue e : JSON::ParseException
       Log.error(exception: e) { {
         edge_id: edge_id,
@@ -31,10 +17,25 @@ module PlaceOS::Edge
       } }
     end
 
-    def remove_edge(edge_id : String)
+    def on_close(edge_id)
       sockets_lock.write do
         sockets.delete(edge_id)
       end
+    end
+
+    def add_edge(edge_id : String, socket : HTTP::WebSocket)
+      socket.on_close { on_close(edge_id) }
+
+      socket.on_message do |payload|
+        on_message(edge_id, payload)
+      end
+
+      sockets_lock.write do
+        sockets[edge_id] = socket
+      end
+    end
+
+    def handle_message(edge_id : String, message : Protocol::Text)
     end
 
     protected def start_event_loop
