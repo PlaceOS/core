@@ -13,8 +13,7 @@ RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certifi
 
 COPY shard.yml /app
 COPY shard.lock /app
-RUN PLACE_COMMIT=$PLACE_COMMIT \
-    shards install
+RUN shards install
 
 COPY src /app/src
 COPY spec /app/spec
