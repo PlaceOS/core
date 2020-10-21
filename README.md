@@ -6,12 +6,14 @@ The coordination service for running drivers on [PlaceOS](https://place.technolo
 
 ## Testing
 
-- `$ ./test`
+- `$ ./test` (tear down the docker-compose environment)
+- `$ ./test --watch` (only run tests on change)
 - `$ docker-compose down` when you are done with development work for the day
 
 ### Dependencies
 
 These will need to be installed prior to running `./install`:
+
 - [docker](https://www.docker.com/)
 - [docker-compose](https://github.com/docker/compose)
 - [git](https://git-scm.com/)
