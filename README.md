@@ -6,8 +6,8 @@ The coordination service for running drivers on [PlaceOS](https://place.technolo
 
 ## Testing
 
-- `$ ./test` (tear down the docker-compose environment)
-- `$ ./test --watch` (only run tests on change)
+- `$ ./test` (run tests and tear down the test environment on exit)
+- `$ ./test --watch` (run test suite on change)
 - `$ docker-compose down` when you are done with development work for the day
 
 ### Dependencies

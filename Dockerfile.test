@@ -10,7 +10,7 @@ RUN apk add --no-cache libssh2 libssh2-dev iputils
 
 # Add trusted CAs for communicating with external services
 RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
-RUN apk add watchexec --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
+RUN apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
 COPY shard.yml /app
 COPY shard.lock /app
