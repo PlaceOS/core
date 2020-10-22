@@ -202,9 +202,7 @@ module PlaceOS::Core
         Promise.all(@driver_proc_managers.map { |driver, manager|
           Promise.defer { {driver, manager.info} }
         }).then { |driver_info|
-          loaded = {} of String => Array(String)
-          driver_info.each { |(driver, info)| loaded[driver] = info }
-          loaded
+          driver_info.to_h
         }.get
       end
     end
