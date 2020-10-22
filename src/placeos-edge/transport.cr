@@ -92,7 +92,16 @@ module PlaceOS::Edge
           end
         end
       in Request
-        on_request.call(message)
+        spawn do
+          begin
+            on_request.call(message)
+          rescue e
+            Log.error(exception: e) { {
+              message:           e.message,
+              transport_message: message.to_json,
+            } }
+          end
+        end
       end
     end
   end

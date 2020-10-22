@@ -27,9 +27,18 @@ module PlaceOS::Core
     end
 
     def handle_request(message : Protocol::Request)
+      case message.type
+      when Protocol::Register
+        register
+      end
+    rescue e
+      Log.error(exception: e) { {
+        message: "failed to handle edge request",
+        request: message.to_json,
+      } }
     end
 
-    protected def handshake
+    protected def register
       # 1. edge opens a websocket connection with the REST API
       # 2. REST API consistent hashes the edge id to the right core (the core which will manage the websocket session)
       # 3. core asks edge which modules/drivers it has
