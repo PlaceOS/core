@@ -118,11 +118,11 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 3.5.16
+    version: 3.5.18
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 4.5.0
+    version: 4.5.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -162,10 +162,10 @@ shards:
 
   rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 3.0.2
+    version: 3.1.1
 
   retriable:
-    git: https://github.com/sija/retriable.cr.git
+    git: https://github.com/Sija/retriable.cr.git
     version: 0.2.2
 
   rwlock:
@@ -174,7 +174,7 @@ shards:
 
   secrets-env:
     git: https://github.com/place-labs/secrets-env.git
-    version: 1.0.0
+    version: 1.1.0
 
   simple_retry:
     git: https://github.com/spider-gazelle/simple_retry.git
@@ -186,7 +186,7 @@ shards:
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
-    version: 2.0.1
+    version: 2.0.2
 
   tokenizer:
     git: https://github.com/spider-gazelle/tokenizer.git
