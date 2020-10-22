@@ -63,7 +63,7 @@ Signal::TERM.trap &terminate
 logging = Proc(Signal, Nil).new do |signal|
   level = signal.usr1? ? Log::Severity::Debug : Log::Severity::Info
   puts " > Log level changed to #{level}"
-  Log.builder.bind "core.*", level, PlaceOS::Core::LOG_BACKEND
+  Log.builder.bind "place_os.core.*", level, PlaceOS::Core::LOG_BACKEND
   signal.ignore
 end
 
