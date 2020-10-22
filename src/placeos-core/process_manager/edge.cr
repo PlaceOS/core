@@ -12,13 +12,7 @@ module PlaceOS::Core
 
     forward_missing_to missing
 
-    @transport : Transport?
-
-    protected def transport : Transport
-      # HACK: fixes the indirect initialization problem
-      # @transport MUST be initialized in the initializer!
-      @transport.as(Transport)
-    end
+    getter! transport : Transport
 
     def intialize(socket : HTTP::WebSocket)
       @transport = Transport.new(socket) do |request|
