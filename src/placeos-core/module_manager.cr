@@ -42,7 +42,7 @@ module PlaceOS::Core
     class_getter instance : ModuleManager { ModuleManager.new(uri: self.uri) }
 
     # Manager for remote edge module processes
-    getter edge_processes : Processes::Edge { Processes::Edge.new }
+    getter edge_processes : Hash(String, Processes::Edge) = {} of String => Processes::Edge
 
     # Manager for local module processes
     getter local_processes : Processes::Local { Processes::Local.new }
@@ -134,13 +134,21 @@ module PlaceOS::Core
     end
 
     def process_manager(mod : Model::Module | String, & : ProcessManager ->)
-      edge = case mod
-             in Model::Module then mod.on_edge?
-             in String        then Model::Module.has_edge_hint?(mod)
-             end
+      edge_id = case mod
+                in Model::Module
+                  mod.edge_id if mod.on_edge?
+                in String
+                  # TODO: Cache module to edge
+                  Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
+                end
 
-      if edge
-        yield edge_processes
+      if !edge_id.nil? && !edge_processes.has_key?(edge_id)
+        Log.error { "missing edge manager for #{edge_id}" }
+        return
+      end
+
+      if edge_id
+        yield edge_processes[edge_id]
       else
         yield local_processes
       end

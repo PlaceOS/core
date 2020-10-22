@@ -89,13 +89,13 @@ module PlaceOS::Core
         module_manager.start
 
         # Check that the node is registered in etcd
-        module_manager.discovery.nodes.size.should eq 1
+        module_manager.discovery.nodes.map(&.[:name]).should contain(module_manager.discovery.name)
 
         module_manager.discovery.unregister
         sleep 0.1
 
-        # Check that the node is registered in etcd
-        module_manager.discovery.nodes.size.should eq 0
+        # Check that the node is no longer registered in etcd
+        module_manager.discovery.nodes.map(&.[:name]).should_not contain(module_manager.discovery.name)
         module_manager.stop
       end
     end
