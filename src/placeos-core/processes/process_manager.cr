@@ -83,7 +83,7 @@ module PlaceOS::Core
 
     # Generate a system status report
     #
-    abstract def system_status : Status
+    abstract def system_status : SystemStatus
 
     # Check for the presence of a module on a ProcessManager
     #

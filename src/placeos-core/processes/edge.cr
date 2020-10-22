@@ -83,7 +83,7 @@ module PlaceOS::Core
       missing
     end
 
-    def system_status : Status
+    def system_status : SystemStatus
       missing
     end
 

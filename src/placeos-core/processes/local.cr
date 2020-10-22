@@ -119,7 +119,7 @@ module PlaceOS::Core
     # Metadata
     ###############################################################################################
 
-    def system_status
+    def system_status : SystemStatus
       process = Hardware::PID.new
       memory = Hardware::Memory.new
       cpu = Hardware::CPU.new
