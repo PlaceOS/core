@@ -14,8 +14,8 @@ require "placeos-resource"
 require "../placeos-edge/server"
 
 require "../constants"
-require "./processes/edge"
-require "./processes/local"
+require "./process_manager/edge"
+require "./process_manager/local"
 
 module PlaceOS::Core
   class ModuleManager < Resource(Model::Module)
@@ -49,7 +49,7 @@ module PlaceOS::Core
     getter edge_processes : Edge::Server = Edge::Server.new
 
     # Manager for local module processes
-    getter local_processes : Processes::Local { Processes::Local.new }
+    getter local_processes : ProcessManager::Local { ProcessManager::Local.new }
 
     # Start up process is as follows..
     # - registered

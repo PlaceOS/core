@@ -1,8 +1,9 @@
 require "hardware"
-require "./process_manager"
+
+require "../process_manager"
 
 module PlaceOS::Core
-  class Processes::Local
+  class ProcessManager::Local
     include ProcessManager
 
     def execute(module_id : String, payload : String | IO)

@@ -4,13 +4,13 @@ require "rwlock"
 require "./protocol"
 require "./transport"
 
-require "../placeos-core/processes/edge"
+require "../placeos-core/process_manager/edge"
 
 module PlaceOS::Edge
   class Server
     Log = ::Log.for(self)
 
-    private getter edges = {} of String => Core::Processes::Edge
+    private getter edges = {} of String => Core::ProcessManager::Edge
     private getter edges_lock = RWLock.new
 
     # List the loaded modules per edge
@@ -30,14 +30,14 @@ module PlaceOS::Edge
         end
       end
 
-      manager = Processes::Edge.new(socket)
+      manager = ProcessManager::Edge.new(socket)
 
       edges_lock.write do
         edges[edge_id] = manager
       end
     end
 
-    # Look up `Processes::Edge` for an edge_id
+    # Look up `ProcessManager::Edge` for an edge_id
     #
     def for?(edge_id : String)
       if edge = edges_lock.read { edges[edge_id]? }
@@ -49,7 +49,7 @@ module PlaceOS::Edge
     end
 
     # :ditto:
-    def for?(edge_id : String, & : Processes::Edge)
+    def for?(edge_id : String, & : ProcessManager::Edge)
       manager = for?(edge_id)
       yield manager unless manager.nil?
     end

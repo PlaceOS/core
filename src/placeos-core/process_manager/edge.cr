@@ -1,11 +1,11 @@
 require "placeos-driver/protocol/management"
 
-require "./process_manager"
+require "../process_manager"
 
 require "../../placeos-edge/transport"
 
 module PlaceOS::Core
-  class Processes::Edge
+  class ProcessManager::Edge
     include ProcessManager
 
     alias Transport = PlaceOS::Edge::Transport
