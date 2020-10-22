@@ -6,7 +6,7 @@ module PlaceOS::Edge
   class Transport
     private getter socket : HTTP::WebSocket
 
-    private getter socket_channel = Channel(Protocol::Message)
+    private getter socket_channel = Channel(Protocol::Message).new
 
     private getter response_lock = RWLock.new
 
@@ -18,7 +18,7 @@ module PlaceOS::Edge
 
     def initialize(@socket, @sequence_id : UInt64 = 0, &@on_request : Protocol::Request ->)
       @socket.on_message &->on_message(String)
-      @socket.on_binary &->on_message(String)
+      @socket.on_binary &->on_binary(Bytes)
       spawn { write_websocket }
     end
 
@@ -75,8 +75,8 @@ module PlaceOS::Edge
       Log.error(exception: e) { "failed to parse incoming message: #{message}" }
     end
 
-    private def on_binary(io)
-      handle_message(io.read_bytes(Protocol::Binary))
+    private def on_binary(bytes)
+      handle_message(bytes)
     rescue e : BinData::ParseError
       Log.error(exception: e) { "failed to parse incoming binary message" }
     end

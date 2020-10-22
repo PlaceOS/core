@@ -2,15 +2,6 @@ require "bindata"
 require "json"
 
 module PlaceOS::Edge::Protocol
-  # Arbitray message on the wire
-  alias Message = Text | Binary
-
-  # Response messages
-  alias Response = Text::Response | Binary
-
-  # Request messages
-  alias Request = Text::Loaded | Text::Register
-
   # Binary messages
   #
   class Binary < BinData
@@ -52,12 +43,21 @@ module PlaceOS::Edge::Protocol
       getter payload : String
     end
 
-    struct Loaded < Request
+    struct Loaded < Text
     end
 
-    struct Register < Request
+    struct Register < Text
     end
   end
+
+  # Request messages
+  alias Request = Text::Loaded | Text::Register
+
+  # Arbitray message on the wire
+  alias Message = Text | Binary
+
+  # Response messages
+  alias Response = Text::Response | Binary
 
   # Response message body formats
   #

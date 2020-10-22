@@ -2,11 +2,32 @@ require "placeos-driver/protocol/management"
 
 require "./process_manager"
 
+require "../../placeos-edge/transport"
+
 module PlaceOS::Core
   class Processes::Edge
     include ProcessManager
 
+    alias Transport = PlaceOS::Edge::Transport
+
     forward_missing_to missing
+
+    @transport : Transport?
+
+    protected def transport : Transport
+      # HACK: fixes the indirect initialization problem
+      # @transport MUST be initialized in the initializer!
+      @transport.as(Transport)
+    end
+
+    def intialize(socket : HTTP::WebSocket)
+      @transport = Transport.new(socket) do |request|
+        handle_request(request)
+      end
+    end
+
+    def handle_request(message : Protocol::Request)
+    end
 
     protected def handshake
       # 1. edge opens a websocket connection with the REST API
@@ -87,7 +108,7 @@ module PlaceOS::Core
       missing
     end
 
-    def driver_status(driver_path : String) : DriverStatus
+    def driver_status(driver_path : String) : DriverStatus?
       missing
     end
 

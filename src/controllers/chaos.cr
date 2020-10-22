@@ -14,7 +14,12 @@ module PlaceOS::Core::Api
       edge_id = params["edge_id"]?.presence
 
       # TODO: move this to ModuleManager
-      manager = edge_id.nil? || !module_manager.own_node?(edge_id) ? module_manager.local_processes : module_manager.edge_processes[edge_id]?
+      manager = if edge_id.nil? || !module_manager.own_node?(edge_id)
+                  module_manager.local_processes
+                else
+                  module_manager.edge_processes.for?(edge_id)
+                end
+
       head :not_found unless manager && manager.driver_loaded?(driver_path)
 
       manager.kill(driver_path)

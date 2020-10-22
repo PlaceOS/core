@@ -11,6 +11,8 @@ require "placeos-models/module"
 require "placeos-models/settings"
 require "placeos-resource"
 
+require "../placeos-edge/server"
+
 require "../constants"
 require "./processes/edge"
 require "./processes/local"
@@ -24,10 +26,12 @@ module PlaceOS::Core
     getter clustering : Clustering
     getter discovery : HoundDog::Discovery
 
-    delegate stop, to: clustering
+    delegate :stop, to: clustering
 
     # TODO: remove
-    delegate path_for?, to: local_processes
+    delegate :path_for?, to: local_processes
+
+    delegate :add_edge, to: edge_processes
 
     delegate :own_node?, to: discovery
 
@@ -42,7 +46,7 @@ module PlaceOS::Core
     class_getter instance : ModuleManager { ModuleManager.new(uri: self.uri) }
 
     # Manager for remote edge module processes
-    getter edge_processes : Hash(String, Processes::Edge) = {} of String => Processes::Edge
+    getter edge_processes : Edge::Server = Edge::Server.new
 
     # Manager for local module processes
     getter local_processes : Processes::Local { Processes::Local.new }
@@ -138,17 +142,16 @@ module PlaceOS::Core
                 in Model::Module
                   mod.edge_id if mod.on_edge?
                 in String
-                  # TODO: Cache module to edge
+                  # TODO: Cache module to edge relation
                   Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
                 end
 
-      if !edge_id.nil? && !edge_processes.has_key?(edge_id)
-        Log.error { "missing edge manager for #{edge_id}" }
-        return
-      end
-
       if edge_id
-        yield edge_processes[edge_id]
+        if (manager = edge_processes.for?(edge_id)).nil?
+          Log.error { "missing edge manager for #{edge_id}" }
+          return
+        end
+        yield manager
       else
         yield local_processes
       end

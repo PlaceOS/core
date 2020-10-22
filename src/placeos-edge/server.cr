@@ -4,57 +4,54 @@ require "rwlock"
 require "./protocol"
 require "./transport"
 
+require "../placeos-core/processes/edge"
+
 module PlaceOS::Edge
   class Server
     Log = ::Log.for(self)
 
-    private getter edges = {} of String => Transport
+    private getter edges = {} of String => Core::Processes::Edge
     private getter edges_lock = RWLock.new
 
-    def initialize
-    end
-
-    def start
-    end
-
-    # Fulfil requests from an edge node
-    def handle_request(edge_id : String, message : Protocol::Request)
-    end
-
-    def send_request(edge_id : String, message : Protocol::Request) : Protocol::Response?
-      transport_for?(edge_id) do |transport|
-        transport.send_request(message)
+    # List the loaded modules per edge
+    #
+    def loaded_modules
+      edges_lock.read do
+        edges.transform_values &.loaded_modules
       end
     end
 
-    def send_response(edge_id : String, message : Protocol::Response)
-      transport_for?(edge_id) do |transport|
-        transport.send_response(message)
-      end
-    end
-
-    def add_edge(edge_id : String, socket : HTTP::WebSocket)
+    # Maintains an Edge API, cleaning up after the socket closes
+    #
+    def manage(edge_id : String, socket : HTTP::WebSocket)
       socket.on_close do
         edges_lock.write do
           edges.delete(edge_id)
         end
       end
 
-      socket.request do |request|
-        handle_request(edge_id, request)
-      end
+      manager = Processes::Edge.new(socket)
 
       edges_lock.write do
-        edges[edge_id] = socket
+        edges[edge_id] = manager
       end
     end
 
-    def transport_for?(edge_id : String, & : Transport)
+    # Look up `Processes::Edge` for an edge_id
+    #
+    def for?(edge_id : String)
       if edge = edges_lock.read { edges[edge_id]? }
-        yield edge
+        edge
       else
-        Log.error { "no transport found for edge #{edge_id}" }
+        Log.error { "no manager found for edge #{edge_id}" }
+        nil
       end
+    end
+
+    # :ditto:
+    def for?(edge_id : String, & : Processes::Edge)
+      manager = for?(edge_id)
+      yield manager unless manager.nil?
     end
   end
 end

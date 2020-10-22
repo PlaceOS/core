@@ -66,7 +66,7 @@ module PlaceOS::Core
 
     # Generate a system status report
     #
-    abstract def driver_status(driver_path) : DriverStatus
+    abstract def driver_status(driver_path) : DriverStatus?
 
     record(
       SystemStatus,
