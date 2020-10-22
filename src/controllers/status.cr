@@ -60,7 +60,7 @@ module PlaceOS::Core::Api
     get "/loaded", :loaded do
       render json: {
         local: module_manager.local_processes.loaded_modules,
-        edge:  module_manager.edge_processes.loaded_modules,
+        edge:  module_manager.edge_processes.transform_values(&.loaded_modules),
       }
     end
 

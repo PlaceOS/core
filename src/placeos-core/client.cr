@@ -159,7 +159,8 @@ module PlaceOS::Core
       post("/command/#{module_id}/load").success?
     end
 
-    alias Loaded = NamedTuple(edge: Hash(String, Array(String)), local: Hash(String, Array(String)))
+    alias Processes = Hash(String, Array(String))
+    alias Loaded = NamedTuple(edge: Hash(String, Processes), local: Processes)
 
     # Returns the loaded modules on the node
     def loaded
