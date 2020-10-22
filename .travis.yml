@@ -2,5 +2,4 @@ services:
   - docker
 
 script:
-  - docker-compose build
-  - docker-compose run --rm core
+  - ./test

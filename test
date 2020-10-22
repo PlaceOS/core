@@ -1,1 +1,2 @@
 docker-compose build && docker-compose run --rm core
+docker-compose down

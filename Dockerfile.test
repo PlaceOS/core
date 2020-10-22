@@ -16,8 +16,6 @@ COPY shard.yml /app
 COPY shard.lock /app
 RUN shards install
 
-COPY src /app/src
-COPY spec /app/spec
 RUN mkdir -p /app/bin/drivers
 
 RUN crystal tool format --check
