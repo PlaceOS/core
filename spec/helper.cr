@@ -1,4 +1,3 @@
-require "spec"
 require "uuid"
 require "../lib/action-controller/spec/curl_context"
 
@@ -10,6 +9,8 @@ require "../src/placeos-core/*"
 require "placeos-models/spec/generator"
 
 SPEC_DRIVER = "drivers/place/private_helper.cr"
+
+require "spec"
 
 CORE_URL = ENV["CORE_URL"]? || "http://core:3000"
 
