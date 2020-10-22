@@ -52,7 +52,7 @@ module PlaceOS::Core::Api
     get "/load", :load do
       render json: {
         local: module_manager.local_processes.system_status,
-        edge:  [] of NamedTuple(edge: String, load: ProcessManager::SystemStatus), # TODO: status for each edge {edge: "edge-1234", load: { ... }}
+        edge:  module_manager.edge_processes.system_status,
       }
     end
 

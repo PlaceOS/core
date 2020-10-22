@@ -13,11 +13,11 @@ module PlaceOS::Edge
     private getter edges = {} of String => Core::ProcessManager::Edge
     private getter edges_lock = RWLock.new
 
-    # List the loaded modules per edge
-    #
-    def loaded_modules
+    # Macro generated calls for each `Core::ProcessManager::Edge`
+    macro method_missing(call)
+      # {{ call.name }} per edge
       edges_lock.read do
-        edges.transform_values &.loaded_modules
+        edges.transform_values &.{{call.name.id}}
       end
     end
 
