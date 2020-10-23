@@ -1,2 +1,21 @@
-docker-compose build && docker-compose run --rm core
+#! /usr/bin/env bash
+
+set -e
+
+# this function is called when Ctrl-C is sent
+function trap_ctrlc ()
+{
+    echo "### cleaning up"
+    docker-compose down
+    exit 2
+}
+
+# initialise trap to call trap_ctrlc function
+# when signal 2 (SIGINT) is received
+trap "trap_ctrlc" 2
+
+docker-compose build
+
+docker-compose run --rm core /app/entrypoint $@
+
 docker-compose down

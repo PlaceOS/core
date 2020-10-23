@@ -1,4 +1,3 @@
-require "spec"
 require "uuid"
 require "../lib/action-controller/spec/curl_context"
 
@@ -8,6 +7,8 @@ require "../src/placeos-core"
 require "../src/placeos-core/*"
 
 require "placeos-models/spec/generator"
+
+require "spec"
 
 SPEC_DRIVER = "drivers/place/private_helper.cr"
 
