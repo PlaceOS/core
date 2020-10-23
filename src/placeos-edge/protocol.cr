@@ -23,7 +23,7 @@ module PlaceOS::Edge::Protocol
     getter sequence_id : UInt64
 
     macro inherited
-      getter type : Type = Type::{{@type.stringify.split("::").last.id}}
+      getter type : Type = PlaceOS::Edge::Protocol::Text::Type::{{@type.stringify.split("::").last.id}}
     end
 
     enum Type

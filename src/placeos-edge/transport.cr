@@ -1,3 +1,6 @@
+require "http"
+require "mutex"
+
 require "./protocol"
 
 module PlaceOS::Edge
@@ -14,7 +17,7 @@ module PlaceOS::Edge
 
     private getter sequence_lock = Mutex.new
 
-    private getter on_request : Protocol::Message ->
+    private getter on_request : Protocol::Request ->
 
     def initialize(@socket, @sequence_id : UInt64 = 0, &@on_request : Protocol::Request ->)
       @socket.on_message &->on_message(String)
@@ -31,12 +34,12 @@ module PlaceOS::Edge
     protected def write_websocket
       while message = socket_channel.receive?
         case message
-        in Binary
+        in Protocol::Binary
           socket.stream(binary: true) do |io|
-            message.to_io(io)
+            message.as(Protocol::Binary).to_io(io)
           end
-        in Text
-          socket.send(message.to_json)
+        in Protocol::Text
+          socket.send(message.as(Protocol::Text).to_json)
         end
       end
     end
@@ -75,15 +78,17 @@ module PlaceOS::Edge
       Log.error(exception: e) { "failed to parse incoming message: #{message}" }
     end
 
-    private def on_binary(bytes)
-      handle_message(bytes)
+    private def on_binary(bytes : Slice)
+      # TODO: change BinData supports serialisation from a slice
+      io = IO::Memory.new(bytes, writeable: false)
+      handle_message(io.read_bytes(Protocol::Binary))
     rescue e : BinData::ParseError
       Log.error(exception: e) { "failed to parse incoming binary message" }
     end
 
     private def handle_message(message : Protocol::Message)
       case message
-      in Response
+      in Protocol::Response
         response_lock.read do
           if channel = responses[message.sequence_id]?
             channel.send(message)
@@ -91,14 +96,15 @@ module PlaceOS::Edge
             Log.error { "unrequested response received: #{message.sequence_id}" }
           end
         end
-      in Request
+      in Protocol::Request
         spawn do
+          # TODO: remove casts once crystal correctly trims union here
           begin
-            on_request.call(message)
+            on_request.call(message.as(Protocol::Request))
           rescue e
             Log.error(exception: e) { {
               message:           e.message,
-              transport_message: message.to_json,
+              transport_message: message.as(Protocol::Request).to_json,
             } }
           end
         end
