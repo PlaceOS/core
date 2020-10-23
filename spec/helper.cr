@@ -8,6 +8,8 @@ require "../src/placeos-core/*"
 
 require "placeos-models/spec/generator"
 
+require "spec"
+
 SPEC_DRIVER = "drivers/place/private_helper.cr"
 
 require "spec"

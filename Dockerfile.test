@@ -11,18 +11,20 @@ RUN apk add --no-cache libssh2 libssh2-dev iputils
 # Add trusted CAs for communicating with external services
 RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
 
+RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing watchexec
+
+RUN apk add --no-cache bash
+
 COPY shard.yml /app
 COPY shard.lock /app
+
 RUN shards install
 
-COPY src /app/src
-COPY spec /app/spec
-RUN mkdir -p /app/bin/drivers
+COPY entrypoint.sh /app/entrypoint.sh
 
-RUN crystal tool format --check
-RUN crystal lib/ameba/bin/ameba.cr
+RUN mkdir -p /app/bin/drivers
 
 # These provide certificate chain validation where communicating with external services over TLS
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-ENTRYPOINT crystal spec --error-trace -v
+ENTRYPOINT /app/entrypoint.sh

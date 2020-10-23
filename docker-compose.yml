@@ -51,6 +51,9 @@ services:
       dockerfile: Dockerfile.test
     container_name: core
     hostname: core
+    volumes:
+      - ./spec:/app/spec
+      - ./src:/app/src
     depends_on:
       - etcd
       - redis
