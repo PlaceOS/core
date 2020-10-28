@@ -56,13 +56,15 @@ module PlaceOS::Edge
           Fiber.yield
         end
 
+        handshake
+
         yield
 
         close_channel.receive?
       end
     end
 
-    def handle_request(request : Protocol::Request)
+    def handle_request(request : Protocol::Server::Request)
     end
 
     # :ditto:
@@ -70,7 +72,19 @@ module PlaceOS::Edge
       start { }
     end
 
+    def send_request(request : Protocol::Client::Request) : Protocol::Server::Response
+      transport.send_request(request).as(Protocol::Server::Response)
+    end
+
+    # TODO: fix up this client. would be good to get the correct type back
+
     def handshake
+      Retriable.retry do
+        unless send_message(Protocol::Register.new).success?
+          Log.warn { "failed to register to core" }
+          raise "handshake failed"
+        end
+      end
     end
   end
 end

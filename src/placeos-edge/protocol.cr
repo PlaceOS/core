@@ -32,52 +32,66 @@ module PlaceOS::Edge::Protocol
       Loaded
     end
 
-    use_json_discriminator "type", {
-      Type::Response => Response,
-      Type::Loaded   => Loaded,
-      Type::Register => Register,
-    }
-
     struct Response < Text
       getter? success : Bool
       getter payload : String
     end
 
-    struct Loaded < Text
-    end
+    use_json_discriminator "type", {
+      Type::Response => Response,
+      Type::Loaded   => Loaded,
+      Type::Register => Register,
+    }
+  end
 
-    struct Register < Text
-    end
+  # Messages
+
+  struct Loaded < Text
+  end
+
+  struct Register < Text
+  end
+
+  # Messages by consumer
+
+  module Client
+    alias Request = Register
+    alias Response = Text::Response
+  end
+
+  module Server
+    alias Request = Loaded | Load
+    alias Response = Text::Response | Binary
   end
 
   # Request messages
-  alias Request = Text::Loaded | Text::Register
+  alias Request = Server::Request | Client::Request
+
+  # Response messages
+  alias Response = Server::Response | Client::Response
 
   # Arbitray message on the wire
   alias Message = Text | Binary
-
-  # Response messages
-  alias Response = Text::Response | Binary
 
   # Response message body formats
   #
   abstract struct ResponseBody
     include JSON::Serializable
+  end
 
-    struct Load < ResponseBody
-      getter add_drivers : Array(String)
-      getter remove_drivers : Array(String)
+  struct Load < ResponseBody
+    getter add_drivers : Array(String)
+    getter remove_drivers : Array(String)
 
-      getter add_modules : Array(String)
-      getter remove_modules : Array(String)
+    getter add_modules : Array(String)
+    getter remove_modules : Array(String)
 
-      def initialize(
-        @add_drivers = [] of String,
-        @remove_drivers = [] of String,
-        @add_modules = [] of String,
-        @remove_modules = [] of String
-      )
-      end
+    def initialize(
+      @add_drivers = [] of String,
+      @remove_drivers = [] of String,
+      @add_modules = [] of String,
+      @remove_modules = [] of String
+    )
     end
   end
 end
