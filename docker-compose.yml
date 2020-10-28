@@ -20,6 +20,27 @@ x-rethinkdb-client-env: &rethinkdb-client-env
   RETHINKDB_DB: ${RETHINKDB_DB:-place_development}
 
 services:
+  core: # Module coordinator
+    build:
+      context: ./
+      dockerfile: Dockerfile.test
+    container_name: core
+    hostname: core
+    volumes:
+      - ./spec:/app/spec
+      - ./src:/app/src
+    depends_on:
+      - etcd
+      - redis
+      - rethink
+    environment:
+      # Service Hosts
+      << : *etcd-client-env
+      << : *redis-client-env
+      << : *rethinkdb-client-env
+      # Environment
+      << : *deployment-env
+
   redis:
     image: eqalpha/keydb
     restart: always
@@ -44,24 +65,3 @@ services:
     environment:
       ALLOW_NONE_AUTHENTICATION: "yes"
       TZ: $TZ
-
-  core: # Module coordinator
-    build:
-      context: ./
-      dockerfile: Dockerfile.test
-    container_name: core
-    hostname: core
-    volumes:
-      - ./spec:/app/spec
-      - ./src:/app/src
-    depends_on:
-      - etcd
-      - redis
-      - rethink
-    environment:
-      # Service Hosts
-      << : *etcd-client-env
-      << : *redis-client-env
-      << : *rethinkdb-client-env
-      # Environment
-      << : *deployment-env
