@@ -1,5 +1,7 @@
 FROM crystallang/crystal:0.35.1-alpine
 
+VOLUME /app/bin/drivers
+
 WORKDIR /app
 
 # Set the commit through a build arg
