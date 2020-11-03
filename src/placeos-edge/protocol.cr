@@ -1,97 +1,138 @@
 require "bindata"
 require "json"
 
+require "./record"
+
 module PlaceOS::Edge::Protocol
+  # Containers
+  #############################################################################
+
   # Binary messages
   #
   class Binary < BinData
     endian big
     uint64 :sequence_id
 
-    int32 :size, value: ->{ description.bytesize }
-    string :description, length: ->{ size }
+    int32 :size, value: ->{ key.bytesize }
+    string :key, length: ->{ size }
 
-    remaining_bytes :payload
+    remaining_bytes :body
   end
 
   # Text messages
   #
-  abstract struct Text
+  class Text
     include JSON::Serializable
     include JSON::Serializable::Strict
 
     getter sequence_id : UInt64
+    getter body : Body
 
-    macro inherited
-      getter type : Type = PlaceOS::Edge::Protocol::Text::Type::{{@type.stringify.split("::").last.id}}
+    def initialize(@sequence_id, @body)
     end
+  end
+
+  alias Container = Text | Binary
+
+  # Messages
+  #############################################################################
+
+  abstract struct Body
+    include JSON::Serializable
 
     enum Type
-      Response
-      Register
+      BasicResponse
+      Exec
+      Load
       Loaded
-    end
-
-    struct Response < Text
-      getter? success : Bool
-      getter payload : String
+      Register
     end
 
     use_json_discriminator "type", {
-      Type::Response => Response,
-      Type::Loaded   => Loaded,
-      Type::Register => Register,
+      Type::BasicResponse => BasicResponse,
+      Type::Exec          => Exec,
+      Type::Load          => Load,
+      Type::Loaded        => Loaded,
+      Type::Register      => Register,
     }
+
+    macro inherited
+      {% unless @type.abstract? %}
+        getter type : Type = PlaceOS::Edge::Protocol::Body::Type::{{@type.stringify.split("::").last.id}}
+      {% end %}
+    end
   end
 
-  # Messages
+  # Requests
 
-  struct Loaded < Text
+  struct Exec < Body
+    getter payload : String
+
+    def initialize(@payload)
+    end
   end
 
-  struct Register < Text
+  struct Loaded < Body
+    def initialize
+    end
   end
 
-  # Messages by consumer
-
-  module Client
-    alias Request = Register
-    alias Response = Text::Response
+  struct Register < Body
+    def initialize
+    end
   end
 
-  module Server
-    alias Request = Loaded | Load
-    alias Response = Text::Response | Binary
+  # Responses
+
+  abstract struct ResponseBody < Body
+    getter success : Bool = true
   end
 
-  # Request messages
-  alias Request = Server::Request | Client::Request
-
-  # Response messages
-  alias Response = Server::Response | Client::Response
-
-  # Arbitray message on the wire
-  alias Message = Text | Binary
-
-  # Response message body formats
-  #
-  abstract struct ResponseBody
-    include JSON::Serializable
+  struct BasicResponse < ResponseBody
+    def initialize(@success : Bool)
+    end
   end
 
   struct Load < ResponseBody
     getter add_drivers : Array(String)
     getter remove_drivers : Array(String)
-
     getter add_modules : Array(String)
     getter remove_modules : Array(String)
 
     def initialize(
-      @add_drivers = [] of String,
-      @remove_drivers = [] of String,
-      @add_modules = [] of String,
-      @remove_modules = [] of String
+      @success : Bool,
+      @add_drivers : Array(String) = [] of String,
+      @remove_drivers : Array(String) = [] of String,
+      @add_modules : Array(String) = [] of String,
+      @remove_modules : Array(String) = [] of String
     )
     end
   end
+
+  # Binary Response
+  #
+  class BinaryBody
+    getter key : String
+    getter binary : Bytes
+    getter success : Bool = true
+
+    def initialize(@key, @binary)
+    end
+  end
+
+  # Messages, grouped by producer
+
+  module Client
+    alias Request = Register
+    alias Response = ResponseBody
+  end
+
+  module Server
+    alias Request = Loaded | Exec
+    alias Response = Load | ResponseBody | BinaryBody
+  end
+
+  alias Request = Server::Request | Client::Request
+  alias Response = Server::Response | Client::Response
+  alias Message = Request | Response
 end

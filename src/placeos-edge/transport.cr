@@ -9,11 +9,11 @@ module PlaceOS::Edge
   class Transport
     private getter socket : HTTP::WebSocket
 
-    private getter socket_channel = Channel(Protocol::Message).new
+    private getter socket_channel = Channel(Protocol::Container).new
 
     private getter response_lock = RWLock.new
 
-    private getter responses = {} of String => Channel(Protocol::Response)
+    private getter responses = {} of UInt64 => Channel(Protocol::Response)
 
     private getter sequence_lock = Mutex.new
 
@@ -49,19 +49,31 @@ module PlaceOS::Edge
       @socket.close
     end
 
-    def send_response(message : Protocol::Response)
+    def send_response(id : UInt64, response : Protocol::Response)
+      message = case response
+                in Protocol::Body
+                  Protocol::Text.new(sequence_id: id, body: response)
+                in Protocol::BinaryBody
+                  m = Protocol::Binary.new
+                  m.sequence_id = id
+                  m.size = response.key.size
+                  m.key = response.key
+                  m.message = response.binary
+                  m
+                end
+
       socket_channel.send(message)
     end
 
-    def send_request(message : Protocol::Request) : Protocol::Response?
+    def send_request(request : Protocol::Request) : Protocol::Response?
       id = sequence_id
 
-      response_channel = Channel(Protocol::Message)
+      response_channel = Channel(Protocol::Response).new
       response_lock.write do
         responses[id] = response_channel
       end
 
-      socket_channel.send(message)
+      socket_channel.send(Protocol::Text.new(sequence_id: id, body: request))
 
       response = response_channel.receive?
 
@@ -86,12 +98,18 @@ module PlaceOS::Edge
       Log.error(exception: e) { "failed to parse incoming binary message" }
     end
 
-    private def handle_message(message : Protocol::Message)
-      case message
+    private def handle_message(message : Protocol::Container)
+      body = if message.is_a? Protocol::Binary
+               Protocol::BinaryBody.new(key: message.key, binary: message.body)
+             else
+               message.body
+             end
+
+      case body
       in Protocol::Response
         response_lock.read do
           if channel = responses[message.sequence_id]?
-            channel.send(message)
+            channel.send(body)
           else
             Log.error { "unrequested response received: #{message.sequence_id}" }
           end
@@ -100,11 +118,11 @@ module PlaceOS::Edge
         spawn do
           # TODO: remove casts once crystal correctly trims union here
           begin
-            on_request.call(message.as(Protocol::Request))
+            on_request.call(body.as(Protocol::Request))
           rescue e
             Log.error(exception: e) { {
               message:           e.message,
-              transport_message: message.as(Protocol::Request).to_json,
+              transport_message: body.as(Protocol::Request).to_json,
             } }
           end
         end

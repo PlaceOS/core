@@ -1,5 +1,8 @@
 require "../helper"
 
+require "../../src/placeos-edge"
+require "../../src/placeos-edge/*"
+
 # Set up websockets on a blocking bidirectional IO
 #
 def mock_sockets

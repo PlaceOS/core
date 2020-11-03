@@ -21,6 +21,14 @@ module PlaceOS::Core
     end
 
     def handle_request(message : Protocol::Request)
+      unless message.is_a?(Protocol::Client::Request)
+        Log.error(exception: e) { {
+          message: "unexpected edge request",
+          request: message.to_json,
+        } }
+        return
+      end
+
       case message.type
       when Protocol::Register
         register

@@ -8,6 +8,7 @@ require "./transport"
 
 module PlaceOS::Edge
   class Client
+    Log                = ::Log.for(self)
     WEBSOCKET_API_PATH = "/edge"
 
     private getter transport : Transport?
@@ -46,8 +47,13 @@ module PlaceOS::Edge
                0_u64
              end
 
-        Transport.new(socket, id) do |request|
-          handle_request(request)
+        @transport = Transport.new(socket, id) do |request|
+          case request
+          in Protocol::Server::Request
+            handle_request(request)
+          in Protocol::Client::Request
+            Log.error { "unexpected request received #{request.inspect}" }
+          end
         end
 
         spawn { socket.run }
@@ -73,14 +79,19 @@ module PlaceOS::Edge
     end
 
     def send_request(request : Protocol::Client::Request) : Protocol::Server::Response
-      transport.send_request(request).as(Protocol::Server::Response)
+      t = transport
+      if t.nil?
+        raise "cannot send request over closed transport"
+      else
+        t.send_request(request).as(Protocol::Server::Response)
+      end
     end
 
     # TODO: fix up this client. would be good to get the correct type back
 
     def handshake
       Retriable.retry do
-        unless send_message(Protocol::Register.new).success?
+        unless send_request(Protocol::Register.new).success
           Log.warn { "failed to register to core" }
           raise "handshake failed"
         end

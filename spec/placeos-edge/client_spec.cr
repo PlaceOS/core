@@ -1,6 +1,6 @@
 require "./helper"
 
 module PlaceOS::Edge
-  describe Client do
+  describe Edge::Client do
   end
 end
