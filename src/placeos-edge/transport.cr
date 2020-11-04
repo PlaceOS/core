@@ -51,9 +51,9 @@ module PlaceOS::Edge
 
     def send_response(id : UInt64, response : Protocol::Response)
       message = case response
-                in Protocol::Body
+                in Protocol::Message::Body
                   Protocol::Text.new(sequence_id: id, body: response)
-                in Protocol::BinaryBody
+                in Protocol::Message::BinaryBody
                   m = Protocol::Binary.new
                   m.sequence_id = id
                   m.size = response.key.size
@@ -100,7 +100,7 @@ module PlaceOS::Edge
 
     private def handle_message(message : Protocol::Container)
       body = if message.is_a? Protocol::Binary
-               Protocol::BinaryBody.new(key: message.key, binary: message.body)
+               Protocol::Message::BinaryBody.new(key: message.key, binary: message.body)
              else
                message.body
              end

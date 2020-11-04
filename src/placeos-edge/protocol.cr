@@ -26,7 +26,7 @@ module PlaceOS::Edge::Protocol
     include JSON::Serializable::Strict
 
     getter sequence_id : UInt64
-    getter body : Body
+    getter body : Message::Body
 
     def initialize(@sequence_id, @body)
     end
@@ -37,217 +37,221 @@ module PlaceOS::Edge::Protocol
   # Messages
   #############################################################################
 
-  abstract def debug(module_id : String, &on_message : String ->)
-  abstract def ignore(module_id : String, &on_message : String ->)
-
-  abstract struct Body
-    include JSON::Serializable
-
-    enum Type
-      # Request
-
-      # -> Server
-      DriverLoaded
-      DriverStatus
-      Execute
-      Kill # Success
-      Load # Success
-      LoadedModules
-      ModuleLoaded
-      RunningDrivers
-      RunningModules
-      Start # Success
-      Stop  # Success
-      SystemStatus
-      Unload # Success
-
-      # -> Client
-      Register
-      WriteRedis # Success
-      FetchBinary
-
-      # Response
-      Success
-
-      # -> Server
-      RegisterResponse
-
-      # -> Client
-
-      def to_json(json : JSON::Builder)
-        json.string(to_s.downcase)
-      end
-    end
-
-    {% begin %}
-    use_json_discriminator "type", {
-    {% for response in Type.constants.map { |t| ({t.underscore, t}) } %}
-      {{ response[0] }} => {{ response[1].id }},
-    {% end %}
-    }
-    {% end %}
-
-    macro inherited
-      {% unless @type.abstract? %}
-        getter type : Type = PlaceOS::Edge::Protocol::Body::Type::{{@type.stringify.split("::").last.id}}
-      {% end %}
-    end
-  end
-
-  # Requests
-
-  struct Execute < Body
-    getter module_id : String
-    getter payload : String
-
-    def initialize(@module_id, @payload)
-    end
-  end
-
-  struct Register < Body
-    def initialize
-    end
-  end
-
-  struct WriteRedis < Body
-    getter module_id : String
-    getter key : String
-    getter value : String
-
-    def initialize(@module_id, @key, @value)
-    end
-  end
-
-  struct FetchBinary < Body
-    getter key : String
-
-    def initialize(@key)
-    end
-  end
-
-  # Responses
-
-  abstract struct ResponseBody < Body
-    getter success : Bool = true
-  end
-
-  struct Success < ResponseBody
-    def initialize(@success : Bool)
-    end
-  end
-
-  struct RegisterResponse < ResponseBody
-    getter add_drivers : Array(String)
-    getter remove_drivers : Array(String)
-    getter add_modules : Array(String)
-    getter remove_modules : Array(String)
-
-    def initialize(
-      @success : Bool,
-      @add_drivers : Array(String) = [] of String,
-      @remove_drivers : Array(String) = [] of String,
-      @add_modules : Array(String) = [] of String,
-      @remove_modules : Array(String) = [] of String
-    )
-    end
-  end
-
-  struct Load < Body
-    getter module_id : String
-    getter driver_key : String
-
-    def initialize(@module_id, @driver_key)
-    end
-  end
-
-  struct Unload < Body
-    getter module_id : String
-
-    def initialize(@module_id)
-    end
-  end
-
-  struct Start < Body
-    getter module_id : String
-    getter payload : String
-
-    def initialize(@module_id, @payload)
-    end
-  end
-
-  struct Stop < Body
-    getter module_id : String
-
-    def initialize(@module_id)
-    end
-  end
-
-  struct Kill < Body
-    getter driver_key : String
-
-    def initialize(@driver_key)
-    end
-  end
-
-  struct DriverStatus < Body
-    getter driver_key : String
-
-    def initialize(@driver_key)
-    end
-  end
-
-  struct SystemStatus < Body
-    def initialize
-    end
-  end
-
-  struct ModuleLoaded < Body
-    getter module_id : String
-
-    def initialize(@module_id)
-    end
-  end
-
-  struct DriverLoaded < Body
-    getter driver_key : String
-
-    def initialize(@driver_key)
-    end
-  end
-
-  struct RunningDrivers < Body
-  end
-
-  struct RunningModules < Body
-  end
-
-  struct LoadedModules < Body
-  end
-
-  # Binary Response
-  #
-  class BinaryBody
-    getter key : String
-    getter binary : Bytes
-    getter success : Bool = true
-
-    def initialize(@key, @binary)
-    end
-  end
-
   # Messages, grouped by producer
 
   module Client
-    alias Request = Register
-    alias Response = ResponseBody
+    alias Request = Message::Register
+    alias Response = Message::ResponseBody
   end
 
   module Server
-    alias Request = LoadedModules | Execute
-    alias Response = ResponseBody | BinaryBody
+    alias Request = Message::LoadedModules | Message::Execute
+    alias Response = Message::ResponseBody | Message::BinaryBody
   end
 
   alias Request = Server::Request | Client::Request
   alias Response = Server::Response | Client::Response
-  alias Message = Request | Response
+
+  module Message
+    # :nodoc:
+    abstract struct Body
+      include JSON::Serializable
+
+      enum Type
+        # Request
+
+        # -> Server
+        DriverLoaded
+        DriverStatus
+        Execute
+        Kill # Success
+        Load # Success
+        LoadedModules
+        ModuleLoaded
+        RunningDrivers
+        RunningModules
+        Start # Success
+        Stop  # Success
+        SystemStatus
+        Unload # Success
+
+        # -> Client
+        Register
+        WriteRedis # Success
+        FetchBinary
+
+        # Response
+        Success
+
+        # -> Server
+        RegisterResponse
+
+        # -> Client
+
+        def to_json(json : JSON::Builder)
+          json.string(to_s.underscore)
+        end
+      end
+
+      {% begin %}
+        use_json_discriminator "type", {
+        {% for response in Type.constants.map { |t| ({t.underscore, t}) } %}
+          {{ response[0] }} => {{ response[1].id }},
+        {% end %}
+        }
+      {% end %}
+
+      macro inherited
+      {% unless @type.abstract? %}
+        getter type : Type = PlaceOS::Edge::Protocol::Message::Body::Type::{{@type.stringify.split("::").last.id}}
+      {% end %}
+      end
+    end
+
+    # Requests
+
+    struct Execute < Body
+      getter module_id : String
+      getter payload : String
+
+      def initialize(@module_id, @payload)
+      end
+    end
+
+    struct Register < Body
+      getter modules : Array(String)
+      getter drivers : Array(String)
+
+      def initialize(@modules, @drivers)
+      end
+    end
+
+    struct WriteRedis < Body
+      getter module_id : String
+      getter key : String
+      getter value : String
+
+      def initialize(@module_id, @key, @value)
+      end
+    end
+
+    struct FetchBinary < Body
+      getter key : String
+
+      def initialize(@key)
+      end
+    end
+
+    # Responses
+
+    abstract struct ResponseBody < Body
+      getter success : Bool = true
+    end
+
+    struct Success < ResponseBody
+      def initialize(@success : Bool)
+      end
+    end
+
+    struct RegisterResponse < ResponseBody
+      getter add_drivers : Array(String)
+      getter remove_drivers : Array(String)
+      getter add_modules : Array(Module)
+      getter remove_modules : Array(Module)
+
+      alias Module = NamedTuple(key: String, module_id: String)
+
+      def initialize(
+        @success : Bool,
+        @add_drivers : Array(String) = [] of String,
+        @remove_drivers : Array(String) = [] of String,
+        @add_modules : Array(Module) = [] of Module,
+        @remove_modules : Array(Module) = [] of Module
+      )
+      end
+    end
+
+    struct Load < Body
+      getter module_id : String
+      getter driver_key : String
+
+      def initialize(@module_id, @driver_key)
+      end
+    end
+
+    struct Unload < Body
+      getter module_id : String
+
+      def initialize(@module_id)
+      end
+    end
+
+    struct Start < Body
+      getter module_id : String
+      getter payload : String
+
+      def initialize(@module_id, @payload)
+      end
+    end
+
+    struct Stop < Body
+      getter module_id : String
+
+      def initialize(@module_id)
+      end
+    end
+
+    struct Kill < Body
+      getter driver_key : String
+
+      def initialize(@driver_key)
+      end
+    end
+
+    struct DriverStatus < Body
+      getter driver_key : String
+
+      def initialize(@driver_key)
+      end
+    end
+
+    struct SystemStatus < Body
+      def initialize
+      end
+    end
+
+    struct ModuleLoaded < Body
+      getter module_id : String
+
+      def initialize(@module_id)
+      end
+    end
+
+    struct DriverLoaded < Body
+      getter driver_key : String
+
+      def initialize(@driver_key)
+      end
+    end
+
+    struct RunningDrivers < Body
+    end
+
+    struct RunningModules < Body
+    end
+
+    struct LoadedModules < Body
+    end
+
+    # Binary Response
+    #
+    class BinaryBody
+      getter key : String
+      getter binary : Bytes
+      getter success : Bool = true
+
+      def initialize(@key, @binary)
+      end
+    end
+  end
 end
