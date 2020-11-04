@@ -5,10 +5,10 @@ module PlaceOS::Edge
   VERSION  = {{ `shards version "#{__DIR__}"`.chomp.stringify.downcase }}
 
   # Secret used to register with PlaceOS
-  CLIENT_SECRET = ENV["PLACE_EDGE_SECRET"]? || abort "missing PLACE_EDGE_SECRET in environment"
+  CLIENT_SECRET = ENV["PLACE_EDGE_SECRET"]? || (production? ? abort("missing PLACE_EDGE_SECRET in environment") : "secret")
 
   # URI of PlaceOS instance
-  PLACE_URI = URI.parse(ENV["PLACE_URI"]? || abort "missing PLACE_HOST in environment")
+  PLACE_URI = URI.parse(ENV["PLACE_URI"]? || "https://localhost:8443".tap { |v| Log.warn { "missing PLACE_URI in environment, using #{v}" } })
 
   PROD = ENV["SG_ENV"]? == "production"
 

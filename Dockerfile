@@ -41,7 +41,8 @@ RUN PLACE_COMMIT=$PLACE_COMMIT \
 COPY src /app/src
 
 # Build application
-RUN crystal build --error-trace --release --debug -o bin/core src/app.cr
+RUN mkdir -p /app/bin/drivers
+RUN crystal build --error-trace --release --debug -o bin/core src/core-app.cr
 
 # These provide certificate chain validation where communicating with external services over TLS
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt

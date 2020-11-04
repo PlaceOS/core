@@ -4,9 +4,9 @@ crystal: ~> 0.35
 
 targets:
   core:
-    main: src/app.cr
+    main: src/core-app.cr
   edge:
-    main: src/placeos-edge.cr
+    main: src/edge-app.cr
 
 dependencies:
   action-controller:

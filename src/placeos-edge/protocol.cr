@@ -37,24 +37,55 @@ module PlaceOS::Edge::Protocol
   # Messages
   #############################################################################
 
+  abstract def debug(module_id : String, &on_message : String ->)
+  abstract def ignore(module_id : String, &on_message : String ->)
+
   abstract struct Body
     include JSON::Serializable
 
     enum Type
-      BasicResponse
-      Exec
-      Load
-      Loaded
+      # Request
+
+      # -> Server
+      DriverLoaded
+      DriverStatus
+      Execute
+      Kill # Success
+      Load # Success
+      LoadedModules
+      ModuleLoaded
+      RunningDrivers
+      RunningModules
+      Start # Success
+      Stop  # Success
+      SystemStatus
+      Unload # Success
+
+      # -> Client
       Register
+      WriteRedis # Success
+      FetchBinary
+
+      # Response
+      Success
+
+      # -> Server
+      RegisterResponse
+
+      # -> Client
+
+      def to_json(json : JSON::Builder)
+        json.string(to_s.downcase)
+      end
     end
 
+    {% begin %}
     use_json_discriminator "type", {
-      Type::BasicResponse => BasicResponse,
-      Type::Exec          => Exec,
-      Type::Load          => Load,
-      Type::Loaded        => Loaded,
-      Type::Register      => Register,
+    {% for response in Type.constants.map { |t| ({t.underscore, t}) } %}
+      {{ response[0] }} => {{ response[1].id }},
+    {% end %}
     }
+    {% end %}
 
     macro inherited
       {% unless @type.abstract? %}
@@ -65,20 +96,32 @@ module PlaceOS::Edge::Protocol
 
   # Requests
 
-  struct Exec < Body
+  struct Execute < Body
+    getter module_id : String
     getter payload : String
 
-    def initialize(@payload)
-    end
-  end
-
-  struct Loaded < Body
-    def initialize
+    def initialize(@module_id, @payload)
     end
   end
 
   struct Register < Body
     def initialize
+    end
+  end
+
+  struct WriteRedis < Body
+    getter module_id : String
+    getter key : String
+    getter value : String
+
+    def initialize(@module_id, @key, @value)
+    end
+  end
+
+  struct FetchBinary < Body
+    getter key : String
+
+    def initialize(@key)
     end
   end
 
@@ -88,12 +131,12 @@ module PlaceOS::Edge::Protocol
     getter success : Bool = true
   end
 
-  struct BasicResponse < ResponseBody
+  struct Success < ResponseBody
     def initialize(@success : Bool)
     end
   end
 
-  struct Load < ResponseBody
+  struct RegisterResponse < ResponseBody
     getter add_drivers : Array(String)
     getter remove_drivers : Array(String)
     getter add_modules : Array(String)
@@ -107,6 +150,78 @@ module PlaceOS::Edge::Protocol
       @remove_modules : Array(String) = [] of String
     )
     end
+  end
+
+  struct Load < Body
+    getter module_id : String
+    getter driver_key : String
+
+    def initialize(@module_id, @driver_key)
+    end
+  end
+
+  struct Unload < Body
+    getter module_id : String
+
+    def initialize(@module_id)
+    end
+  end
+
+  struct Start < Body
+    getter module_id : String
+    getter payload : String
+
+    def initialize(@module_id, @payload)
+    end
+  end
+
+  struct Stop < Body
+    getter module_id : String
+
+    def initialize(@module_id)
+    end
+  end
+
+  struct Kill < Body
+    getter driver_key : String
+
+    def initialize(@driver_key)
+    end
+  end
+
+  struct DriverStatus < Body
+    getter driver_key : String
+
+    def initialize(@driver_key)
+    end
+  end
+
+  struct SystemStatus < Body
+    def initialize
+    end
+  end
+
+  struct ModuleLoaded < Body
+    getter module_id : String
+
+    def initialize(@module_id)
+    end
+  end
+
+  struct DriverLoaded < Body
+    getter driver_key : String
+
+    def initialize(@driver_key)
+    end
+  end
+
+  struct RunningDrivers < Body
+  end
+
+  struct RunningModules < Body
+  end
+
+  struct LoadedModules < Body
   end
 
   # Binary Response
@@ -128,8 +243,8 @@ module PlaceOS::Edge::Protocol
   end
 
   module Server
-    alias Request = Loaded | Exec
-    alias Response = Load | ResponseBody | BinaryBody
+    alias Request = LoadedModules | Execute
+    alias Response = ResponseBody | BinaryBody
   end
 
   alias Request = Server::Request | Client::Request

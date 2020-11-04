@@ -29,11 +29,9 @@ module PlaceOS::Edge
     # Initialize the WebSocket API
     #
     # Optionally accepts a block called after connection has been established.
-    def start
-      Retriable.retry do
-        # Open a websocket
-        socket = HTTP::WebSocket.new(uri)
-
+    def start(initial_socket : HTTP::WebSocket? = nil)
+      socket = initial_socket || HTTP::WebSocket.new(uri)
+      Retriable.retry(on_retry: ->(_ex : Exception, _i : Int32, _e : Time::Span, _p : Time::Span) { socket = HTTP::WebSocket.new(uri) }) do
         close_channel = Channel(Nil).new
 
         socket.on_close do
@@ -47,16 +45,16 @@ module PlaceOS::Edge
                0_u64
              end
 
-        @transport = Transport.new(socket, id) do |request|
+        @transport = Transport.new(socket, id) do |(sequence_id, request)|
           case request
           in Protocol::Server::Request
-            handle_request(request)
+            handle_request(sequence_id, request)
           in Protocol::Client::Request
             Log.error { "unexpected request received #{request.inspect}" }
           end
         end
 
-        spawn { socket.run }
+        spawn { socket.as(HTTP::WebSocket).run }
 
         while socket.closed?
           Fiber.yield
@@ -70,12 +68,12 @@ module PlaceOS::Edge
       end
     end
 
-    def handle_request(request : Protocol::Server::Request)
+    # :ditto:
+    def start(initial_socket : HTTP::WebSocket? = nil)
+      start(initial_socket) { }
     end
 
-    # :ditto:
-    def start
-      start { }
+    def handle_request(sequence_id : UInt64, request : Protocol::Server::Request)
     end
 
     def send_request(request : Protocol::Client::Request) : Protocol::Server::Response

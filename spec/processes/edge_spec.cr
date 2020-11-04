@@ -1,7 +1,7 @@
 require "../helper"
 
 module PlaceOS::Core
-  describe ProcessManager::Edge, focus: true do
+  describe ProcessManager::Edge do
     pending "debug" do
     end
 
