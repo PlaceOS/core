@@ -33,10 +33,8 @@ else
   args=""
 fi
 
-echo "### \`crystal spec ${args}\`"
-
 if [[ "$watch" == "true" ]]; then
-  CRYSTAL_WORKERS=$(nproc) watchexec -e cr -c -r -w src -w spec -- crystal spec --error-trace -v ${args}
+  CRYSTAL_WORKERS=$(nproc) watchexec -e cr -c -r -w src -w spec -- scripts/crystal-spec.sh -v spec/placeos-edge/client_spec.cr
 else
-  CRYSTAL_WORKERS=$(nproc) crystal spec --error-trace -v ${args}
+  CRYSTAL_WORKERS=$(nproc) scripts/crystal-spec.sh -v
 fi
