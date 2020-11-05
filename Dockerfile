@@ -1,7 +1,5 @@
 FROM crystallang/crystal:0.35.1-alpine
 
-VOLUME /app/bin/drivers
-
 WORKDIR /app
 
 # Set the commit through a build arg
@@ -29,6 +27,11 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
+# Create binary directory
+RUN mkdir -p /app/repositories /app/bin/drivers
+
+RUN chown appuser -R /app
+
 COPY shard.yml /app
 COPY shard.lock /app
 RUN PLACE_COMMIT=$PLACE_COMMIT \
@@ -37,15 +40,12 @@ RUN PLACE_COMMIT=$PLACE_COMMIT \
 # Add source last for efficient caching
 COPY src /app/src
 
-# Build App
-RUN mkdir -p /app/bin/drivers
+# Build application
 RUN crystal build --error-trace --release --debug -o bin/core src/app.cr
 
 # These provide certificate chain validation where communicating with external services over TLS
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-# Use an unprivileged user.
-RUN chown appuser:appuser -R /app
 USER appuser:appuser
 
 # Run the app binding on port 3000
