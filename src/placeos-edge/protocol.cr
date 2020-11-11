@@ -41,12 +41,12 @@ module PlaceOS::Edge::Protocol
 
   module Client
     alias Request = Message::Register
-    alias Response = Message::ResponseBody
+    alias Response = Message::Success
   end
 
   module Server
-    alias Request = Message::LoadedModules | Message::Execute
-    alias Response = Message::ResponseBody | Message::BinaryBody
+    alias Request = Message::DriverLoaded | Message::DriverStatus | Message::Execute | Message::Kill | Message::Load | Message::LoadedModules | Message::ModuleLoaded | Message::RunningDrivers | Message::RunningModules | Message::Start | Message::Stop | Message::SystemStatus | Message::Unload
+    alias Response = Message::RegisterResponse | Message::Success | Message::BinaryBody
   end
 
   alias Request = Server::Request | Client::Request
@@ -109,14 +109,105 @@ module PlaceOS::Edge::Protocol
     end
 
     # Requests
+    ###########################################################################
+
+    # Server Requests
+
+    struct DriverLoaded < Body
+      include JSON::Serializable
+      getter driver_key : String
+
+      def initialize(@driver_key)
+      end
+    end
+
+    struct DriverStatus < Body
+      include JSON::Serializable
+      getter driver_key : String
+
+      def initialize(@driver_key)
+      end
+    end
 
     struct Execute < Body
+      include JSON::Serializable
       getter module_id : String
       getter payload : String
 
       def initialize(@module_id, @payload)
       end
     end
+
+    struct Kill < Body
+      include JSON::Serializable
+      getter driver_key : String
+
+      def initialize(@driver_key)
+      end
+    end
+
+    struct Load < Body
+      include JSON::Serializable
+      getter module_id : String
+      getter driver_key : String
+
+      def initialize(@module_id, @driver_key)
+      end
+    end
+
+    struct LoadedModules < Body
+      include JSON::Serializable
+    end
+
+    struct ModuleLoaded < Body
+      include JSON::Serializable
+      getter module_id : String
+
+      def initialize(@module_id)
+      end
+    end
+
+    struct RunningDrivers < Body
+      include JSON::Serializable
+    end
+
+    struct RunningModules < Body
+      include JSON::Serializable
+    end
+
+    struct Start < Body
+      include JSON::Serializable
+      getter module_id : String
+      getter payload : String
+
+      def initialize(@module_id, @payload)
+      end
+    end
+
+    struct Stop < Body
+      include JSON::Serializable
+      getter module_id : String
+
+      def initialize(@module_id)
+      end
+    end
+
+    struct SystemStatus < Body
+      include JSON::Serializable
+
+      def initialize
+      end
+    end
+
+    struct Unload < Body
+      include JSON::Serializable
+      getter module_id : String
+
+      def initialize(@module_id)
+      end
+    end
+
+    # Client Requests
 
     struct Register < Body
       getter modules : Array(String)
@@ -143,6 +234,7 @@ module PlaceOS::Edge::Protocol
     end
 
     # Responses
+    ###########################################################################
 
     abstract struct ResponseBody < Body
       getter success : Bool = true
@@ -152,6 +244,8 @@ module PlaceOS::Edge::Protocol
       def initialize(@success : Bool)
       end
     end
+
+    # Server Responses
 
     struct RegisterResponse < ResponseBody
       getter add_drivers : Array(String)
@@ -169,78 +263,6 @@ module PlaceOS::Edge::Protocol
         @remove_modules : Array(Module) = [] of Module
       )
       end
-    end
-
-    struct Load < Body
-      getter module_id : String
-      getter driver_key : String
-
-      def initialize(@module_id, @driver_key)
-      end
-    end
-
-    struct Unload < Body
-      getter module_id : String
-
-      def initialize(@module_id)
-      end
-    end
-
-    struct Start < Body
-      getter module_id : String
-      getter payload : String
-
-      def initialize(@module_id, @payload)
-      end
-    end
-
-    struct Stop < Body
-      getter module_id : String
-
-      def initialize(@module_id)
-      end
-    end
-
-    struct Kill < Body
-      getter driver_key : String
-
-      def initialize(@driver_key)
-      end
-    end
-
-    struct DriverStatus < Body
-      getter driver_key : String
-
-      def initialize(@driver_key)
-      end
-    end
-
-    struct SystemStatus < Body
-      def initialize
-      end
-    end
-
-    struct ModuleLoaded < Body
-      getter module_id : String
-
-      def initialize(@module_id)
-      end
-    end
-
-    struct DriverLoaded < Body
-      getter driver_key : String
-
-      def initialize(@driver_key)
-      end
-    end
-
-    struct RunningDrivers < Body
-    end
-
-    struct RunningModules < Body
-    end
-
-    struct LoadedModules < Body
     end
 
     # Binary Response

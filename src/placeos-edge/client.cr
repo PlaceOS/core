@@ -18,6 +18,9 @@ module PlaceOS::Edge
     private getter transport : Transport?
     private getter! uri : URI
 
+    # NOTE: For testing
+    private getter? skip_handshake : Bool
+
     def host
       uri.to_s.gsub(uri.full_path, "")
     end
@@ -26,7 +29,8 @@ module PlaceOS::Edge
       uri : URI = PLACE_URI,
       secret : String = CLIENT_SECRET,
       @sequence_id : UInt64 = 0,
-      @binary_directory : String = File.join(Dir.current, "/bin/drivers")
+      @binary_directory : String = File.join(Dir.current, "/bin/drivers"),
+      @skip_handshake : Bool = false
     )
       # Mutate a copy as secret is embedded in uri
       uri = uri.dup
@@ -66,7 +70,7 @@ module PlaceOS::Edge
         @transport = Transport.new(socket, id) do |(sequence_id, request)|
           case request
           in Protocol::Server::Request
-            handle_request(sequence_id, request)
+            handle_request(sequence_id, request.as(Protocol::Server::Request))
           in Protocol::Client::Request
             Log.error { "unexpected request received #{request.inspect}" }
           end
@@ -80,7 +84,7 @@ module PlaceOS::Edge
           Fiber.yield
         end
 
-        handshake
+        handshake unless skip_handshake?
 
         yield
 
@@ -93,15 +97,24 @@ module PlaceOS::Edge
       start(initial_socket) { }
     end
 
+    # ameba:disable Metrics/CyclomaticComplexity
     def handle_request(sequence_id : UInt64, request : Protocol::Server::Request)
-    end
-
-    def send_request(request : Protocol::Client::Request) : Protocol::Server::Response
-      t = transport
-      if t.nil?
-        raise "cannot send request over closed transport"
-      else
-        t.send_request(request).as(Protocol::Server::Response)
+      case request
+      in Protocol::Message::DriverLoaded
+      in Protocol::Message::DriverStatus
+      in Protocol::Message::Execute
+      in Protocol::Message::Kill # Success
+      in Protocol::Message::Load # Success
+      in Protocol::Message::LoadedModules
+      in Protocol::Message::ModuleLoaded
+      in Protocol::Message::RunningDrivers
+      in Protocol::Message::RunningModules
+      in Protocol::Message::Start # Success
+      in Protocol::Message::Stop  # Success
+      in Protocol::Message::SystemStatus
+      in Protocol::Message::Unload # Success
+      in Protocol::Message::Body
+        Log.warn { {"unexpected message in handle request: #{request.type}"} }
       end
     end
 
@@ -140,6 +153,9 @@ module PlaceOS::Edge
 
       Promise.all(promises).get
     end
+
+    # Message
+    ###########################################################################
 
     # Extracts the running modules and drivers on the edge
     #
@@ -183,6 +199,16 @@ module PlaceOS::Edge
       File.join(binary_directory, key)
     end
 
+    # HACK: get the driver key from the module_id
+    #
+    def driver_key_for?(module_id)
+      proc_manager_lock.synchronize do
+        @module_proc_managers[module_id]?.try do |manager|
+          @driver_proc_managers.key_for?(manager)
+        end
+      end
+    end
+
     # Modules
     ###########################################################################
 
@@ -202,17 +228,19 @@ module PlaceOS::Edge
     def unload_module(module_id : String)
     end
 
-    # Helpers
+    # Transport
     ###########################################################################
 
-    # HACK: get the driver key from the module_id
-    #
-    def key_for?(module_id)
-      proc_manager_lock.synchronize do
-        @module_proc_managers[module_id]?.try do |manager|
-          @driver_proc_managers.key_for?(manager)
-        end
-      end
+    def send_response(sequence_id : UInt64, response : Protocol::Client::Response)
+      t = transport
+      raise "cannot send response over closed transport" if t.nil?
+      t.send_response(sequence_id, response)
+    end
+
+    def send_request(request : Protocol::Client::Request) : Protocol::Server::Response
+      t = transport
+      raise "cannot send request over closed transport" if t.nil?
+      t.send_request(request).as(Protocol::Server::Response)
     end
 
     # Protocol Managers

@@ -49,7 +49,7 @@ module PlaceOS::Edge
       @socket.close
     end
 
-    def send_response(id : UInt64, response : Protocol::Response)
+    protected def send_response(id : UInt64, response : Protocol::Response)
       message = case response
                 in Protocol::Message::Body
                   Protocol::Text.new(sequence_id: id, body: response)
@@ -65,7 +65,7 @@ module PlaceOS::Edge
       socket_channel.send(message)
     end
 
-    def send_request(request : Protocol::Request) : Protocol::Response?
+    protected def send_request(request : Protocol::Request) : Protocol::Response?
       id = sequence_id
 
       response_channel = Channel(Protocol::Response).new
@@ -109,7 +109,7 @@ module PlaceOS::Edge
       in Protocol::Response
         response_lock.read do
           if channel = responses[message.sequence_id]?
-            channel.send(body)
+            channel.send(body.as(Protocol::Response))
           else
             Log.error { "unrequested response received: #{message.sequence_id}" }
           end
@@ -118,7 +118,7 @@ module PlaceOS::Edge
         spawn do
           # TODO: remove casts once crystal correctly trims union here
           begin
-            on_request.call({message.sequence_id, body.as(Protocol::Request)})
+            on_request.call({message.sequence_id, body}.as(Tuple(UInt64, Protocol::Request)))
           rescue e
             Log.error(exception: e) { {
               message:           e.message,
