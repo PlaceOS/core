@@ -17,9 +17,9 @@ module PlaceOS::Edge
 
     private getter sequence_lock = Mutex.new
 
-    private getter on_request : {UInt64, Protocol::Request} ->
+    private getter on_request : {UInt64, ::PlaceOS::Edge::Protocol::Request} ->
 
-    def initialize(@socket, @sequence_id : UInt64 = 0, &@on_request : {UInt64, Protocol::Request} ->)
+    def initialize(@socket, @sequence_id : UInt64 = 0, &@on_request : {UInt64, ::PlaceOS::Edge::Protocol::Request} ->)
       @socket.on_message &->on_message(String)
       @socket.on_binary &->on_binary(Bytes)
       spawn { write_websocket }
@@ -118,7 +118,7 @@ module PlaceOS::Edge
         spawn do
           # TODO: remove casts once crystal correctly trims union here
           begin
-            on_request.call({message.sequence_id, body}.as(Tuple(UInt64, Protocol::Request)))
+            on_request.call({message.sequence_id, body}) # .as(Tuple(UInt64, Protocol::Request)))
           rescue e
             Log.error(exception: e) { {
               message:           e.message,

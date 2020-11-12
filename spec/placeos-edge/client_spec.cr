@@ -9,7 +9,7 @@ module PlaceOS::Edge
       client = Client.new
       client_ws, server_ws = mock_sockets
       spawn {
-        client.start(client_ws) do
+        client.connect(client_ws) do
           called = true
           coordination.close
         end

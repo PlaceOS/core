@@ -34,7 +34,7 @@ else
 fi
 
 if [[ "$watch" == "true" ]]; then
-  CRYSTAL_WORKERS=$(nproc) watchexec -e cr -c -r -w src -w spec -- scripts/crystal-spec.sh -v spec/placeos-edge/client_spec.cr
+  CRYSTAL_WORKERS=$(nproc) watchexec -e cr -c -r -w src -w spec -- scripts/crystal-spec.sh -v  # spec/placeos-edge/client_spec.cr
 else
   CRYSTAL_WORKERS=$(nproc) scripts/crystal-spec.sh -v
 fi

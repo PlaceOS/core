@@ -49,7 +49,7 @@ module PlaceOS::Core
     getter edge_processes : Edge::Server = Edge::Server.new
 
     # Manager for local module processes
-    getter local_processes : ProcessManager::Local { ProcessManager::Local.new }
+    getter local_processes : ProcessManager::Local { ProcessManager::Local.new(discovery) }
 
     # Start up process is as follows..
     # - registered
@@ -223,63 +223,6 @@ module PlaceOS::Core
         mod.on_edge? ? mod.edge_id.as(String) : mod.id.as(String)
       end
     end
-
-    # Used in `on_exec` for locating the remote module
-    #
-    def which_core(module_id : String) : URI
-      node = discovery.find?(hash_id(module_id))
-      raise "no registered core instances" unless node
-      node[:uri]
-    end
-
-    def on_exec(request : Request, response_cb : Proc(Request, Nil))
-      # Protocol.instance.expect_response(@module_id, @reply_id, "exec", request, raw: true)
-      remote_module_id = request.id
-      raw_execute_json = request.payload.not_nil!
-
-      core_uri = which_core(remote_module_id)
-
-      # If module maps to this node
-      if core_uri == uri
-        if manager = proc_manager_by_module?(remote_module_id)
-          # responds with a JSON string
-          request.payload = manager.execute(remote_module_id, raw_execute_json)
-        else
-          raise "could not locate module #{remote_module_id}. It may not be running."
-        end
-      else
-        # build request
-        core_uri.path = "/api/core/v1/command/#{remote_module_id}/execute"
-        response = HTTP::Client.post(
-          core_uri,
-          headers: HTTP::Headers{"X-Request-ID" => "int-#{request.reply}-#{remote_module_id}-#{Time.utc.to_unix_ms}"},
-          body: raw_execute_json
-        )
-
-        case response.status_code
-        when 200
-          # exec was successful, json string returned
-          request.payload = response.body
-        when 203
-          # exec sent to module and it raised an error
-          info = NamedTuple(message: String, backtrace: Array(String)?).from_json(response.body)
-          request.payload = info[:message]
-          request.backtrace = info[:backtrace]
-          request.error = "RequestFailed"
-        else
-          # some other failure 3
-          request.payload = "unexpected response code #{response.status_code}"
-          request.error = "UnexpectedFailure"
-        end
-      end
-
-      response_cb.call(request)
-    rescue error
-      request.set_error(error)
-      response_cb.call(request)
-    end
-
-    alias Request = PlaceOS::Driver::Protocol::Request
 
     def self.core_uri(mod : Model::Module | String, rendezvous_hash : RendezvousHash)
       rendezvous_hash[hash_id(mod)]?.try do |hash_value|

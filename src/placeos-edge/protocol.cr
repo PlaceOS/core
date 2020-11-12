@@ -1,5 +1,6 @@
 require "bindata"
 require "json"
+require "placeos-driver/protocol/management"
 
 require "./record"
 
@@ -38,38 +39,27 @@ module PlaceOS::Edge::Protocol
   #############################################################################
 
   # Messages, grouped by producer
-
-  module Client
-    alias Request = Message::Register
-    alias Response = Message::Success
-  end
-
-  module Server
-    alias Request = Message::DriverLoaded | Message::DriverStatus | Message::Execute | Message::Kill | Message::Load | Message::LoadedModules | Message::ModuleLoaded | Message::RunningDrivers | Message::RunningModules | Message::Start | Message::Stop | Message::SystemStatus | Message::Unload
-    alias Response = Message::RegisterResponse | Message::Success | Message::BinaryBody
-  end
-
-  alias Request = Server::Request | Client::Request
-  alias Response = Server::Response | Client::Response
-
   module Message
     # :nodoc:
     abstract struct Body
       include JSON::Serializable
 
+      # TODO:
+      # - Refactor to indivual enums for better case exhaustiveness
+      # - Maybe make a macro that casts a Body based on type
+
       enum Type
         # Request
 
         # -> Server
-        DriverLoaded
+        DriverLoaded # Success
         DriverStatus
         Execute
         Kill # Success
         Load # Success
         LoadedModules
-        ModuleLoaded
-        RunningDrivers
-        RunningModules
+        ModuleLoaded # Success
+        RunCount
         Start # Success
         Stop  # Success
         SystemStatus
@@ -77,8 +67,9 @@ module PlaceOS::Edge::Protocol
 
         # -> Client
         Register
-        WriteRedis # Success
+        ProxyRedis # Success
         FetchBinary
+        SettingsAction # Success
 
         # Response
         Success
@@ -87,6 +78,11 @@ module PlaceOS::Edge::Protocol
         RegisterResponse
 
         # -> Client
+        DriverStatusResponse
+        ExecuteResponse
+        LoadedModulesResponse
+        RunCountResponse
+        SystemStatusResponse
 
         def to_json(json : JSON::Builder)
           json.string(to_s.underscore)
@@ -108,29 +104,33 @@ module PlaceOS::Edge::Protocol
       end
     end
 
+    abstract struct ::PlaceOS::Edge::Protocol::Server::Request < ::PlaceOS::Edge::Protocol::Message::Body
+    end
+
+    abstract struct ::PlaceOS::Edge::Protocol::Client::Request < ::PlaceOS::Edge::Protocol::Message::Body
+    end
+
     # Requests
-    ###########################################################################
+    ###############################################################################################
 
     # Server Requests
+    ###########################################################################
 
-    struct DriverLoaded < Body
-      include JSON::Serializable
+    struct DriverLoaded < Server::Request
       getter driver_key : String
 
       def initialize(@driver_key)
       end
     end
 
-    struct DriverStatus < Body
-      include JSON::Serializable
+    struct DriverStatus < Server::Request
       getter driver_key : String
 
       def initialize(@driver_key)
       end
     end
 
-    struct Execute < Body
-      include JSON::Serializable
+    struct Execute < Server::Request
       getter module_id : String
       getter payload : String
 
@@ -138,16 +138,14 @@ module PlaceOS::Edge::Protocol
       end
     end
 
-    struct Kill < Body
-      include JSON::Serializable
+    struct Kill < Server::Request
       getter driver_key : String
 
       def initialize(@driver_key)
       end
     end
 
-    struct Load < Body
-      include JSON::Serializable
+    struct Load < Server::Request
       getter module_id : String
       getter driver_key : String
 
@@ -155,28 +153,25 @@ module PlaceOS::Edge::Protocol
       end
     end
 
-    struct LoadedModules < Body
-      include JSON::Serializable
+    struct RunCount < Server::Request
+      getter modules : Int32
+      getter drivers : Int32
+
+      def initialize(@modules, @drivers)
+      end
     end
 
-    struct ModuleLoaded < Body
-      include JSON::Serializable
+    struct LoadedModules < Server::Request
+    end
+
+    struct ModuleLoaded < Server::Request
       getter module_id : String
 
       def initialize(@module_id)
       end
     end
 
-    struct RunningDrivers < Body
-      include JSON::Serializable
-    end
-
-    struct RunningModules < Body
-      include JSON::Serializable
-    end
-
-    struct Start < Body
-      include JSON::Serializable
+    struct Start < Server::Request
       getter module_id : String
       getter payload : String
 
@@ -184,23 +179,19 @@ module PlaceOS::Edge::Protocol
       end
     end
 
-    struct Stop < Body
-      include JSON::Serializable
+    struct Stop < Server::Request
       getter module_id : String
 
       def initialize(@module_id)
       end
     end
 
-    struct SystemStatus < Body
-      include JSON::Serializable
-
+    struct SystemStatus < Server::Request
       def initialize
       end
     end
 
-    struct Unload < Body
-      include JSON::Serializable
+    struct Unload < Server::Request
       getter module_id : String
 
       def initialize(@module_id)
@@ -208,8 +199,16 @@ module PlaceOS::Edge::Protocol
     end
 
     # Client Requests
+    ###########################################################################
 
-    struct Register < Body
+    struct FetchBinary < Client::Request
+      getter key : String
+
+      def initialize(@key)
+      end
+    end
+
+    struct Register < Client::Request
       getter modules : Array(String)
       getter drivers : Array(String)
 
@@ -217,27 +216,41 @@ module PlaceOS::Edge::Protocol
       end
     end
 
-    struct WriteRedis < Body
-      getter module_id : String
-      getter key : String
-      getter value : String
+    struct ProxyRedis < Client::Request
+      getter action : RedisAction
+      getter hash_id : String
+      getter key_name : String
+      getter status_value : String?
 
-      def initialize(@module_id, @key, @value)
+      def initialize(
+        @action,
+        @hash_id,
+        @key_name,
+        @status_value
+      )
       end
     end
 
-    struct FetchBinary < Body
-      getter key : String
+    struct SettingsAction < Client::Request
+      getter module_id : String
+      getter setting_name : String
+      getter setting_value : YAML::Any
 
-      def initialize(@key)
+      def initialize(@module_id, @setting_name, @setting_value)
       end
     end
 
     # Responses
-    ###########################################################################
+    ###############################################################################################
 
-    abstract struct ResponseBody < Body
+    abstract struct ResponseBody < ::PlaceOS::Edge::Protocol::Message::Body
       getter success : Bool = true
+    end
+
+    abstract struct ::PlaceOS::Edge::Protocol::Client::Response < ::PlaceOS::Edge::Protocol::Message::ResponseBody
+    end
+
+    abstract struct ::PlaceOS::Edge::Protocol::Server::Response < ::PlaceOS::Edge::Protocol::Message::ResponseBody
     end
 
     struct Success < ResponseBody
@@ -245,9 +258,59 @@ module PlaceOS::Edge::Protocol
       end
     end
 
-    # Server Responses
+    # Client Responses
+    ############################################################################
 
-    struct RegisterResponse < ResponseBody
+    struct DriverStatusResponse < Client::Response
+      getter status : Core::ProcessManager::DriverStatus?
+
+      def initialize(@status : Core::ProcessManager::DriverStatus?)
+      end
+    end
+
+    struct ExecuteResponse < Client::Response
+      getter output : String?
+
+      def initialize(@output : String?)
+      end
+    end
+
+    struct LoadedModulesResponse < Client::Response
+      getter modules : Hash(String, Array(String))
+
+      def initialize(@modules : Hash(String, Array(String)))
+      end
+    end
+
+    struct RunCountResponse < Client::Response
+      getter drivers : Int32
+      getter modules : Int32
+
+      def initialize(@drivers : Int32, @modules : Int32)
+      end
+    end
+
+    struct SystemStatusResponse < Client::Response
+      getter status : Core::ProcessManager::SystemStatus
+
+      def initialize(@status : Core::ProcessManager::SystemStatus)
+      end
+    end
+
+    # Server Responses
+    ############################################################################
+
+    # Binary response constructor
+    class BinaryBody
+      getter key : String
+      getter binary : Bytes
+      getter success : Bool = true
+
+      def initialize(@key, @binary)
+      end
+    end
+
+    struct RegisterResponse < Server::Response
       getter add_drivers : Array(String)
       getter remove_drivers : Array(String)
       getter add_modules : Array(Module)
@@ -264,16 +327,27 @@ module PlaceOS::Edge::Protocol
       )
       end
     end
-
-    # Binary Response
-    #
-    class BinaryBody
-      getter key : String
-      getter binary : Bytes
-      getter success : Bool = true
-
-      def initialize(@key, @binary)
-      end
-    end
   end
+
+  alias RedisAction = ::PlaceOS::Driver::Protocol::Management::RedisAction
+
+  private macro unwrap_subclasses(to_alias, type_union)
+    alias {{ to_alias }} = Union(
+      {% for klass in type_union.resolve.union_types %}
+        {% unless klass.abstract? || !klass.subclasses.empty? %}
+          {{ klass }},
+        {% end %}
+        {% for generic in klass.subclasses %}
+          {% for sub in generic.subclasses %}
+            {{ sub }},
+          {% end %}
+        {% end %}
+      {% end %}
+    )
+  end
+
+  {% begin %}
+    unwrap_subclasses(Request, Union(Server::Request, Client::Request))
+    unwrap_subclasses(Response, Union(Server::Response, Client::Response, Message::Success, Message::BinaryBody))
+  {% end %}
 end

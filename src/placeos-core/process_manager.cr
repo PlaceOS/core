@@ -1,5 +1,7 @@
 require "placeos-driver/protocol/management"
 
+require "./error"
+
 module PlaceOS::Core
   module ProcessManager
     alias Request = PlaceOS::Driver::Protocol::Request
@@ -34,20 +36,9 @@ module PlaceOS::Core
     #
     abstract def on_exec(request : Request, response_callback : Request ->)
 
-    def save_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
-      mod = PlaceOS::Model::Module.find!(module_id)
-      if setting = mod.settings_at?(:none)
-      else
-        setting = PlaceOS::Model::Settings.new
-        setting.parent = mod
-        setting.encryption_level = :none
-      end
-
-      settings_hash = setting.any
-      settings_hash[YAML::Any.new(setting_name)] = setting_value
-      setting.settings_string = settings_hash.to_yaml
-      setting.save!
-    end
+    # Handler for settings updates
+    #
+    abstract def save_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
 
     # Metadata
     ###############################################################################################

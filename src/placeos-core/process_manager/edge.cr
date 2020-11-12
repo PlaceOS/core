@@ -88,6 +88,10 @@ module PlaceOS::Core
       missing
     end
 
+    def save_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
+      missing
+    end
+
     def on_exec(request : Request, response_callback : Request ->)
       raise "Edge modules cannot make execute requests"
     end

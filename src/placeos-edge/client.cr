@@ -4,12 +4,16 @@ require "uri"
 
 require "placeos-driver/protocol/management"
 
+require "../placeos-core/process_manager/local"
+
 require "./constants"
 require "./protocol"
 require "./transport"
 
 module PlaceOS::Edge
   class Client
+    include Core::ProcessManager::Local::Common
+
     Log                = ::Log.for(self)
     WEBSOCKET_API_PATH = "/edge"
 
@@ -42,7 +46,7 @@ module PlaceOS::Edge
     # Initialize the WebSocket API
     #
     # Optionally accepts a block called after connection has been established.
-    def start(initial_socket : HTTP::WebSocket? = nil)
+    def connect(initial_socket : HTTP::WebSocket? = nil)
       begin
         socket = initial_socket || HTTP::WebSocket.new(uri)
       rescue Socket::ConnectError
@@ -69,10 +73,9 @@ module PlaceOS::Edge
 
         @transport = Transport.new(socket, id) do |(sequence_id, request)|
           case request
-          in Protocol::Server::Request
+          when Protocol::Server::Request
             handle_request(sequence_id, request.as(Protocol::Server::Request))
-          in Protocol::Client::Request
-            Log.error { "unexpected request received #{request.inspect}" }
+          else Log.error { "unexpected request received #{request.inspect}" }
           end
         end
 
@@ -93,33 +96,58 @@ module PlaceOS::Edge
     end
 
     # :ditto:
-    def start(initial_socket : HTTP::WebSocket? = nil)
-      start(initial_socket) { }
+    def connect(initial_socket : HTTP::WebSocket? = nil)
+      connect(initial_socket) { }
     end
 
     # ameba:disable Metrics/CyclomaticComplexity
     def handle_request(sequence_id : UInt64, request : Protocol::Server::Request)
       case request
       in Protocol::Message::DriverLoaded
+        boolean_command(sequence_id, request) do
+          driver_loaded?(request.driver_key)
+        end
       in Protocol::Message::DriverStatus
+        status = driver_status(request.driver_key)
+        send_response(sequence_id, Protocol::Message::DriverStatusResponse.new(status))
       in Protocol::Message::Execute
-      in Protocol::Message::Kill # Success
-      in Protocol::Message::Load # Success
+        response = Protocol::Message::ExecuteResponse.new(execute(request.module_id, request.payload))
+        send_response(sequence_id, response)
+      in Protocol::Message::Kill
+        boolean_command(sequence_id, request) do
+          kill(request.driver_key)
+        end
+      in Protocol::Message::Load
+        boolean_command(sequence_id, request) do
+          load(request.module_id, request.driver_key)
+        end
       in Protocol::Message::LoadedModules
+        send_response(sequence_id, Protocol::Message::LoadedModulesResponse.new(loaded_modules))
       in Protocol::Message::ModuleLoaded
-      in Protocol::Message::RunningDrivers
-      in Protocol::Message::RunningModules
-      in Protocol::Message::Start # Success
-      in Protocol::Message::Stop  # Success
+        boolean_command(sequence_id, request) do
+          module_loaded?(request.module_id)
+        end
+      in Protocol::Message::RunCount
+        send_response(sequence_id, run_count)
+      in Protocol::Message::Start
+        boolean_command(sequence_id, request) do
+          start(request.module_id, request.payload)
+        end
+      in Protocol::Message::Stop
+        boolean_command(sequence_id, request) do
+          stop(request.module_id)
+        end
       in Protocol::Message::SystemStatus
-      in Protocol::Message::Unload # Success
+        send_response(sequence_id, Protocol::Message::SystemStatusResponse.new(system_status))
+      in Protocol::Message::Unload
+        boolean_command(sequence_id, request) do
+          unload(request.module_id)
+        end
       in Protocol::Message::Body
         Log.warn { {"unexpected message in handle request: #{request.type}"} }
       end
     end
 
-    # TODO: fix up this client. would be good to get the correct type back
-    #
     def handshake
       Retriable.retry do
         response = send_request(registration_message)
@@ -129,7 +157,7 @@ module PlaceOS::Edge
         end
 
         response.remove_modules.each do |mod|
-          unload_module(mod[:module_id])
+          unload(mod[:module_id])
         end
 
         response.remove_drivers.each do |driver|
@@ -139,15 +167,15 @@ module PlaceOS::Edge
         load_binaries(response.add_drivers)
 
         response.add_modules.each do |mod|
-          load_module(mod[:module_id], mod[:key])
+          load(mod[:module_id], mod[:key])
         end
       end
     end
 
     def load_binaries(binaries : Array(String))
-      promises = binaries.map do |b|
+      promises = binaries.map do |driver_key|
         Promise.defer do
-          load_binary(b)
+          load_binary(driver_key)
         end
       end
 
@@ -166,6 +194,27 @@ module PlaceOS::Edge
       )
     end
 
+    protected def run_count : Protocol::Message::RunCountResponse
+      Protocol::Message::RunCountResponse.new(
+        drivers: running_drivers,
+        modules: running_modules,
+      )
+    end
+
+    # Bundles up the result of a command into a `Success` response
+    #
+    protected def boolean_command(sequence_id, request)
+      success = begin
+        yield
+        true
+      rescue e
+        meta = request.responds_to?(:module_id) ? request.module_id : (request.responds_to?(:driver_key) ? request.driver_key : nil)
+        Log.error(exception: e) { "failed to #{request.type.to_s.underscore} #{meta}" }
+        false
+      end
+      send_response(sequence_id, Protocol::Message::Success.new(success))
+    end
+
     # Driver binaries
     ###########################################################################
 
@@ -177,9 +226,26 @@ module PlaceOS::Edge
       end
     end
 
-    # Load binary, first checking if present locally then the server
+    # Load binary, first checking if present locally then fetch from core
     #
-    def load_binary(key : String)
+    def load_binary(key : String) : Bool
+      return true if File.exists?(path(key))
+
+      binary = fetch_binary(key)
+      add_binary(key, binary) if binary
+
+      !binary.nil?
+    end
+
+    def fetch_binary(key : String) : Bytes?
+      response = send_request(Protocol::Message::FetchBinary.new(key))
+
+      if response.is_a?(Protocol::Message::BinaryBody)
+        response.binary
+      else
+        Log.error { {message: "fetch_binary did not receive a binary", key: key} }
+        nil
+      end
     end
 
     def add_binary(key : String, binary : Bytes)
@@ -199,18 +265,46 @@ module PlaceOS::Edge
       File.join(binary_directory, key)
     end
 
-    # HACK: get the driver key from the module_id
-    #
-    def driver_key_for?(module_id)
-      proc_manager_lock.synchronize do
-        @module_proc_managers[module_id]?.try do |manager|
-          @driver_proc_managers.key_for?(manager)
-        end
-      end
-    end
-
     # Modules
     ###########################################################################
+
+    # Check for binary, request if it's not present
+    # Start the module with redis hooks
+    def load(module_id, driver_key)
+      Log.context.set({module_id: module_id, driver_key: driver_key})
+
+      if !proc_manager_by_module?(module_id)
+        if (existing_driver_manager = proc_manager_by_driver?(driver_key))
+          # Use the existing driver protocol manager
+          set_module_proc_manager(module_id, existing_driver_manager)
+        else
+          unless load_binary(driver_key)
+            Log.error { "failed to load binary for module" }
+            return
+          end
+
+          # Create a new protocol manager
+          manager = Driver::Protocol::Management.new(driver_key, on_edge: true)
+
+          # Callbacks
+
+          manager.on_setting = ->(id : String, setting_name : String, setting_value : YAML::Any) {
+            on_setting(id, setting_name, setting_value)
+          }
+
+          manager.on_redis = ->(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?) {
+            on_redis(action, hash_id, key_name, status_value)
+          }
+
+          set_module_proc_manager(module_id, manager)
+          set_driver_proc_manager(driver_key, manager)
+        end
+
+        Log.info { "module loaded" }
+      else
+        Log.info { "module already loaded" }
+      end
+    end
 
     # List the modules running on this client
     #
@@ -220,18 +314,42 @@ module PlaceOS::Edge
       end
     end
 
-    def load_module(module_id : String, key : String)
-      # Check for binary, request if it's not present
-      # Start the module with redis hooks
+    # Module Callbacks
+    ###########################################################################
+
+    # Proxy a settings write via Core
+    def on_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
+      request = Protocol::Message::SettingsAction.new(
+        module_id: module_id,
+        setting_name: setting_name,
+        setting_value: setting_value
+      )
+
+      response = send_request(request).as(Protocol::Message::Success)
+      unless response.success
+        Log.error { {module_id: module_id, setting_name: setting_name, message: "failed to proxy module setting"} }
+      end
     end
 
-    def unload_module(module_id : String)
+    # Proxy a redis action via Core
+    def on_redis(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?)
+      request = Protocol::Message::ProxyRedis.new(
+        action: action,
+        hash_id: hash_id,
+        key_name: key_name,
+        status_value: status_value,
+      )
+
+      response = send_request(request).as(Protocol::Message::Success)
+      unless response.success
+        Log.error { {action: action.to_s, hash_id: hash_id, key_name: key_name, message: "failed to proxy redis action"} }
+      end
     end
 
     # Transport
     ###########################################################################
 
-    def send_response(sequence_id : UInt64, response : Protocol::Client::Response)
+    def send_response(sequence_id : UInt64, response : Protocol::Client::Response | Protocol::Message::Success)
       t = transport
       raise "cannot send response over closed transport" if t.nil?
       t.send_response(sequence_id, response)
@@ -241,59 +359,6 @@ module PlaceOS::Edge
       t = transport
       raise "cannot send request over closed transport" if t.nil?
       t.send_request(request).as(Protocol::Server::Response)
-    end
-
-    # Protocol Managers
-    ###########################################################################
-
-    def remove_driver_manager(key)
-      set_driver_proc_manager(key, nil)
-    end
-
-    private getter proc_manager_lock = Mutex.new
-
-    # Mapping from module_id to protocol manager
-    @module_proc_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
-
-    # Mapping from driver path to protocol manager
-    @driver_proc_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
-
-    protected def proc_manager_by_module?(module_id) : Driver::Protocol::Management?
-      proc_manager_lock.synchronize do
-        @module_proc_managers[module_id]?.tap do |manager|
-          Log.info { "missing module manager for #{module_id}" } if manager.nil?
-        end
-      end
-    end
-
-    protected def proc_manager_by_driver?(driver_path) : Driver::Protocol::Management?
-      proc_manager_lock.synchronize do
-        @driver_proc_managers[driver_path]?.tap do |manager|
-          Log.info { "missing module manager for #{driver_path}" } if manager.nil?
-        end
-      end
-    end
-
-    protected def set_module_proc_manager(module_id, manager : Driver::Protocol::Management?)
-      proc_manager_lock.synchronize do
-        if manager.nil?
-          @module_proc_managers.delete(module_id)
-        else
-          @module_proc_managers[module_id] = manager
-          manager
-        end
-      end
-    end
-
-    protected def set_driver_proc_manager(driver_path, manager : Driver::Protocol::Management?)
-      proc_manager_lock.synchronize do
-        if manager.nil?
-          @driver_proc_managers.delete(driver_path)
-        else
-          @driver_proc_managers[driver_path] = manager
-          manager
-        end
-      end
     end
   end
 end
