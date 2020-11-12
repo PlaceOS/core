@@ -118,7 +118,7 @@ module PlaceOS::Edge
         spawn do
           # TODO: remove casts once crystal correctly trims union here
           begin
-            on_request.call({message.sequence_id, body}) # .as(Tuple(UInt64, Protocol::Request)))
+            on_request.call({message.sequence_id, body}.as(Tuple(UInt64, Protocol::Request)))
           rescue e
             Log.error(exception: e) { {
               message:           e.message,

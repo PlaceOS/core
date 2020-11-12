@@ -289,7 +289,7 @@ module PlaceOS::Edge
           # Callbacks
 
           manager.on_setting = ->(id : String, setting_name : String, setting_value : YAML::Any) {
-            on_setting(id, setting_name, setting_value)
+            on_setting(id, setting_name, setting_value.to_yaml)
           }
 
           manager.on_redis = ->(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?) {
@@ -318,15 +318,15 @@ module PlaceOS::Edge
     ###########################################################################
 
     # Proxy a settings write via Core
-    def on_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
+    def on_setting(module_id : String, setting_name : String, setting_value : String)
       request = Protocol::Message::SettingsAction.new(
         module_id: module_id,
         setting_name: setting_name,
         setting_value: setting_value
       )
 
-      response = send_request(request).as(Protocol::Message::Success)
-      unless response.success
+      response = send_request(request)
+      unless response.is_a?(Protocol::Message::Success) && response.success
         Log.error { {module_id: module_id, setting_name: setting_name, message: "failed to proxy module setting"} }
       end
     end
@@ -340,8 +340,8 @@ module PlaceOS::Edge
         status_value: status_value,
       )
 
-      response = send_request(request).as(Protocol::Message::Success)
-      unless response.success
+      response = send_request(request)
+      unless response.is_a?(Protocol::Message::Success) && response.success
         Log.error { {action: action.to_s, hash_id: hash_id, key_name: key_name, message: "failed to proxy redis action"} }
       end
     end

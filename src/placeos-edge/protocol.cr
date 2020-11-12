@@ -234,7 +234,7 @@ module PlaceOS::Edge::Protocol
     struct SettingsAction < Client::Request
       getter module_id : String
       getter setting_name : String
-      getter setting_value : YAML::Any
+      getter setting_value : String
 
       def initialize(@module_id, @setting_name, @setting_value)
       end
