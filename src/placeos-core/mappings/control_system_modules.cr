@@ -85,7 +85,7 @@ module PlaceOS::Core
       mod : Model::Module?
     )
       system_id = control_system.id.as(String)
-      storage = Driver::Storage.new(system_id, "system")
+      storage = Driver::RedisStorage.new(system_id, "system")
 
       # Clear out the ControlSystem's mapping
       storage.clear

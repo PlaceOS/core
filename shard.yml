@@ -37,7 +37,7 @@ dependencies:
 
   placeos-driver:
     github: placeos/driver
-    version: ~> 3.0
+    version: ~> 3.6
 
   placeos-models:
     github: placeos/models
