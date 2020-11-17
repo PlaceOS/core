@@ -24,7 +24,6 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.test
-    container_name: core
     hostname: core
     volumes:
       - ./spec:/app/spec
@@ -44,7 +43,6 @@ services:
   redis:
     image: eqalpha/keydb
     restart: always
-    container_name: redis
     hostname: redis
     environment:
       TZ: $TZ
@@ -52,7 +50,6 @@ services:
   rethink:
     image: rethinkdb:${RETHINKDB_VERSION:-2.4}
     restart: always
-    container_name: rethink
     hostname: rethink
     environment:
       TZ: $TZ
@@ -60,7 +57,6 @@ services:
   etcd:
     image: bitnami/etcd:${ETCD_VERSION:-3.3.13}
     restart: always
-    container_name: etcd
     hostname: etcd
     environment:
       ALLOW_NONE_AUTHENTICATION: "yes"
