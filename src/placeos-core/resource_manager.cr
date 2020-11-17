@@ -14,6 +14,8 @@ module PlaceOS::Core
     getter settings_updates : SettingsUpdate
     getter? started = false
 
+    private getter start_lock = Mutex.new
+
     @@instance : ResourceManager?
 
     def self.instance(testing = false) : ResourceManager
@@ -32,26 +34,29 @@ module PlaceOS::Core
     end
 
     def start
-      return if started?
-      @started = true
+      start_lock.synchronize {
+        return if started?
 
-      Log.info { "cloning Repositories" }
-      cloning.start
+        Log.info { "cloning Repositories" }
+        cloning.start
 
-      Log.info { "compiling Drivers" }
-      compilation.start
+        Log.info { "compiling Drivers" }
+        compilation.start
 
-      # Run the on-load processes
-      yield
+        # Run the on-load processes
+        yield
 
-      Log.info { "maintaining ControlSystem Module redis mappings" }
-      control_system_modules.start
+        Log.info { "maintaining ControlSystem Module redis mappings" }
+        control_system_modules.start
 
-      Log.info { "synchronising Module name changes with redis mappings" }
-      module_names.start
+        Log.info { "synchronising Module name changes with redis mappings" }
+        module_names.start
 
-      Log.info { "listening for Module Settings update" }
-      settings_updates.start
+        Log.info { "listening for Module Settings update" }
+        settings_updates.start
+
+        @started = true
+      }
     end
 
     def stop
