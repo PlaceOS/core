@@ -72,7 +72,15 @@ end
 Signal::USR1.trap &logging
 Signal::USR2.trap &logging
 
-PlaceOS::Core.start_managers
+spawn(same_thread: true) do
+  begin
+    PlaceOS::Core.start_managers
+  rescue error
+    puts " > startup failed"
+    server.close
+    raise error
+  end
+end
 
 # Start the server
 server.run do
