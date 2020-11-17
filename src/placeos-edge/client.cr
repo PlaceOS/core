@@ -25,6 +25,8 @@ module PlaceOS::Edge
     # NOTE: For testing
     private getter? skip_handshake : Bool
 
+    private getter close_channel = Channel(Nil).new
+
     def host
       uri.to_s.gsub(uri.full_path, "")
     end
@@ -58,11 +60,13 @@ module PlaceOS::Edge
         Log.info { "reconnecting to #{host}" }
         socket = HTTP::WebSocket.new(uri)
       }) do
-        close_channel = Channel(Nil).new
-
-        socket.on_close do
-          Log.info { "websocket to #{host} closed" }
-          close_channel.close
+        socket.on_close do |code, _message|
+          case code
+          when .normal_closure?
+            Log.info { "websocket to #{host} closed" }
+          when .abnormal_closure?
+            # TODO: close off all debug streams to modules
+          end
         end
 
         id = if existing_transport = transport
@@ -72,10 +76,10 @@ module PlaceOS::Edge
              end
 
         @transport = Transport.new(socket, id) do |(sequence_id, request)|
-          case request
-          when Protocol::Server::Request
-            handle_request(sequence_id, request.as(Protocol::Server::Request))
-          else Log.error { "unexpected request received #{request.inspect}" }
+          if request.is_a?(Protocol::Server::Request)
+            handle_request(sequence_id, request)
+          else
+            Log.error { {message: "unexpected core request", request: request.to_json} }
           end
         end
 
@@ -98,6 +102,10 @@ module PlaceOS::Edge
     # :ditto:
     def connect(initial_socket : HTTP::WebSocket? = nil)
       connect(initial_socket) { }
+    end
+
+    def disconnect
+      close_channel.close
     end
 
     # ameba:disable Metrics/CyclomaticComplexity
@@ -128,7 +136,7 @@ module PlaceOS::Edge
           module_loaded?(request.module_id)
         end
       in Protocol::Message::RunCount
-        send_response(sequence_id, run_count)
+        send_response(sequence_id, run_count_message)
       in Protocol::Message::Start
         boolean_command(sequence_id, request) do
           start(request.module_id, request.payload)
@@ -144,14 +152,16 @@ module PlaceOS::Edge
           unload(request.module_id)
         end
       in Protocol::Message::Body
-        Log.warn { {"unexpected message in handle request: #{request.type}"} }
+        Log.warn { {message: "unexpected message in handle request", type: request.type.to_s} }
       end
+    rescue e
+      Log.error(exception: e) { {message: "failed to handle core request", request: request.to_json} }
     end
 
     def handshake
       Retriable.retry do
-        response = send_request(registration_message)
-        unless response.success && response.is_a?(Protocol::Message::RegisterResponse)
+        response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
+        unless response
           Log.warn { "failed to register to core" }
           raise "handshake failed"
         end
@@ -194,25 +204,8 @@ module PlaceOS::Edge
       )
     end
 
-    protected def run_count : Protocol::Message::RunCountResponse
-      Protocol::Message::RunCountResponse.new(
-        drivers: running_drivers,
-        modules: running_modules,
-      )
-    end
-
-    # Bundles up the result of a command into a `Success` response
-    #
-    protected def boolean_command(sequence_id, request)
-      success = begin
-        yield
-        true
-      rescue e
-        meta = request.responds_to?(:module_id) ? request.module_id : (request.responds_to?(:driver_key) ? request.driver_key : nil)
-        Log.error(exception: e) { "failed to #{request.type.to_s.underscore} #{meta}" }
-        false
-      end
-      send_response(sequence_id, Protocol::Message::Success.new(success))
+    protected def run_count_message : Protocol::Message::RunCountResponse
+      Protocol::Message::RunCountResponse.new(count: run_count)
     end
 
     # Driver binaries
@@ -231,21 +224,25 @@ module PlaceOS::Edge
     def load_binary(key : String) : Bool
       return true if File.exists?(path(key))
 
-      binary = fetch_binary(key)
+      binary = begin
+        Retriable.retry(max_attempts: 5, base_interval: 5.seconds) do
+          result = fetch_binary(key)
+          raise "retry" if result.nil?
+          result
+        end
+      rescue e
+        Log.error(exception: e) { "while fetching binary" } unless e.message == "retry"
+        nil
+      end
+
       add_binary(key, binary) if binary
 
       !binary.nil?
     end
 
     def fetch_binary(key : String) : Bytes?
-      response = send_request(Protocol::Message::FetchBinary.new(key))
-
-      if response.is_a?(Protocol::Message::BinaryBody)
-        response.binary
-      else
-        Log.error { {message: "fetch_binary did not receive a binary", key: key} }
-        nil
-      end
+      response = Protocol.request(Protocol::Message::FetchBinary.new(key), expect: Protocol::Message::BinaryBody)
+      response.try &.binary
     end
 
     def add_binary(key : String, binary : Bytes)
@@ -325,10 +322,7 @@ module PlaceOS::Edge
         setting_value: setting_value
       )
 
-      response = send_request(request)
-      unless response.is_a?(Protocol::Message::Success) && response.success
-        Log.error { {module_id: module_id, setting_name: setting_name, message: "failed to proxy module setting"} }
-      end
+      Protocol.request(request, expect: Protocol::Message::Success)
     end
 
     # Proxy a redis action via Core
@@ -340,22 +334,33 @@ module PlaceOS::Edge
         status_value: status_value,
       )
 
-      response = send_request(request)
-      unless response.is_a?(Protocol::Message::Success) && response.success
-        Log.error { {action: action.to_s, hash_id: hash_id, key_name: key_name, message: "failed to proxy redis action"} }
-      end
+      Protocol.request(request, expect: Protocol::Message::Success)
     end
 
     # Transport
     ###########################################################################
 
-    def send_response(sequence_id : UInt64, response : Protocol::Client::Response | Protocol::Message::Success)
+    # Bundles up the result of a command into a `Success` response
+    #
+    protected def boolean_command(sequence_id, request)
+      success = begin
+        yield
+        true
+      rescue e
+        meta = request.responds_to?(:module_id) ? request.module_id : (request.responds_to?(:driver_key) ? request.driver_key : nil)
+        Log.error(exception: e) { "failed to #{request.type.to_s.underscore} #{meta}" }
+        false
+      end
+      send_response(sequence_id, Protocol::Message::Success.new(success))
+    end
+
+    protected def send_response(sequence_id : UInt64, response : Protocol::Client::Response | Protocol::Message::Success)
       t = transport
       raise "cannot send response over closed transport" if t.nil?
       t.send_response(sequence_id, response)
     end
 
-    def send_request(request : Protocol::Client::Request) : Protocol::Server::Response
+    protected def send_request(request : Protocol::Client::Request) : Protocol::Server::Response
       t = transport
       raise "cannot send request over closed transport" if t.nil?
       t.send_request(request).as(Protocol::Server::Response)

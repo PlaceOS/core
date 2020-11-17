@@ -1,7 +1,7 @@
 require "./helper"
 
 module PlaceOS::Edge
-  describe Edge::Client do
+  describe Client do
     it "handshakes on register" do
       called = false
       coordination = Channel(Nil).new

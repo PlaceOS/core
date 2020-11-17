@@ -5,6 +5,7 @@ require "../process_manager"
 
 module PlaceOS::Core
   class ProcessManager::Local
+    # Methods for interacting with module processes common across a local and edge node
     module Common
       def execute(module_id : String, payload : String | IO)
         manager = proc_manager_by_module?(module_id)
@@ -145,17 +146,12 @@ module PlaceOS::Core
         !proc_manager_by_driver?(driver_path).nil?
       end
 
-      # The number of drivers loaded on current node
-      def running_drivers
+      def run_count : NamedTuple(drivers: Int32, modules: Int32)
         proc_manager_lock.synchronize do
-          @driver_proc_managers.size
-        end
-      end
-
-      # The number of module processes on current node
-      def running_modules
-        proc_manager_lock.synchronize do
-          @module_proc_managers.size
+          {
+            drivers: @driver_proc_managers.size,
+            modules: @module_proc_managers.size,
+          }
         end
       end
 
@@ -257,7 +253,7 @@ module PlaceOS::Core
           }
 
           manager.on_setting = ->(id : String, setting_name : String, setting_value : YAML::Any) {
-            save_setting(id, setting_name, setting_value)
+            on_setting(id, setting_name, setting_value)
           }
 
           set_module_proc_manager(module_id, manager)
@@ -318,21 +314,6 @@ module PlaceOS::Core
     rescue error
       request.set_error(error)
       response_callback.call(request)
-    end
-
-    def save_setting(id : String, setting_name : String, setting_value : YAML::Any)
-      mod = PlaceOS::Model::Module.find!(id)
-      if setting = mod.settings_at?(:none)
-      else
-        setting = PlaceOS::Model::Settings.new
-        setting.parent = mod
-        setting.encryption_level = :none
-      end
-
-      settings_hash = setting.any
-      settings_hash[YAML::Any.new(setting_name)] = setting_value
-      setting.settings_string = settings_hash.to_yaml
-      setting.save!
     end
 
     # Clustering

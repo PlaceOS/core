@@ -32,10 +32,7 @@ module PlaceOS::Core
     pending "on_exec" do
     end
 
-    pending "running_drivers" do
-    end
-
-    pending "running_modules" do
+    pending "run_count" do
     end
 
     pending "save_setting" do

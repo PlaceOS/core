@@ -1,8 +1,7 @@
 require "bindata"
 require "json"
-require "placeos-driver/protocol/management"
 
-require "./record"
+require "placeos-driver/protocol/management"
 
 module PlaceOS::Edge::Protocol
   # Containers
@@ -11,13 +10,23 @@ module PlaceOS::Edge::Protocol
   # Binary messages
   #
   class Binary < BinData
+    enum Status
+      Success
+      Fail
+    end
+
     endian big
     uint64 :sequence_id
 
-    int32 :size, value: ->{ key.bytesize }
-    string :key, length: ->{ size }
+    enum_field UInt8, status : Status = Status::Success
+    int32 :length, value: ->{ key.bytesize }
+    string :key, length: ->{ length }
 
     remaining_bytes :body
+
+    def success
+      status.success?
+    end
   end
 
   # Text messages
@@ -187,8 +196,6 @@ module PlaceOS::Edge::Protocol
     end
 
     struct SystemStatus < Server::Request
-      def initialize
-      end
     end
 
     struct Unload < Server::Request
@@ -222,12 +229,7 @@ module PlaceOS::Edge::Protocol
       getter key_name : String
       getter status_value : String?
 
-      def initialize(
-        @action,
-        @hash_id,
-        @key_name,
-        @status_value
-      )
+      def initialize(@action, @hash_id, @key_name, @status_value)
       end
     end
 
@@ -254,7 +256,7 @@ module PlaceOS::Edge::Protocol
     end
 
     struct Success < ResponseBody
-      def initialize(@success : Bool)
+      def initialize(@success)
       end
     end
 
@@ -264,36 +266,35 @@ module PlaceOS::Edge::Protocol
     struct DriverStatusResponse < Client::Response
       getter status : Core::ProcessManager::DriverStatus?
 
-      def initialize(@status : Core::ProcessManager::DriverStatus?)
+      def initialize(@status)
       end
     end
 
     struct ExecuteResponse < Client::Response
       getter output : String?
 
-      def initialize(@output : String?)
+      def initialize(@output)
       end
     end
 
     struct LoadedModulesResponse < Client::Response
       getter modules : Hash(String, Array(String))
 
-      def initialize(@modules : Hash(String, Array(String)))
+      def initialize(@modules)
       end
     end
 
     struct RunCountResponse < Client::Response
-      getter drivers : Int32
-      getter modules : Int32
+      getter count : NamedTuple(drivers: Int32, modules: Int32)
 
-      def initialize(@drivers : Int32, @modules : Int32)
+      def initialize(@count)
       end
     end
 
     struct SystemStatusResponse < Client::Response
       getter status : Core::ProcessManager::SystemStatus
 
-      def initialize(@status : Core::ProcessManager::SystemStatus)
+      def initialize(@status)
       end
     end
 
@@ -303,10 +304,10 @@ module PlaceOS::Edge::Protocol
     # Binary response constructor
     class BinaryBody
       getter key : String
-      getter binary : Bytes
-      getter success : Bool = true
+      getter binary : Bytes?
+      getter success : Bool
 
-      def initialize(@key, @binary)
+      def initialize(@success, @key, @binary)
       end
     end
 
@@ -319,11 +320,11 @@ module PlaceOS::Edge::Protocol
       alias Module = NamedTuple(key: String, module_id: String)
 
       def initialize(
-        @success : Bool,
-        @add_drivers : Array(String) = [] of String,
-        @remove_drivers : Array(String) = [] of String,
-        @add_modules : Array(Module) = [] of Module,
-        @remove_modules : Array(Module) = [] of Module
+        @success,
+        @add_drivers = [] of String,
+        @remove_drivers = [] of String,
+        @add_modules = [] of Module,
+        @remove_modules = [] of Module
       )
       end
     end
@@ -344,6 +345,26 @@ module PlaceOS::Edge::Protocol
         {% end %}
       {% end %}
     )
+  end
+
+  macro request(message, expect)
+    begin
+      %response = send_request({{ message }})
+
+      %success = %response.responds_to?(:success) ?  %response.success : true
+
+      if %response.is_a?({{expect}}) && %success
+        %response
+      else
+        Log.error { {
+          {% for arg in @def.args %}
+            {{arg.name}}: {{arg.name}}.is_a?(::Log::Metadata::Value::Type) ? {{arg.name.id}} : {{arg.name.id}}.to_s,
+          {% end %}
+          message: "{{@def.name}} failed",
+        } }
+        nil
+      end
+    end
   end
 
   {% begin %}

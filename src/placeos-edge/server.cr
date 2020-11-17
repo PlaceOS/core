@@ -30,7 +30,7 @@ module PlaceOS::Edge
         end
       end
 
-      manager = ProcessManager::Edge.new(socket)
+      manager = ProcessManager::Edge.new(edge_id, socket)
 
       edges_lock.write do
         edges[edge_id] = manager

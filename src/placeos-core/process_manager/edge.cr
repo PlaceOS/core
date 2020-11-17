@@ -10,33 +10,48 @@ module PlaceOS::Core
 
     alias Transport = PlaceOS::Edge::Transport
 
-    forward_missing_to missing
+    getter transport : Transport
+    getter edge_id : String
 
-    getter! transport : Transport
-
-    def intialize(socket : HTTP::WebSocket)
-      @transport = Transport.new(socket) do |request|
-        handle_request(request)
+    def initialize(@edge_id : String, socket : HTTP::WebSocket)
+      @transport = Transport.new(socket) do |(sequence_id, request)|
+        if request.is_a?(Protocol::Client::Request)
+          handle_request(sequence_id, request)
+        else
+          Log.error { {message: "unexpected edge request", request: request.to_json} }
+        end
       end
     end
 
-    def handle_request(message : Protocol::Request)
-      unless message.is_a?(Protocol::Client::Request)
-        Log.error(exception: e) { {
-          message: "unexpected edge request",
-          request: message.to_json,
-        } }
-        return
-      end
-
-      case message.type
-      when Protocol::Register
-        register
+    def handle_request(sequence_id : UInt64, request : Protocol::Client::Request)
+      case request
+      in Protocol::Message::FetchBinary
+        response = fetch_binary(request.driver_key)
+        send_response(sequence_id, response)
+      in Protocol::Message::ProxyRedis
+        boolean_response(sequence_id, request) do
+          on_redis(
+            action: request.action,
+            hash_id: request.hash_id,
+            key_name: request.key_name,
+            status_value: request.status_value,
+          )
+        end
+      in Protocol::Message::Register
+        register(request.module)
+      in Protocol::Message::SettingsAction
+        boolean_response(sequence_id, request) do
+          on_setting(
+            id: request.module_id,
+            setting_name: request.setting_name,
+            setting_value: YAML.parse(request.setting_value)
+          )
+        end
       end
     rescue e
       Log.error(exception: e) { {
         message: "failed to handle edge request",
-        request: message.to_json,
+        request: request.to_json,
       } }
     end
 
@@ -51,84 +66,140 @@ module PlaceOS::Core
     end
 
     def execute(module_id : String, payload : String)
-      missing
-      # make_request(API::Exec, {module_id: module_id, payload: payload}) do |result|
-      #   yield result
-      # end
+      response = Protocol.request(Protocol::Message::Load.new(module_id, driver_path), expect: Protocol::Message::ExecuteResponse)
+      response.try &.output
     end
 
     def load(module_id : String, driver_path : String)
-      missing
+      !!Protocol.request(Protocol::Message::Load.new(module_id, driver_path), expect: Protocol::Message::Success)
     end
 
     def unload(module_id : String)
-      missing
+      !!Protocol.request(Protocol::Message::Unload.new(module_id), expect: Protocol::Message::Success)
     end
 
     def start(module_id : String, payload : String)
-      missing
+      !!Protocol.request(Protocol::Message::Stop.start(module_id, payload), expect: Protocol::Message::Success)
     end
 
     def stop(module_id : String)
-      missing
+      !!Protocol.request(Protocol::Message::Stop.new(module_id), expect: Protocol::Message::Success)
     end
 
     def kill(driver_path : String)
-      missing
+      !!Protocol.request(Protocol::Message::Kill.new(driver_path), expect: Protocol::Message::Success)
     end
 
     # Callbacks
     ###############################################################################################
 
+    private getter debug_lock : Mutex { Mutex.new }
+    private getter debug_callbacks = Hash(String, Array(Proc(String, Nil))).new { |h, k| h[k] = [] of String -> }
+
     def debug(module_id : String, &on_message : String ->)
-      missing
+      signal = debug_lock.synchronize do
+        callbacks = debug_callbacks[module_id]
+        callbacks << on_message
+        callbacks.size == 1
+      end
+
+      send_request(Protocol::Message::Debug.new(module_id)) if signal
     end
 
     def ignore(module_id : String, &on_message : String ->)
-      missing
-    end
+      signal = debug_lock.synchronize do
+        module_callbacks = debug_callbacks[module_id]
+        initial_size = module_callbacks.size
+        module_callbacks.reject! on_message
 
-    def save_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
-      missing
+        # Only signal if the module was still in the process of debugging
+        if module_callbacks.empty?
+          debug_callbacks.delete(module_id)
+          initial_size > 0
+        else
+          false
+        end
+      end
+
+      send_request(Protocol::Message::Ignore.new(module_id)) if signal
     end
 
     def on_exec(request : Request, response_callback : Request ->)
       raise "Edge modules cannot make execute requests"
     end
 
+    # Binaries
+    ###############################################################################################
+
+    def fetch_binary(driver_key : String) : Protocol::Message::BinaryBody
+      path = File.join(PlaceOS::Compiler.bin_dir, driver_key)
+
+      binary = Edge.read_file?(path)
+
+      Protocol::Message::BinaryBody.new(success: !binary.nil?, key: driver_key, binary: binary)
+    end
+
     # Metadata
     ###############################################################################################
 
     def driver_loaded?(driver_path : String) : Bool
-      missing
+      !!Protocol.request(Protocol::Message::DriverLoaded.new, expect: Protocol::Message::Success)
     end
 
     def module_loaded?(module_id : String) : Bool
-      missing
+      !!Protocol.request(Protocol::Message::RunCount.new, expect: Protocol::Message::Success)
     end
 
-    def running_drivers
-      missing
-    end
+    def run_count : NamedTuple(drivers: Int32, modules: Int32)
+      response = Protocol.request(Protocol::Message::RunCount.new, expect: Protocol::Message::RunCountResponse)
+      raise "failed to request run count" if response.nil?
 
-    def running_modules
-      missing
+      response.count
     end
 
     def loaded_modules
-      missing
+      response = Protocol.request(Protocol::Message::LoadedModules.new, expect: Protocol::Message::LoadedModulesResponse)
+
+      raise "failed to request loaded modules " if response.nil?
+
+      response.status
     end
 
     def system_status : SystemStatus
-      missing
+      response = Protocol.request(Protocol::Message::SystemStatus.new, expect: Protocol::Message::SystemStatusResponse)
+
+      raise "failed to request edge system status" if response.nil?
+
+      response.status
     end
 
     def driver_status(driver_path : String) : DriverStatus?
-      missing
+      response = Protocol.request(Protocol::Message::DriverStatus.new(driver_path), expect: Protocol::Message::DriverStatusResponse)
+
+      response.status
     end
 
-    def missing
-      raise NotImplementedError.new("Edge has no implemented this method yet")
+    protected def boolean_response(sequence_id, request)
+      success = begin
+        yield
+        true
+      rescue e
+        meta = request.responds_to?(:module_id) ? request.module_id : (request.responds_to?(:driver_key) ? request.driver_key : nil)
+        Log.error(exception: e) { "failed to #{request.type.to_s.underscore} #{meta}" }
+        false
+      end
+      send_response(sequence_id, Protocol::Message::Success.new(success))
+    end
+
+    def self.read_file?(path : String) : Slice?
+      File.open(path) do |file|
+        memory = IO::Memory.new
+        IO.copy file, memory
+        memory.to_slice
+      end
+    rescue e
+      Log.error(exception: e) { "failed to read #{path} into slice" }
+      nil
     end
   end
 end

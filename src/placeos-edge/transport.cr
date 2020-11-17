@@ -56,9 +56,9 @@ module PlaceOS::Edge
                 in Protocol::Message::BinaryBody
                   m = Protocol::Binary.new
                   m.sequence_id = id
-                  m.size = response.key.size
+                  m.status = response.success ? Protocol::Binary::Status::Success : Protocol::Binary::Status::Fail
                   m.key = response.key
-                  m.message = response.binary
+                  m.body = response.binary
                   m
                 end
 
@@ -91,16 +91,14 @@ module PlaceOS::Edge
     end
 
     private def on_binary(bytes : Slice)
-      # TODO: change BinData supports serialisation from a slice
-      io = IO::Memory.new(bytes, writeable: false)
-      handle_message(io.read_bytes(Protocol::Binary))
+      handle_message(Protocol::Binary.from_slice(bytes))
     rescue e : BinData::ParseError
       Log.error(exception: e) { "failed to parse incoming binary message" }
     end
 
     private def handle_message(message : Protocol::Container)
       body = if message.is_a? Protocol::Binary
-               Protocol::Message::BinaryBody.new(key: message.key, binary: message.body)
+               Protocol::Message::BinaryBody.new(success: message.success, key: message.key, binary: message.body)
              else
                message.body
              end

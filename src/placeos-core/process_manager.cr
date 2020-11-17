@@ -38,7 +38,20 @@ module PlaceOS::Core
 
     # Handler for settings updates
     #
-    abstract def save_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
+    def on_setting(id : String, setting_name : String, setting_value : YAML::Any)
+      mod = PlaceOS::Model::Module.find!(id)
+      if setting = mod.settings_at?(:none)
+      else
+        setting = PlaceOS::Model::Settings.new
+        setting.parent = mod
+        setting.encryption_level = :none
+      end
+
+      settings_hash = setting.any
+      settings_hash[YAML::Any.new(setting_name)] = setting_value
+      setting.settings_string = settings_hash.to_yaml
+      setting.save!
+    end
 
     # Metadata
     ###############################################################################################
@@ -84,13 +97,11 @@ module PlaceOS::Core
     #
     abstract def driver_loaded?(driver_path) : Bool
 
-    # Number of unique drivers running on a ProcessManager
+    # Returns the count of ...
+    # - unique drivers running
+    # - module processes
     #
-    abstract def running_drivers
-
-    # Number of module processes on a ProcessManager
-    #
-    abstract def running_modules
+    abstract def run_count : NamedTuple(drivers: Int32, modules: Int32)
 
     # Count of distinct modules loaded on a ProcessManager
     #
