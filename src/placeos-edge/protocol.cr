@@ -61,11 +61,13 @@ module PlaceOS::Edge::Protocol
         # Request
 
         # -> Server
+        Debug        # Success
         DriverLoaded # Success
         DriverStatus
         Execute
-        Kill # Success
-        Load # Success
+        Ignore # Success
+        Kill   # Success
+        Load   # Success
         LoadedModules
         ModuleLoaded # Success
         RunCount
@@ -87,6 +89,7 @@ module PlaceOS::Edge::Protocol
         RegisterResponse
 
         # -> Client
+        DebugMessage
         DriverStatusResponse
         ExecuteResponse
         LoadedModulesResponse
@@ -139,11 +142,25 @@ module PlaceOS::Edge::Protocol
       end
     end
 
+    struct Debug < Server::Request
+      getter module_id : String
+
+      def initialize(@module_id)
+      end
+    end
+
     struct Execute < Server::Request
       getter module_id : String
       getter payload : String
 
       def initialize(@module_id, @payload)
+      end
+    end
+
+    struct Ignore < Server::Request
+      getter module_id : String
+
+      def initialize(@module_id)
       end
     end
 
@@ -216,8 +233,8 @@ module PlaceOS::Edge::Protocol
     end
 
     struct Register < Client::Request
-      getter modules : Array(String)
-      getter drivers : Array(String)
+      getter modules : Set(String)
+      getter drivers : Set(String)
 
       def initialize(@modules, @drivers)
       end
@@ -263,6 +280,13 @@ module PlaceOS::Edge::Protocol
     # Client Responses
     ############################################################################
 
+    struct ExecuteResponse < Client::Response
+      getter output : String?
+
+      def initialize(@output)
+      end
+    end
+
     struct DriverStatusResponse < Client::Response
       getter status : Core::ProcessManager::DriverStatus?
 
@@ -270,10 +294,11 @@ module PlaceOS::Edge::Protocol
       end
     end
 
-    struct ExecuteResponse < Client::Response
-      getter output : String?
+    struct DebugMessage < Client::Response
+      getter module_id : String
+      getter message : String
 
-      def initialize(@output)
+      def initialize(@module_id, @message)
       end
     end
 

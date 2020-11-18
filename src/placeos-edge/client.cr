@@ -17,6 +17,8 @@ module PlaceOS::Edge
     Log                = ::Log.for(self)
     WEBSOCKET_API_PATH = "/edge"
 
+    getter edge_id : String
+
     getter binary_directory : String
 
     private getter transport : Transport?
@@ -26,6 +28,10 @@ module PlaceOS::Edge
     private getter? skip_handshake : Bool
 
     private getter close_channel = Channel(Nil).new
+
+    def self.extract_edge_id(secret : String)
+      secret.split('_').first
+    end
 
     def host
       uri.to_s.gsub(uri.full_path, "")
@@ -38,6 +44,8 @@ module PlaceOS::Edge
       @binary_directory : String = File.join(Dir.current, "/bin/drivers"),
       @skip_handshake : Bool = false
     )
+      @edge_id = Client.extract_edge_id(secret)
+
       # Mutate a copy as secret is embedded in uri
       uri = uri.dup
       uri.path = WEBSOCKET_API_PATH
@@ -49,6 +57,7 @@ module PlaceOS::Edge
     #
     # Optionally accepts a block called after connection has been established.
     def connect(initial_socket : HTTP::WebSocket? = nil)
+      Log.context.set(edge_id: edge_id)
       begin
         socket = initial_socket || HTTP::WebSocket.new(uri)
       rescue Socket::ConnectError
@@ -200,7 +209,7 @@ module PlaceOS::Edge
     protected def registration_message : Protocol::Message::Register
       Protocol::Message::Register.new(
         modules: modules,
-        drivers: binaries,
+        drivers: drivers,
       )
     end
 
@@ -211,12 +220,12 @@ module PlaceOS::Edge
     # Driver binaries
     ###########################################################################
 
-    # List the binaries present on this client
+    # List the driver binaries present on this client
     #
-    def binaries
+    def drivers
       Dir.children(binary_directory).reject do |file|
         file.includes?(".") || File.directory?(file)
-      end
+      end.to_set
     end
 
     # Load binary, first checking if present locally then fetch from core
@@ -307,8 +316,35 @@ module PlaceOS::Edge
     #
     def modules
       proc_manager_lock.synchronize do
-        @module_proc_managers.keys
+        @module_proc_managers.keys.to_set
       end
+    end
+
+    # Debugging
+    ###########################################################################
+
+    private getter debug_callbacks = {} of String => String ->
+    private getter debug_lock = Mutex.new
+
+    def debug(module_id : String)
+      debug_lock.synchronize do
+        unless debug_callbacks.has_key?(module_id)
+          callback = ->(message : String) { forward_debug_message(module_id, message) }
+          debug_callbacks[module_id] = callback
+          proc_manager_by_module(module_id).debug(module_id, callback)
+        end
+      end
+    end
+
+    def ignore(module_id : String)
+      debug_lock.synchronize do
+        callback = debug_callbacks.delete(module_id)
+        proc_manager_by_module(module_id).ignore(module_id, callback) unless callback.nil?
+      end
+    end
+
+    def forward_debug_message(module_id, message)
+      send_request(Protocol::Message::DebugMessage.new(module_id, message))
     end
 
     # Module Callbacks

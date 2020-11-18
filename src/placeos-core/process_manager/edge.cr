@@ -25,9 +25,21 @@ module PlaceOS::Core
 
     def handle_request(sequence_id : UInt64, request : Protocol::Client::Request)
       case request
+      in Protocol::Message::Debug
+        boolean_response(sequence_id, request) do
+          debug(request.module_id)
+        end
+      in Protocol::Message::DebugMessage
+        boolean_response(sequence_id, request) do
+          forward_debug_message(request.module_id, request.message)
+        end
       in Protocol::Message::FetchBinary
         response = fetch_binary(request.driver_key)
         send_response(sequence_id, response)
+      in Protocol::Message::Ignore
+        boolean_response(sequence_id, request) do
+          ignore(request.module_id)
+        end
       in Protocol::Message::ProxyRedis
         boolean_response(sequence_id, request) do
           on_redis(
@@ -38,7 +50,7 @@ module PlaceOS::Core
           )
         end
       in Protocol::Message::Register
-        register(request.module)
+        send_response(sequence_id, register(modules: request.modules, drivers: request.drivers))
       in Protocol::Message::SettingsAction
         boolean_response(sequence_id, request) do
           on_setting(
@@ -53,16 +65,6 @@ module PlaceOS::Core
         message: "failed to handle edge request",
         request: request.to_json,
       } }
-    end
-
-    protected def register
-      # 1. edge opens a websocket connection with the REST API
-      # 2. REST API consistent hashes the edge id to the right core (the core which will manage the websocket session)
-      # 3. core asks edge which modules/drivers it has
-      # 4. edge responds with that information
-      # 5. core diffs those modules/drivers, pushes drivers the edge is missing, and unloads things that are not needed
-      # 6. core asks edge to load all modules it hasn't already loaded
-      # 7. core treats the edge just like any other process manager
     end
 
     def execute(module_id : String, payload : String)
@@ -90,11 +92,37 @@ module PlaceOS::Core
       !!Protocol.request(Protocol::Message::Kill.new(driver_path), expect: Protocol::Message::Success)
     end
 
+    # Calculates the modules/drivers that the edge needs to add/remove
+    #
+    protected def register(drivers : Set(String), modules : Set(String))
+      allocated_drivers = Set(String).new
+      allocated_modules = Set(String).new
+      PlaceOS::Model::Module.on_edge(edge_id).each do |mod|
+        driver = mod.driver
+        allocated_modules << mod.id.as(String)
+        allocated_drivers << Compiler::Helper.driver_binary_name(driver_file: driver.file_name, commit: driver.commit, id: driver.id)
+      end
+
+      Protocol::Message::RegisterResponse.new(
+        success: true,
+        add_drivers: (allocated_drivers - drivers).to_a,
+        remove_drivers: (drivers - allocated_drivers).to_a,
+        add_modules: (allocated_modules - modules).to_a,
+        remove_modules: (modules - allocated_modules).to_a,
+      )
+    end
+
     # Callbacks
     ###############################################################################################
 
     private getter debug_lock : Mutex { Mutex.new }
     private getter debug_callbacks = Hash(String, Array(Proc(String, Nil))).new { |h, k| h[k] = [] of String -> }
+
+    def forward_debug_message(module_id : String, message : String)
+      debug_lock.synchronize do
+        debug_callbacks[module_id].each &.call(message)
+      end
+    end
 
     def debug(module_id : String, &on_message : String ->)
       signal = debug_lock.synchronize do
@@ -125,7 +153,7 @@ module PlaceOS::Core
     end
 
     def on_exec(request : Request, response_callback : Request ->)
-      raise "Edge modules cannot make execute requests"
+      {{ raise "Edge modules cannot make execute requests" }}
     end
 
     # Binaries
