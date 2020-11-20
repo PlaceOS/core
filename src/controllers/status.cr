@@ -19,7 +19,6 @@ module PlaceOS::Core::Api
         compiled_drivers:         PlaceOS::Compiler::Helper.compiled_drivers,
         available_repositories:   PlaceOS::Compiler::Helper.repositories,
         run_count:                module_manager.local_processes.run_count,
-        modules:                  module_manager.local_processes.running_modules,
         edge_run_count:           module_manager.edge_processes.run_count,
         unavailable_repositories: resource_manager.cloning.errors,
         unavailable_drivers:      resource_manager.compilation.errors,

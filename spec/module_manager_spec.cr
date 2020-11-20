@@ -25,7 +25,7 @@ module PlaceOS::Core
         module_manager.start
 
         # Check that the module is loaded, and the module manager can be received
-        module_manager.local_processes.running_modules.should eq 1
+        module_manager.local_processes.run_count[:modules].should eq 1
         module_manager.stop
       end
 
@@ -60,8 +60,7 @@ module PlaceOS::Core
 
         module_manager.load_module(mod)
 
-        module_manager.local_processes.running_modules.should eq 1
-        module_manager.local_processes.running_drivers.should eq 1
+        module_manager.local_processes.run_count.should eq ({modules: 1, drivers: 1})
 
         module_manager.local_processes.proc_manager_by_module?(mod_id).should_not be_nil
         module_manager.local_processes.proc_manager_by_driver?(driver_path).should_not be_nil

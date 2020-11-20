@@ -173,10 +173,12 @@ module PlaceOS::Core
 
     struct CoreStatus < BaseResponse
       alias Error = NamedTuple(name: String, reason: String)
+      alias RunCount = NamedTuple(modules: Int32, drivers: Int32)
+
       getter compiled_drivers : Array(String)
       getter available_repositories : Array(String)
-      getter running_drivers : Int32
-      getter module_instances : Int32
+      getter run_count : RunCount
+      getter edge_run_count : Hash(String, RunCount)
       getter unavailable_repositories : Array(Error)
       getter unavailable_drivers : Array(Error)
     end

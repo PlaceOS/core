@@ -3,12 +3,14 @@ require "placeos-driver/protocol/management"
 require "../process_manager"
 
 require "../../placeos-edge/transport"
+require "../../placeos-edge/protocol"
 
 module PlaceOS::Core
   class ProcessManager::Edge
     include ProcessManager
 
     alias Transport = PlaceOS::Edge::Transport
+    alias Protocol = PlaceOS::Edge::Protocol
 
     getter transport : Transport
     getter edge_id : String
@@ -68,7 +70,7 @@ module PlaceOS::Core
     end
 
     def execute(module_id : String, payload : String)
-      response = Protocol.request(Protocol::Message::Load.new(module_id, driver_path), expect: Protocol::Message::ExecuteResponse)
+      response = Protocol.request(Protocol::Message::Execute.new(module_id, payload), expect: Protocol::Message::ExecuteResponse)
       response.try &.output
     end
 
@@ -81,7 +83,7 @@ module PlaceOS::Core
     end
 
     def start(module_id : String, payload : String)
-      !!Protocol.request(Protocol::Message::Stop.start(module_id, payload), expect: Protocol::Message::Success)
+      !!Protocol.request(Protocol::Message::Start.new(module_id, payload), expect: Protocol::Message::Success)
     end
 
     def stop(module_id : String)
@@ -217,6 +219,18 @@ module PlaceOS::Core
         false
       end
       send_response(sequence_id, Protocol::Message::Success.new(success))
+    end
+
+    protected def send_response(sequence_id : UInt64, response : Protocol::Server::Response | Protocol::Message::Success)
+      t = transport
+      raise "cannot send response over closed transport" if t.nil?
+      t.send_response(sequence_id, response)
+    end
+
+    protected def send_request(request : Protocol::Server::Request) : Protocol::Client::Response
+      t = transport
+      raise "cannot send request over closed transport" if t.nil?
+      t.send_request(request).as(Protocol::Client::Response)
     end
 
     def self.read_file?(path : String) : Slice?

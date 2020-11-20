@@ -180,10 +180,7 @@ module PlaceOS::Edge::Protocol
     end
 
     struct RunCount < Server::Request
-      getter modules : Int32
-      getter drivers : Int32
-
-      def initialize(@modules, @drivers)
+      def initialize
       end
     end
 

@@ -17,9 +17,9 @@ module PlaceOS::Edge
     Log                = ::Log.for(self)
     WEBSOCKET_API_PATH = "/edge"
 
-    getter edge_id : String
+    class_property binary_directory : String = File.join(Dir.current, "/bin/drivers")
 
-    getter binary_directory : String
+    getter edge_id : String
 
     private getter transport : Transport?
     private getter! uri : URI
@@ -41,7 +41,6 @@ module PlaceOS::Edge
       uri : URI = PLACE_URI,
       secret : String = CLIENT_SECRET,
       @sequence_id : UInt64 = 0,
-      @binary_directory : String = File.join(Dir.current, "/bin/drivers"),
       @skip_handshake : Bool = false
     )
       @edge_id = Client.extract_edge_id(secret)
@@ -57,18 +56,14 @@ module PlaceOS::Edge
     #
     # Optionally accepts a block called after connection has been established.
     def connect(initial_socket : HTTP::WebSocket? = nil)
+      initial = initial_socket
       Log.context.set(edge_id: edge_id)
-      begin
-        socket = initial_socket || HTTP::WebSocket.new(uri)
-      rescue Socket::ConnectError
-        Log.error { "failed to open initial connection to #{host}" }
-        exit 1
-      end
-
-      Retriable.retry(on_retry: ->(_ex : Exception, _i : Int32, _e : Time::Span, _p : Time::Span) {
-        Log.info { "reconnecting to #{host}" }
-        socket = HTTP::WebSocket.new(uri)
+      Log.info { "connecting to #{host}" }
+      Retriable.retry(max_interval: 5.seconds, on_retry: ->(error : Exception, _i : Int32, _e : Time::Span, _p : Time::Span) {
+        Log.warn { { error: error.to_s, message: "reconnecting"  }}
+        initial = nil
       }) do
+        socket = (initial || HTTP::WebSocket.new(uri)).as(HTTP::WebSocket)
         socket.on_close do |code, _message|
           case code
           when .normal_closure?
@@ -169,24 +164,29 @@ module PlaceOS::Edge
 
     def handshake
       Retriable.retry do
-        response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
-        unless response
-          Log.warn { "failed to register to core" }
-          raise "handshake failed"
-        end
+        begin
+          response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
+          unless response
+            Log.warn { "failed to register to core" }
+            raise "handshake failed"
+          end
 
-        response.remove_modules.each do |mod|
-          unload(mod[:module_id])
-        end
+          response.remove_modules.each do |mod|
+            unload(mod[:module_id])
+          end
 
-        response.remove_drivers.each do |driver|
-          remove_binary(driver)
-        end
+          response.remove_drivers.each do |driver|
+            remove_binary(driver)
+          end
 
-        load_binaries(response.add_drivers)
+          load_binaries(response.add_drivers)
 
-        response.add_modules.each do |mod|
-          load(mod[:module_id], mod[:key])
+          response.add_modules.each do |mod|
+            load(mod[:module_id], mod[:key])
+          end
+        rescue error
+          Log.error(exception: error) { "during handshake" }
+          raise error
         end
       end
     end
@@ -223,7 +223,8 @@ module PlaceOS::Edge
     # List the driver binaries present on this client
     #
     def drivers
-      Dir.children(binary_directory).reject do |file|
+      Dir.mkdir_p(self.class.binary_directory) unless Dir.exists?(self.class.binary_directory)
+      Dir.children(self.class.binary_directory).reject do |file|
         file.includes?(".") || File.directory?(file)
       end.to_set
     end
@@ -268,7 +269,7 @@ module PlaceOS::Edge
     end
 
     protected def path(key : String)
-      File.join(binary_directory, key)
+      File.join(self.class.binary_directory, key)
     end
 
     # Modules
