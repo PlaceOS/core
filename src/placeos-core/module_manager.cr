@@ -117,22 +117,9 @@ module PlaceOS::Core
     end
 
     def start_module(mod : Model::Module)
-      begin
-        # Merge module settings
-        merged_settings = mod.merge_settings
-      rescue e
-        raise ModuleError.new("Failed to merge module settings")
-      end
-
-      # Start format
-      payload = mod.to_json.rchop
-
-      # The settings object needs to be unescaped
-      payload = %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{merged_settings}})
-
       module_id = mod.id.as(String)
 
-      process_manager(mod) { |manager| manager.start(module_id, payload) }
+      process_manager(mod) { |manager| manager.start(module_id, ModuleManager.start_payload(mod)) }
 
       Log.info { {message: "started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
     end
@@ -282,6 +269,28 @@ module PlaceOS::Core
 
     # Helpers
     ###########################################################################
+
+    def self.start_payload(mod : Model::Module)
+      begin
+        # Merge module settings
+        merged_settings = mod.merge_settings
+      rescue e
+        raise ModuleError.new("Failed to merge module settings #{e.message}")
+      end
+
+      # Start format
+      payload = mod.to_json.rchop
+
+      # The settings object needs to be unescaped
+      %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{merged_settings}})
+    end
+
+    def self.execute_payload(method : String | Symbol, args : Enumerable? = nil, named_args : Hash | NamedTuple | Nil = nil)
+      {
+        "__exec__" => method,
+        method     => args || named_args,
+      }.to_json
+    end
 
     def self.needs_restart?(mod : Model::Module) : Bool
       mod.ip_changed? || mod.port_changed? || mod.tls_changed? || mod.udp_changed? || mod.makebreak_changed? || mod.uri_changed?

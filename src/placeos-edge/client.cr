@@ -60,7 +60,7 @@ module PlaceOS::Edge
       Log.context.set(edge_id: edge_id)
       Log.info { "connecting to #{host}" }
       Retriable.retry(max_interval: 5.seconds, on_retry: ->(error : Exception, _i : Int32, _e : Time::Span, _p : Time::Span) {
-        Log.warn { { error: error.to_s, message: "reconnecting"  }}
+        Log.warn { {error: error.to_s, message: "reconnecting"} }
         initial = nil
       }) do
         socket = (initial || HTTP::WebSocket.new(uri)).as(HTTP::WebSocket)

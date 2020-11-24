@@ -25,7 +25,7 @@ module PlaceOS::Core
       end
 
       def stop(module_id : String)
-        proc_manager_by_module?(module_id).try do |manager|
+        !!proc_manager_by_module?(module_id).try do |manager|
           manager.stop(module_id)
         end
       end
@@ -60,11 +60,14 @@ module PlaceOS::Core
         end
       end
 
-      def kill(driver_path : String)
-        proc_manager_by_driver?(driver_path).try do |manager|
-          pid = manager.pid.to_s
-          Process.run("kill", {"-9", pid})
+      def kill(driver_path : String) : Bool
+        !!proc_manager_by_driver?(driver_path).try do |manager|
+          pid = manager.pid
+          Process.signal(Signal::KILL, pid)
+          true
         end
+      rescue
+        false
       end
 
       def debug(module_id : String, &on_message : String ->)
@@ -238,7 +241,7 @@ module PlaceOS::Core
     def initialize(@discovery : HoundDog::Discovery)
     end
 
-    def load(module_id, driver_path)
+    def load(module_id : String, driver_path : String)
       if !proc_manager_by_module?(module_id)
         if (existing_driver_manager = proc_manager_by_driver?(driver_path))
           # Use the existing driver protocol manager
