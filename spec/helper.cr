@@ -62,6 +62,7 @@ end
 
 Spec.after_suite do
   PlaceOS::Core::ResourceManager.instance.stop
+  Log.builder.bind("*", backend: PlaceOS::Core::LOG_BACKEND, level: Log::Severity::Error)
   `pkill -f "core-spec"` rescue nil
   teardown
 end
