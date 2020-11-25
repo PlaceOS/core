@@ -5,7 +5,7 @@ module PlaceOS::Core::ProcessManager
     _working_directory, repository, driver, mod = setup
     Cloning.clone_and_install(repository)
     result = Compiler::Helper.compile_driver(driver.file_name, repository.folder_name, driver.commit, id: driver.id)
-    yield driver, mod, result[:executable]
+    yield mod, result[:executable]
   end
 
   def self.test_starting(manager, mod, driver_path)
@@ -16,7 +16,7 @@ module PlaceOS::Core::ProcessManager
   end
 
   describe Local do
-    with_driver do |_driver, mod, driver_path|
+    with_driver do |mod, driver_path|
       describe Local::Common do
         describe "driver_loaded?" do
           it "confirms a driver is loaded" do
@@ -187,33 +187,38 @@ module PlaceOS::Core::ProcessManager
         describe "unload" do
           it "removes driver if no dependent modules running" do
             path = driver_path + UUID.random.to_s
+            module_id = "mod"
             File.copy(driver_path, path)
 
             pm = Local.new(discovery_mock)
-            pm.load(module_id: "mod", driver_path: path)
+            pm.load(module_id: module_id, driver_path: path)
             pm.driver_loaded?(path).should be_true
-            pm.module_loaded?(path).should be_true
-            pm.unload("mod")
+            pm.module_loaded?(module_id).should be_true
+            pm.unload(module_id)
             pm.driver_loaded?(path).should be_false
-            pm.module_loaded?("mod").should be_false
-            File.exists?(path).should be_false
+            pm.module_loaded?(module_id).should be_false
+            File.exists?(path).should be_true
+
+            File.delete(path) rescue nil
           end
 
           it "keeps driver if dependent modules still running" do
             path = driver_path + UUID.random.to_s
+            module0 = "mod0"
+            module1 = "mod1"
             File.copy(driver_path, path)
 
             pm = Local.new(discovery_mock)
-            pm.load(module_id: "mod0", driver_path: path)
-            pm.load(module_id: "mod1", driver_path: path)
+            pm.load(module_id: module0, driver_path: path)
+            pm.load(module_id: module1, driver_path: path)
             pm.driver_loaded?(path).should be_true
-            pm.module_loaded?("mod0").should be_true
-            pm.module_loaded?("mod1").should be_true
-            pm.unload("mod0")
-            pm.module_loaded?("mod0").should be_false
-            pm.module_loaded?("mod1").should be_true
+            pm.module_loaded?(module0).should be_true
+            pm.module_loaded?(module1).should be_true
+            pm.unload(module0)
+            pm.module_loaded?(module0).should be_false
+            pm.module_loaded?(module1).should be_true
             pm.driver_loaded?(path).should be_true
-            File.exists?(path).should be_false
+            File.exists?(path).should be_true
 
             File.delete(path) rescue nil
           end

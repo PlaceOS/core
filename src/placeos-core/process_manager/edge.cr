@@ -75,7 +75,7 @@ module PlaceOS::Core
     end
 
     def load(module_id : String, driver_path : String)
-      !!Protocol.request(Protocol::Message::Load.new(module_id, driver_path), expect: Protocol::Message::Success)
+      !!Protocol.request(Protocol::Message::Load.new(module_id, Edge.path_to_key(driver_path)), expect: Protocol::Message::Success)
     end
 
     def unload(module_id : String)
@@ -91,7 +91,7 @@ module PlaceOS::Core
     end
 
     def kill(driver_path : String)
-      !!Protocol.request(Protocol::Message::Kill.new(driver_path), expect: Protocol::Message::Success)
+      !!Protocol.request(Protocol::Message::Kill.new(Edge.path_to_key(driver_path)), expect: Protocol::Message::Success)
     end
 
     # Calculates the modules/drivers that the edge needs to add/remove
@@ -173,11 +173,11 @@ module PlaceOS::Core
     ###############################################################################################
 
     def driver_loaded?(driver_path : String) : Bool
-      !!Protocol.request(Protocol::Message::DriverLoaded.new, expect: Protocol::Message::Success)
+      !!Protocol.request(Protocol::Message::DriverLoaded.new(Edge.path_to_key(driver_path)), expect: Protocol::Message::Success)
     end
 
     def module_loaded?(module_id : String) : Bool
-      !!Protocol.request(Protocol::Message::RunCount.new, expect: Protocol::Message::Success)
+      !!Protocol.request(Protocol::Message::ModuleLoaded.new(module_id), expect: Protocol::Message::Success)
     end
 
     def run_count : NamedTuple(drivers: Int32, modules: Int32)
@@ -192,7 +192,7 @@ module PlaceOS::Core
 
       raise "failed to request loaded modules " if response.nil?
 
-      response.status
+      response.modules
     end
 
     def system_status : SystemStatus
@@ -204,7 +204,7 @@ module PlaceOS::Core
     end
 
     def driver_status(driver_path : String) : DriverStatus?
-      response = Protocol.request(Protocol::Message::DriverStatus.new(driver_path), expect: Protocol::Message::DriverStatusResponse)
+      response = Protocol.request(Protocol::Message::DriverStatus.new(Edge.path_to_key(driver_path)), expect: Protocol::Message::DriverStatusResponse)
 
       response.status
     end
@@ -231,6 +231,13 @@ module PlaceOS::Core
       t = transport
       raise "cannot send request over closed transport" if t.nil?
       t.send_request(request).as(Protocol::Client::Response)
+    end
+
+    # Utilities
+    ###############################################################################################
+
+    def self.path_to_key(driver_path : String)
+      driver_path.lchop(PlaceOS::Compiler.bin_dir).lstrip('/')
     end
 
     def self.read_file?(path : String) : Slice?

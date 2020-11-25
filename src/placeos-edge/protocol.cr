@@ -185,6 +185,8 @@ module PlaceOS::Edge::Protocol
     end
 
     struct LoadedModules < Server::Request
+      def initialize
+      end
     end
 
     struct ModuleLoaded < Server::Request
@@ -210,6 +212,8 @@ module PlaceOS::Edge::Protocol
     end
 
     struct SystemStatus < Server::Request
+      def initialize
+      end
     end
 
     struct Unload < Server::Request

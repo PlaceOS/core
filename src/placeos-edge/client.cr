@@ -20,6 +20,7 @@ module PlaceOS::Edge
     class_property binary_directory : String = File.join(Dir.current, "/bin/drivers")
 
     getter edge_id : String
+    private getter secret : String
 
     private getter transport : Transport?
     private getter! uri : URI
@@ -29,8 +30,13 @@ module PlaceOS::Edge
 
     private getter close_channel = Channel(Nil).new
 
-    def self.extract_edge_id(secret : String)
-      secret.split('_').first
+    def self.extract_token(token : String)
+      edge_id, secret = token.split('_')
+      ({edge_id, secret})
+    end
+
+    def self.create_token(edge_id : String, secret : String)
+      "#{edge_id}_#{secret}"
     end
 
     def host
@@ -39,16 +45,23 @@ module PlaceOS::Edge
 
     def initialize(
       uri : URI = PLACE_URI,
-      secret : String = CLIENT_SECRET,
+      edge_id : String? = nil,
+      secret : String? = nil,
       @sequence_id : UInt64 = 0,
       @skip_handshake : Bool = false
     )
-      @edge_id = Client.extract_edge_id(secret)
+      if secret && edge_id && secret.presence && edge_id.presence
+        @edge_id = edge_id
+        @secret = secret
+      else
+        Log.info { "using secret from environment" }
+        @edge_id, @secret = Client.extract_token(CLIENT_SECRET)
+      end
 
       # Mutate a copy as secret is embedded in uri
       uri = uri.dup
       uri.path = WEBSOCKET_API_PATH
-      uri.query = "secret=#{secret}"
+      uri.query = "secret=#{Client.create_token(@edge_id, @secret)}"
       @uri = uri
     end
 

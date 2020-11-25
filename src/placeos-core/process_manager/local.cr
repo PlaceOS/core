@@ -242,12 +242,22 @@ module PlaceOS::Core
     end
 
     def load(module_id : String, driver_path : String)
-      if !proc_manager_by_module?(module_id)
+      ::Log.with_context do
+        Log.context.set({
+          module_id:   module_id,
+          driver_path: driver_path,
+        })
+
+        if proc_manager_by_module?(module_id)
+          Log.info { "module already loaded" }
+          return true
+        end
+
         if (existing_driver_manager = proc_manager_by_driver?(driver_path))
-          # Use the existing driver protocol manager
+          Log.debug { "using existing protocol manager" }
           set_module_proc_manager(module_id, existing_driver_manager)
         else
-          # Create a new protocol manager
+          Log.debug { "creating new protocol manager" }
           manager = Driver::Protocol::Management.new(driver_path)
 
           # Hook up the callbacks
@@ -264,9 +274,15 @@ module PlaceOS::Core
         end
 
         Log.info { "loaded module" }
-      else
-        Log.info { "module already loaded" }
+        true
       end
+    rescue error
+      Log.error(exception: error) { {
+        message:     "failed to load module",
+        module_id:   module_id,
+        driver_path: driver_path,
+      } }
+      false
     end
 
     # Callbacks
