@@ -185,7 +185,7 @@ module PlaceOS::Edge
           end
 
           response.remove_modules.each do |mod|
-            unload(mod[:module_id])
+            unload(mod)
           end
 
           response.remove_drivers.each do |driver|

@@ -96,7 +96,7 @@ def setup(fresh : Bool = false, temporary : Bool = true)
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
   driver_commit = "HEAD"
-  driver_role = PlaceOS::Model::Driver::Role::Logic
+  driver_role = PlaceOS::Model::Driver::Role::Service
 
   existing_repo = PlaceOS::Model::Repository.where(uri: repository_uri).first?
   existing_driver = existing_repo.try(&.drivers.first?)

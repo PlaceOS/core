@@ -31,7 +31,7 @@ module PlaceOS::Core
     # TODO: remove
     delegate :path_for?, to: local_processes
 
-    delegate :add_edge, to: edge_processes
+    delegate :manage_edge, to: edge_processes
 
     delegate :own_node?, to: discovery
 

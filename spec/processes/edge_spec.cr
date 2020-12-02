@@ -2,7 +2,7 @@ require "../helper"
 
 require "./local_spec"
 
-module PlaceOS::Core
+module PlaceOS::Core::ProcessManager
   record Context,
     module : Model::Module,
     edge : Model::Edge,
@@ -11,40 +11,61 @@ module PlaceOS::Core
 
   def self.client_server(edge_id)
     client_ws, server_ws = mock_sockets
-    client = Client.new(edge_id: edge_id, secret: "s3cr3t", skip_handshake: true)
+    client = ::PlaceOS::Edge::Client.new(edge_id: edge_id, secret: "s3cr3t", skip_handshake: true)
     client.connect(client_ws)
     edge_manager = Edge.new(edge_id: edge_id, socket: server_ws)
     {client, edge_manager}
   end
 
   def self.with_edge
-    with_driver do |mod, driver_path|
+    with_driver do |mod, driver_path, driver|
+      if mod.role.logic? || mod.control_system_id
+        mod = Model::Generator.module(driver: driver)
+        mod.role = Model::Driver::Role::Service
+        mod.control_system_id = nil
+        mod.save!
+      end
+
       if (existing_edge_id = mod.edge_id)
         edge = Model::Edge.find!(existing_edge_id)
       else
-        edge = Generator.edge.save!
+        edge = Model::Generator.edge.save!
         mod.edge_id = edge.id.as(String)
         mod.save!
       end
 
-      Context.new(
+      ctx = Context.new(
         module: mod,
         edge: edge,
         driver_path: driver_path,
         driver_key: Edge.path_to_key(driver_path),
       )
 
-      client, manager = client_server(edge.id.as(String))
+      client, process_manager = client_server(edge.id.as(String))
 
-      yield context, client, manager
+      yield ({ctx, client, process_manager})
     end
   end
 
-  describe ProcessManager::Edge do
+  describe Edge do
     pending "debug" do
     end
 
     pending "driver_loaded?" do
+      it "confirms a driver is loaded" do
+        with_edge do |ctx, client, pm|
+          pm.load(module_id: "mod", driver_path: ctx.driver_path)
+          client.driver_loaded?(ctx.driver_path).should be_true
+          pm.driver_loaded?(ctx.driver_path).should be_true
+        end
+      end
+
+      it "confirms a driver is not loaded" do
+        with_edge do |_ctx, client, pm|
+          pm.driver_loaded?("does-not-exist").should be_false
+          client.driver_loaded?("does-not-exist").should be_false
+        end
+      end
     end
 
     pending "driver_status" do

@@ -1,7 +1,7 @@
 require "placeos-driver/protocol/management"
+require "redis-cluster"
 
 require "../process_manager"
-
 require "../../placeos-edge/transport"
 require "../../placeos-edge/protocol"
 
@@ -15,7 +15,9 @@ module PlaceOS::Core
     getter transport : Transport
     getter edge_id : String
 
-    def initialize(@edge_id : String, socket : HTTP::WebSocket)
+    getter redis : Redis::Client { Redis::Client.boot(REDIS_URL) }
+
+    def initialize(@edge_id : String, socket : HTTP::WebSocket, @redis : Redis? = nil)
       @transport = Transport.new(socket) do |(sequence_id, request)|
         if request.is_a?(Protocol::Client::Request)
           handle_request(sequence_id, request)
@@ -27,22 +29,22 @@ module PlaceOS::Core
 
     def handle_request(sequence_id : UInt64, request : Protocol::Client::Request)
       case request
-      in Protocol::Message::Debug
+      when Protocol::Message::Debug
         boolean_response(sequence_id, request) do
           debug(request.module_id)
         end
-      in Protocol::Message::DebugMessage
+      when Protocol::Message::DebugMessage
         boolean_response(sequence_id, request) do
           forward_debug_message(request.module_id, request.message)
         end
-      in Protocol::Message::FetchBinary
-        response = fetch_binary(request.driver_key)
+      when Protocol::Message::FetchBinary
+        response = fetch_binary(request.key)
         send_response(sequence_id, response)
-      in Protocol::Message::Ignore
+      when Protocol::Message::Ignore
         boolean_response(sequence_id, request) do
           ignore(request.module_id)
         end
-      in Protocol::Message::ProxyRedis
+      when Protocol::Message::ProxyRedis
         boolean_response(sequence_id, request) do
           on_redis(
             action: request.action,
@@ -51,9 +53,9 @@ module PlaceOS::Core
             status_value: request.status_value,
           )
         end
-      in Protocol::Message::Register
+      when Protocol::Message::Register
         send_response(sequence_id, register(modules: request.modules, drivers: request.drivers))
-      in Protocol::Message::SettingsAction
+      when Protocol::Message::SettingsAction
         boolean_response(sequence_id, request) do
           on_setting(
             id: request.module_id,
@@ -94,23 +96,29 @@ module PlaceOS::Core
       !!Protocol.request(Protocol::Message::Kill.new(Edge.path_to_key(driver_path)), expect: Protocol::Message::Success)
     end
 
+    alias Module = Protocol::Message::RegisterResponse::Module
+
     # Calculates the modules/drivers that the edge needs to add/remove
     #
     protected def register(drivers : Set(String), modules : Set(String))
       allocated_drivers = Set(String).new
-      allocated_modules = Set(String).new
+      allocated_modules = Set(Module).new
       PlaceOS::Model::Module.on_edge(edge_id).each do |mod|
-        driver = mod.driver
-        allocated_modules << mod.id.as(String)
-        allocated_drivers << Compiler::Helper.driver_binary_name(driver_file: driver.file_name, commit: driver.commit, id: driver.id)
+        driver = mod.driver.not_nil!
+        driver_key = Compiler::Helper.driver_binary_name(driver_file: driver.file_name, commit: driver.commit, id: driver.id)
+        allocated_modules << {key: driver_key, module_id: mod.id.as(String)}
+        allocated_drivers << driver_key
       end
+
+      add_modules = allocated_modules.reject { |mod| modules.includes?(mod[:module_id]) }
+      remove_modules = (modules - allocated_modules.map(&.[:module_id])).to_a
 
       Protocol::Message::RegisterResponse.new(
         success: true,
         add_drivers: (allocated_drivers - drivers).to_a,
         remove_drivers: (drivers - allocated_drivers).to_a,
-        add_modules: (allocated_modules - modules).to_a,
-        remove_modules: (modules - allocated_modules).to_a,
+        add_modules: add_modules,
+        remove_modules: remove_modules,
       )
     end
 
@@ -156,6 +164,30 @@ module PlaceOS::Core
 
     def on_exec(request : Request, response_callback : Request ->)
       {{ raise "Edge modules cannot make execute requests" }}
+    end
+
+    def on_redis(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?)
+      case action
+      in .hset?
+        value = status_value || "null"
+        redis.pipelined(key: hash_id, reconnect: true) do |pipeline|
+          pipeline.hset(hash_id, key_name, value)
+          pipeline.publish("#{hash_id}/#{key_name}", value)
+        end
+      in .set?
+        # Note:
+        # - Driver sends `key` in `hash_id` position
+        # - Driver sends `value` in `key_name` position
+        redis.set(hash_id, key_name)
+      in .clear?
+        keys = redis.hkeys(hash_id)
+        redis.pipelined(key: hash_id, reconnect: true) do |pipeline|
+          keys.each do |key|
+            pipeline.hdel(hash_id, key)
+            pipeline.publish("#{hash_id}/#{key}", "null")
+          end
+        end
+      end
     end
 
     # Binaries
@@ -221,7 +253,7 @@ module PlaceOS::Core
       send_response(sequence_id, Protocol::Message::Success.new(success))
     end
 
-    protected def send_response(sequence_id : UInt64, response : Protocol::Server::Response | Protocol::Message::Success)
+    protected def send_response(sequence_id : UInt64, response : Protocol::Server::Response | Protocol::Message::BinaryBody | Protocol::Message::Success)
       t = transport
       raise "cannot send response over closed transport" if t.nil?
       t.send_response(sequence_id, response)
@@ -240,7 +272,7 @@ module PlaceOS::Core
       driver_path.lchop(PlaceOS::Compiler.bin_dir).lstrip('/')
     end
 
-    def self.read_file?(path : String) : Slice?
+    def self.read_file?(path : String) : Bytes?
       File.open(path) do |file|
         memory = IO::Memory.new
         IO.copy file, memory

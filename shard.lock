@@ -145,7 +145,7 @@ shards:
     version: 2.2.2
 
   redis:
-    git: https://github.com/stefanwille/crystal-redis.git
+    git: https://github.com/maiha/crystal-redis.git
     version: 2.6.0
 
   redis-cluster:

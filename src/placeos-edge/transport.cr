@@ -58,7 +58,8 @@ module PlaceOS::Edge
                   m.sequence_id = id
                   m.status = response.success ? Protocol::Binary::Status::Success : Protocol::Binary::Status::Fail
                   m.key = response.key
-                  m.body = response.binary
+                  binary = response.binary || Bytes.empty
+                  m.body = binary
                   m
                 end
 

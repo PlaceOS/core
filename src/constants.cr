@@ -13,7 +13,7 @@ module PlaceOS::Core
   ETCD_HOST = ENV["ETCD_HOST"]? || "localhost"
   ETCD_PORT = (ENV["ETCD_PORT"]? || 2379).to_i
 
-  REDIS_URL = ENV["REDIS_URL"]?
+  REDIS_URL = ENV["REDIS_URL"]? || "redis://localhost:6379"
 
   # `core` self-registers to etcd with this information.
   # In k8s we can grab the Pod information from the environment

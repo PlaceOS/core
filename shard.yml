@@ -54,6 +54,10 @@ dependencies:
     github: spider-gazelle/promise
     version: ~> 2
 
+  redis-cluster:
+    github: caspiano/redis-cluster.cr
+    version: ">= 0.8.4"
+
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
     version: ~> 3

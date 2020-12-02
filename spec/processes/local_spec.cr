@@ -5,7 +5,7 @@ module PlaceOS::Core::ProcessManager
     _working_directory, repository, driver, mod = setup
     Cloning.clone_and_install(repository)
     result = Compiler::Helper.compile_driver(driver.file_name, repository.folder_name, driver.commit, id: driver.id)
-    yield mod, result[:executable]
+    yield mod, result[:executable], driver
   end
 
   def self.test_starting(manager, mod, driver_path)
@@ -16,7 +16,7 @@ module PlaceOS::Core::ProcessManager
   end
 
   describe Local do
-    with_driver do |mod, driver_path|
+    with_driver do |mod, driver_path, _driver|
       describe Local::Common do
         describe "driver_loaded?" do
           it "confirms a driver is loaded" do
