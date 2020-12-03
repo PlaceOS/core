@@ -18,7 +18,7 @@ shards:
 
   bindata:
     git: https://github.com/spider-gazelle/bindata.git
-    version: 1.8.0
+    version: 1.8.1
 
   bisect:
     git: https://github.com/spider-gazelle/bisect.git
@@ -74,7 +74,7 @@ shards:
 
   hound-dog:
     git: https://github.com/place-labs/hound-dog.git
-    version: 2.5.3
+    version: 2.6.0
 
   http-params-serializable:
     git: https://github.com/vladfaust/http-params-serializable.git
@@ -118,11 +118,11 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 3.6.1
+    version: 3.6.2
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 4.5.3
+    version: 4.7.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -162,7 +162,7 @@ shards:
 
   rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 3.1.1
+    version: 3.1.2
 
   retriable:
     git: https://github.com/Sija/retriable.cr.git
