@@ -15,7 +15,7 @@ module PlaceOS::Edge
     include Core::ProcessManager::Local::Common
 
     Log                = ::Log.for(self)
-    WEBSOCKET_API_PATH = "/edge"
+    WEBSOCKET_API_PATH = "/api/engine/v2/edges"
 
     class_property binary_directory : String = File.join(Dir.current, "/bin/drivers")
 
