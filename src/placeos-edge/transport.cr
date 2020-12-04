@@ -1,6 +1,7 @@
 require "http"
 require "mutex"
 
+require "./error"
 require "./protocol"
 
 module PlaceOS::Edge
@@ -76,7 +77,11 @@ module PlaceOS::Edge
 
       socket_channel.send(Protocol::Text.new(sequence_id: id, body: request))
 
-      response = response_channel.receive?
+      select
+      when response = response_channel.receive?
+      when timeout 30.seconds
+        raise Error::TransportTimeout.new(request)
+      end
 
       response_lock.write do
         responses.delete(id)

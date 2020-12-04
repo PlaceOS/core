@@ -29,10 +29,6 @@ module PlaceOS::Core
 
     def handle_request(sequence_id : UInt64, request : Protocol::Client::Request)
       case request
-      when Protocol::Message::Debug
-        boolean_response(sequence_id, request) do
-          debug(request.module_id)
-        end
       when Protocol::Message::DebugMessage
         boolean_response(sequence_id, request) do
           forward_debug_message(request.module_id, request.message)
@@ -40,10 +36,6 @@ module PlaceOS::Core
       when Protocol::Message::FetchBinary
         response = fetch_binary(request.key)
         send_response(sequence_id, response)
-      when Protocol::Message::Ignore
-        boolean_response(sequence_id, request) do
-          ignore(request.module_id)
-        end
       when Protocol::Message::ProxyRedis
         boolean_response(sequence_id, request) do
           on_redis(
@@ -134,7 +126,7 @@ module PlaceOS::Core
       end
     end
 
-    def debug(module_id : String, &on_message : String ->)
+    def debug(module_id : String, &on_message : String -> Nil)
       signal = debug_lock.synchronize do
         callbacks = debug_callbacks[module_id]
         callbacks << on_message
@@ -166,25 +158,29 @@ module PlaceOS::Core
       {{ raise "Edge modules cannot make execute requests" }}
     end
 
+    private getter redis_lock = Mutex.new
+
     def on_redis(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?)
-      case action
-      in .hset?
-        value = status_value || "null"
-        redis.pipelined(key: hash_id, reconnect: true) do |pipeline|
-          pipeline.hset(hash_id, key_name, value)
-          pipeline.publish("#{hash_id}/#{key_name}", value)
-        end
-      in .set?
-        # Note:
-        # - Driver sends `key` in `hash_id` position
-        # - Driver sends `value` in `key_name` position
-        redis.set(hash_id, key_name)
-      in .clear?
-        keys = redis.hkeys(hash_id)
-        redis.pipelined(key: hash_id, reconnect: true) do |pipeline|
-          keys.each do |key|
-            pipeline.hdel(hash_id, key)
-            pipeline.publish("#{hash_id}/#{key}", "null")
+      redis_lock.synchronize do
+        case action
+        in .hset?
+          value = status_value || "null"
+          redis.pipelined(key: hash_id, reconnect: true) do |pipeline|
+            pipeline.hset(hash_id, key_name, value)
+            pipeline.publish("#{hash_id}/#{key_name}", value)
+          end
+        in .set?
+          # Note:
+          # - Driver sends `key` in `hash_id` position
+          # - Driver sends `value` in `key_name` position
+          redis.set(hash_id, key_name)
+        in .clear?
+          keys = redis.hkeys(hash_id)
+          redis.pipelined(key: hash_id, reconnect: true) do |pipeline|
+            keys.each do |key|
+              pipeline.hdel(hash_id, key)
+              pipeline.publish("#{hash_id}/#{key}", "null")
+            end
           end
         end
       end
@@ -238,13 +234,15 @@ module PlaceOS::Core
     def driver_status(driver_path : String) : DriverStatus?
       response = Protocol.request(Protocol::Message::DriverStatus.new(Edge.path_to_key(driver_path)), expect: Protocol::Message::DriverStatusResponse)
 
-      response.status
+      Log.warn { {message: "failed to request driver status", driver_path: driver_path} } if response.nil?
+
+      response.try &.status
     end
 
     protected def boolean_response(sequence_id, request)
       success = begin
-        yield
-        true
+        result = yield
+        result.is_a?(Bool) ? result : true
       rescue e
         meta = request.responds_to?(:module_id) ? request.module_id : (request.responds_to?(:driver_key) ? request.driver_key : nil)
         Log.error(exception: e) { "failed to #{request.type.to_s.underscore} #{meta}" }
@@ -259,10 +257,10 @@ module PlaceOS::Core
       t.send_response(sequence_id, response)
     end
 
-    protected def send_request(request : Protocol::Server::Request) : Protocol::Client::Response
+    protected def send_request(request : Protocol::Server::Request)
       t = transport
       raise "cannot send request over closed transport" if t.nil?
-      t.send_request(request).as(Protocol::Client::Response)
+      t.send_request(request)
     end
 
     # Utilities

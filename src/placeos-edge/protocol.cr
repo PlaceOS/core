@@ -226,18 +226,18 @@ module PlaceOS::Edge::Protocol
     # Client Requests
     ###########################################################################
 
+    struct DebugMessage < Client::Request
+      getter module_id : String
+      getter message : String
+
+      def initialize(@module_id, @message)
+      end
+    end
+
     struct FetchBinary < Client::Request
       getter key : String
 
       def initialize(@key)
-      end
-    end
-
-    struct Register < Client::Request
-      getter modules : Set(String)
-      getter drivers : Set(String)
-
-      def initialize(@modules, @drivers)
       end
     end
 
@@ -248,6 +248,14 @@ module PlaceOS::Edge::Protocol
       getter status_value : String?
 
       def initialize(@action, @hash_id, @key_name, @status_value)
+      end
+    end
+
+    struct Register < Client::Request
+      getter modules : Set(String)
+      getter drivers : Set(String)
+
+      def initialize(@modules, @drivers)
       end
     end
 
@@ -292,14 +300,6 @@ module PlaceOS::Edge::Protocol
       getter status : Core::ProcessManager::DriverStatus?
 
       def initialize(@status)
-      end
-    end
-
-    struct DebugMessage < Client::Response
-      getter module_id : String
-      getter message : String
-
-      def initialize(@module_id, @message)
       end
     end
 

@@ -82,7 +82,7 @@ def set_temporary_working_directory(fresh : Bool = false) : String
 end
 
 # Create models for a test
-def setup(fresh : Bool = false, temporary : Bool = true)
+def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::Driver::Role? = nil)
   # Set up a temporary directory
   temp_dir = set_temporary_working_directory(fresh)
 
@@ -96,14 +96,15 @@ def setup(fresh : Bool = false, temporary : Bool = true)
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
   driver_commit = "HEAD"
-  driver_role = PlaceOS::Model::Driver::Role::Service
+  driver_role = role || PlaceOS::Model::Driver::Role::Logic
 
   existing_repo = PlaceOS::Model::Repository.where(uri: repository_uri).first?
   existing_driver = existing_repo.try(&.drivers.first?)
   existing_module = existing_driver.try(&.modules.first?)
-  existing_control_system = existing_module.try &.control_system
 
-  if existing_repo && existing_driver && existing_module && existing_control_system
+  needs_control_system = driver_role.logic? && !existing_module.try(&.control_system)
+
+  if existing_repo && existing_driver && existing_module && !needs_control_system
     repository, driver, mod = existing_repo, existing_driver, existing_module
   else
     clear_tables
@@ -129,9 +130,15 @@ def setup(fresh : Bool = false, temporary : Bool = true)
     mod.running = true
     mod.save!
 
-    mod.control_system = PlaceOS::Model::Generator.control_system.save! unless mod.control_system
-    mod.control_system.as(PlaceOS::Model::ControlSystem).modules = [mod.id.as(String)]
-    mod.control_system.as(PlaceOS::Model::ControlSystem).save!
+    control_system = if needs_control_system
+                       mod.control_system = PlaceOS::Model::Generator.control_system.save! unless mod.control_system
+                       mod.control_system.as(PlaceOS::Model::ControlSystem)
+                     else
+                       PlaceOS::Model::Generator.control_system
+                     end
+
+    control_system.modules = [mod.id.as(String)]
+    control_system.save
   end
 
   {temp_dir, repository, driver, mod}

@@ -40,7 +40,7 @@ module PlaceOS::Edge
       # Message should say what's on the edge currently
       # including modules and driver binaries
       body.modules.should be_empty
-      body.drivers.should be_empty
+      body.drivers.should eq(client.drivers)
 
       select
       when coordination.receive?

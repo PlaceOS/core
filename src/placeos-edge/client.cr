@@ -128,6 +128,10 @@ module PlaceOS::Edge
     # ameba:disable Metrics/CyclomaticComplexity
     def handle_request(sequence_id : UInt64, request : Protocol::Server::Request)
       case request
+      in Protocol::Message::Debug
+        boolean_command(sequence_id, request) do
+          debug(request.module_id)
+        end
       in Protocol::Message::DriverLoaded
         boolean_command(sequence_id, request) do
           driver_loaded?(request.driver_key)
@@ -138,6 +142,10 @@ module PlaceOS::Edge
       in Protocol::Message::Execute
         response = Protocol::Message::ExecuteResponse.new(execute(request.module_id, request.payload))
         send_response(sequence_id, response)
+      in Protocol::Message::Ignore
+        boolean_command(sequence_id, request) do
+          ignore(request.module_id)
+        end
       in Protocol::Message::Kill
         boolean_command(sequence_id, request) do
           kill(request.driver_key)
@@ -269,7 +277,8 @@ module PlaceOS::Edge
     end
 
     def add_binary(key : String, binary : Bytes)
-      File.open(path(key), mode: "w+") do |file|
+      # Default permissions + execute for owner
+      File.open(path(key), mode: "w+", perm: 0o744) do |file|
         file.write(binary)
       end
     end
@@ -304,7 +313,7 @@ module PlaceOS::Edge
           end
 
           # Create a new protocol manager
-          manager = Driver::Protocol::Management.new(driver_key, on_edge: true)
+          manager = Driver::Protocol::Management.new(path(driver_key), on_edge: true)
 
           # Callbacks
 
@@ -337,15 +346,15 @@ module PlaceOS::Edge
     # Debugging
     ###########################################################################
 
-    private getter debug_callbacks = {} of String => String ->
+    private getter debug_callbacks = {} of String => String -> Nil
     private getter debug_lock = Mutex.new
 
     def debug(module_id : String)
       debug_lock.synchronize do
         unless debug_callbacks.has_key?(module_id)
-          callback = ->(message : String) { forward_debug_message(module_id, message) }
+          callback = ->(message : String) { forward_debug_message(module_id, message); nil }
           debug_callbacks[module_id] = callback
-          proc_manager_by_module(module_id).debug(module_id, callback)
+          proc_manager_by_module?(module_id).try &.debug(module_id, &callback)
         end
       end
     end
@@ -353,7 +362,7 @@ module PlaceOS::Edge
     def ignore(module_id : String)
       debug_lock.synchronize do
         callback = debug_callbacks.delete(module_id)
-        proc_manager_by_module(module_id).ignore(module_id, callback) unless callback.nil?
+        proc_manager_by_module?(module_id).try &.ignore(module_id, &callback) unless callback.nil?
       end
     end
 
@@ -394,8 +403,8 @@ module PlaceOS::Edge
     #
     protected def boolean_command(sequence_id, request)
       success = begin
-        yield
-        true
+        result = yield
+        result.is_a?(Bool) ? result : true
       rescue e
         meta = request.responds_to?(:module_id) ? request.module_id : (request.responds_to?(:driver_key) ? request.driver_key : nil)
         Log.error(exception: e) { "failed to #{request.type.to_s.underscore} #{meta}" }
@@ -410,10 +419,10 @@ module PlaceOS::Edge
       t.send_response(sequence_id, response)
     end
 
-    protected def send_request(request : Protocol::Client::Request) : Protocol::Server::Response
+    protected def send_request(request : Protocol::Client::Request)
       t = transport
       raise "cannot send request over closed transport" if t.nil?
-      t.send_request(request).as(Protocol::Server::Response)
+      t.send_request(request)
     end
   end
 end
