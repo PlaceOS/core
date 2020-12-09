@@ -38,7 +38,7 @@ COPY src /app/src
 # Build the required target
 RUN UNAME_AT_COMPILE_TIME=true \
     PLACE_COMMIT=${PLACE_COMMIT} \
-    shards build ${TARGET} --production --static
+    shards build ${TARGET} --production --static --error-trace
 
 ###############################################################################
 

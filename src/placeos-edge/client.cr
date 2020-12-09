@@ -57,11 +57,8 @@ module PlaceOS::Edge
         @secret = secret
       else
         Log.info { "using secret from environment" }
-        begin
-          @edge_id, @secret = Client.extract_token(CLIENT_SECRET)
-        rescue
-          abort("Invalid secret: #{CLIENT_SECRET}")
-        end
+        id, secret = Client.extract_token(CLIENT_SECRET) rescue abort("Invalid secret: #{CLIENT_SECRET}")
+        @edge_id, @secret = id, secret
       end
 
       # Mutate a copy as secret is embedded in uri
