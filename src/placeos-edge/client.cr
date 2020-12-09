@@ -15,7 +15,7 @@ module PlaceOS::Edge
     include Core::ProcessManager::Local::Common
 
     Log                = ::Log.for(self)
-    WEBSOCKET_API_PATH = "/api/engine/v2/edges"
+    WEBSOCKET_API_PATH = "/api/engine/v2/edges/control"
 
     class_property binary_directory : String = File.join(Dir.current, "/bin/drivers")
 
@@ -64,7 +64,7 @@ module PlaceOS::Edge
       # Mutate a copy as secret is embedded in uri
       uri = uri.dup
       uri.path = WEBSOCKET_API_PATH
-      uri.query = "secret=#{Client.create_token(@edge_id, @secret)}"
+      uri.query = "token=#{Client.create_token(@edge_id, @secret)}"
       @uri = uri
     end
 
