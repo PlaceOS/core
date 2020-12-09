@@ -31,7 +31,9 @@ module PlaceOS::Edge
     private getter close_channel = Channel(Nil).new
 
     def self.extract_token(token : String)
-      edge_id, secret = token.split('_')
+      parts = token.split('_')
+      raise "Invalid token: #{token}" unless parts.size == 2
+      edge_id, secret = parts
       ({edge_id, secret})
     end
 
@@ -55,7 +57,11 @@ module PlaceOS::Edge
         @secret = secret
       else
         Log.info { "using secret from environment" }
-        @edge_id, @secret = Client.extract_token(CLIENT_SECRET)
+        begin
+          @edge_id, @secret = Client.extract_token(CLIENT_SECRET)
+        rescue
+          abort("Invalid secret: #{CLIENT_SECRET}")
+        end
       end
 
       # Mutate a copy as secret is embedded in uri
