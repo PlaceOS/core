@@ -40,9 +40,15 @@ RUN UNAME_AT_COMPILE_TIME=true \
     PLACE_COMMIT=${PLACE_COMMIT} \
     shards build ${TARGET} --production --static --error-trace
 
+# Create binary directories
+RUN mkdir -p repositories bin/drivers
+RUN chown appuser -R /app
+
 ###############################################################################
 
 FROM scratch as minimal
+
+WORKDIR /
 
 # These are required for communicating with external services
 COPY --from=build /etc/hosts /etc/hosts
@@ -65,8 +71,6 @@ COPY --from=build /app/bin /bin
 
 USER appuser:appuser
 
-WORKDIR /app
-
 ###############################################################################
 
 FROM minimal as edge
@@ -83,12 +87,8 @@ FROM build as core
 COPY --from=build /app/bin /bin
 
 WORKDIR /app
-RUN chown appuser -R /app
 
 USER appuser:appuser
-
-# Create binary directories
-RUN mkdir -p repositories bin/drivers
 
 EXPOSE 3000
 HEALTHCHECK CMD wget -qO- http://localhost:3000/api/core/v1
