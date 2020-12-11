@@ -18,13 +18,15 @@ module PlaceOS::Core
     getter redis : Redis::Client { Redis::Client.boot(REDIS_URL) }
 
     def initialize(@edge_id : String, socket : HTTP::WebSocket, @redis : Redis? = nil)
-      @transport = Transport.new(socket) do |(sequence_id, request)|
+      @transport = Transport.new do |(sequence_id, request)|
         if request.is_a?(Protocol::Client::Request)
           handle_request(sequence_id, request)
         else
           Log.error { {message: "unexpected edge request", request: request.to_json} }
         end
       end
+
+      spawn { transport.listen(socket) }
     end
 
     def handle_request(sequence_id : UInt64, request : Protocol::Client::Request)

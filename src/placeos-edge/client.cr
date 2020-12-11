@@ -22,8 +22,8 @@ module PlaceOS::Edge
     getter edge_id : String
     private getter secret : String
 
-    private getter transport : Transport?
     private getter! uri : URI
+    protected getter! transport : Transport
 
     # NOTE: For testing
     private getter? skip_handshake : Bool
@@ -72,51 +72,24 @@ module PlaceOS::Edge
     #
     # Optionally accepts a block called after connection has been established.
     def connect(initial_socket : HTTP::WebSocket? = nil)
-      initial = initial_socket
       Log.context.set(edge_id: edge_id)
       Log.info { "connecting to #{host}" }
-      Retriable.retry(max_interval: 5.seconds, on_retry: ->(error : Exception, _i : Int32, _e : Time::Span, _p : Time::Span) {
-        Log.warn { {error: error.to_s, message: "reconnecting"} }
-        initial = nil
-      }) do
-        socket = (initial || HTTP::WebSocket.new(uri)).as(HTTP::WebSocket)
-        socket.on_close do |code, _message|
-          case code
-          when .normal_closure?
-            Log.info { "websocket to #{host} closed" }
-          when .abnormal_closure?
-            # TODO: close off all debug streams to modules
-          end
+
+      @transport = Transport.new do |(sequence_id, request)|
+        if request.is_a?(Protocol::Server::Request)
+          handle_request(sequence_id, request)
+        else
+          Log.error { {message: "unexpected core request", request: request.to_json} }
         end
-
-        id = if existing_transport = transport
-               existing_transport.sequence_id
-             else
-               0_u64
-             end
-
-        @transport = Transport.new(socket, id) do |(sequence_id, request)|
-          if request.is_a?(Protocol::Server::Request)
-            handle_request(sequence_id, request)
-          else
-            Log.error { {message: "unexpected core request", request: request.to_json} }
-          end
-        end
-
-        spawn do
-          socket.as(HTTP::WebSocket).run
-        end
-
-        while socket.closed?
-          Fiber.yield
-        end
-
-        handshake unless skip_handshake?
-
-        yield
-
-        close_channel.receive?
       end
+
+      transport.connect(uri, initial_socket)
+
+      handshake unless skip_handshake?
+
+      yield
+
+      close_channel.receive?
     end
 
     # :ditto:
@@ -417,13 +390,13 @@ module PlaceOS::Edge
     end
 
     protected def send_response(sequence_id : UInt64, response : Protocol::Client::Response | Protocol::Message::Success)
-      t = transport
+      t = transport?
       raise "cannot send response over closed transport" if t.nil?
       t.send_response(sequence_id, response)
     end
 
     protected def send_request(request : Protocol::Client::Request)
-      t = transport
+      t = transport?
       raise "cannot send request over closed transport" if t.nil?
       t.send_request(request)
     end
