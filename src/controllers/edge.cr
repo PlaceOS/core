@@ -8,7 +8,7 @@ module PlaceOS::Core::Api
 
     getter module_manager : ModuleManager { ModuleManager.instance }
 
-    ws "/:edge_id" do |socket|
+    ws "/control" do |socket|
       edge_id = params["edge_id"]
       module_manager.manage_edge(edge_id, socket)
     end

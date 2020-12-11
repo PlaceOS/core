@@ -38,7 +38,7 @@ module PlaceOS::Edge
     end
 
     def self.create_token(edge_id : String, secret : String)
-      "#{edge_id}_#{secret}"
+      Base64.urlsafe_encode("#{edge_id}_#{secret}")
     end
 
     def host
@@ -350,7 +350,7 @@ module PlaceOS::Edge
     ###########################################################################
 
     private getter debug_callbacks = {} of String => String -> Nil
-    private getter debug_lock = Mutex.new
+    private getter debug_lock = Mutex.new(protection: :reentrant)
 
     def debug(module_id : String)
       debug_lock.synchronize do
