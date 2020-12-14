@@ -34,6 +34,7 @@ def clear_tables
   PlaceOS::Model::Repository.clear
   PlaceOS::Model::Driver.clear
   PlaceOS::Model::Module.clear
+  PlaceOS::Model::Edge.clear
 end
 
 def discovery_mock
@@ -63,7 +64,8 @@ end
 Spec.after_suite do
   PlaceOS::Core::ResourceManager.instance.stop
   Log.builder.bind("*", backend: PlaceOS::Core::LOG_BACKEND, level: Log::Severity::Error)
-  `pkill -f "core-spec"` rescue nil
+  puts "\n> Terminating stray driver processes"
+  `pkill -f ".*core-spec.*"` rescue nil
   teardown
 end
 

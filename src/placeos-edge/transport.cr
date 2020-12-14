@@ -63,6 +63,17 @@ module PlaceOS::Edge
       raise error
     end
 
+    # Periodically send a ping frame
+    #
+    def ping(interval : Time::Span = 10.seconds)
+      until close_channel.closed?
+        socket_lock.synchronize do
+          socket?.try(&.ping) rescue nil
+        end
+        sleep(interval)
+      end
+    end
+
     def disconnect
       response_lock.synchronize do
         responses.each_value(&.close)

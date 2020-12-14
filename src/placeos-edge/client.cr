@@ -27,6 +27,7 @@ module PlaceOS::Edge
 
     # NOTE: For testing
     private getter? skip_handshake : Bool
+    private getter? ping : Bool
 
     private getter close_channel = Channel(Nil).new
 
@@ -50,7 +51,8 @@ module PlaceOS::Edge
       edge_id : String? = nil,
       secret : String? = nil,
       @sequence_id : UInt64 = 0,
-      @skip_handshake : Bool = false
+      @skip_handshake : Bool = false,
+      @ping : Bool = true
     )
       if secret && edge_id && secret.presence && edge_id.presence
         @edge_id = edge_id
@@ -93,6 +95,9 @@ module PlaceOS::Edge
       handshake unless skip_handshake?
 
       yield
+
+      # Send ping frames
+      spawn { transport.ping if ping? }
 
       close_channel.receive?
     end
