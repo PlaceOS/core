@@ -5,8 +5,9 @@ require "./protocol"
 
 module PlaceOS::Edge
   # WebSocket Transport
-  #
   class Transport
+    Log = ::Log.for(self)
+
     private getter! socket : HTTP::WebSocket
     private getter socket_lock : Mutex = Mutex.new
     private getter socket_channel = Channel(Protocol::Container).new
@@ -31,6 +32,10 @@ module PlaceOS::Edge
 
     def sequence_id : UInt64
       sequence_atomic.add(1)
+    end
+
+    def closed?
+      socket?.nil? || socket.closed?
     end
 
     def listen(socket : HTTP::WebSocket)
@@ -164,11 +169,11 @@ module PlaceOS::Edge
     end
 
     private def handle_message(message : Protocol::Container)
-      body = if message.is_a? Protocol::Binary
-               Protocol::Message::BinaryBody.new(success: message.success, key: message.key, binary: message.body)
-             else
-               message.body
-             end
+      body, message_type = if message.is_a? Protocol::Binary
+                             {Protocol::Message::BinaryBody.new(success: message.success, key: message.key, binary: message.body), "Binary"}
+                           else
+                             {message.body, message.body.type}
+                           end
 
       case body
       in Protocol::Response
@@ -176,7 +181,11 @@ module PlaceOS::Edge
           if channel = responses[message.sequence_id]?
             channel.send(body.as(Protocol::Response))
           else
-            Log.error { "unrequested response received: #{message.sequence_id}" }
+            Log.error { {
+              sequence_id: message.sequence_id.to_s,
+              type:        message_type.to_s,
+              message:     "unrequested response received",
+            } }
           end
         end
       in Protocol::Request

@@ -3,15 +3,14 @@ require "./helper"
 module PlaceOS::Edge
   describe Client do
     it "handshakes on register" do
-      called = false
-      coordination = Channel(Nil).new
+      coordination = Channel(Bool).new
 
       client = Client.new
       client_ws, server_ws = mock_sockets
+
       spawn {
         client.connect(client_ws) do
-          called = true
-          coordination.close
+          coordination.send(true)
         end
       }
 
@@ -19,7 +18,7 @@ module PlaceOS::Edge
 
       server_ws.on_message do |m|
         messages.send Protocol::Text.from_json(m)
-        server_ws.send(Protocol::Text.new(1_u64, Protocol::Message::RegisterResponse.new(true)).to_json)
+        server_ws.send(Protocol::Text.new(0_u64, Protocol::Message::RegisterResponse.new(true)).to_json)
       end
 
       spawn { server_ws.run }
@@ -43,11 +42,11 @@ module PlaceOS::Edge
       body.drivers.should eq(client.drivers)
 
       select
-      when coordination.receive?
+      when result = coordination.receive
+        result.should be_true
       when timeout 2.seconds
+        raise "timed out"
       end
-
-      called.should be_true
     end
   end
 end

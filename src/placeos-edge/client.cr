@@ -83,7 +83,12 @@ module PlaceOS::Edge
         end
       end
 
-      transport.connect(uri, initial_socket)
+      spawn { transport.connect(uri, initial_socket) }
+
+      while transport.closed?
+        sleep 0.01
+        Fiber.yield
+      end
 
       handshake unless skip_handshake?
 
