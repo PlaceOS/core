@@ -10,6 +10,9 @@ module PlaceOS::Edge
 
     private getter! socket : HTTP::WebSocket
     private getter socket_lock : Mutex = Mutex.new
+
+    private getter connection_errors = Channel(Exception).new
+
     private getter socket_channel = Channel(Protocol::Container).new
     private getter close_channel : Channel(Nil) = Channel(Nil).new
 
@@ -93,19 +96,17 @@ module PlaceOS::Edge
         @socket = socket
       end
 
-      errors = Channel(Exception).new
-
       spawn do
         begin
           socket.run
         rescue e
-          errors.send(e)
+          connection_errors.send(e)
         end
       end
 
       select
       when close_channel.receive?
-      when error = errors.receive
+      when error = connection_errors.receive
         raise error
       end
     end
@@ -114,15 +115,24 @@ module PlaceOS::Edge
     #
     protected def write_websocket
       while message = socket_channel.receive?
-        socket_lock.synchronize do
-          case message
-          in Protocol::Binary
-            socket.stream(binary: true) do |io|
-              message.as(Protocol::Binary).to_io(io)
-            end
-          in Protocol::Text
-            socket.send(message.as(Protocol::Text).to_json)
+        return if message.nil?
+        begin
+          until !closed? || close_channel.closed?
+            sleep 0.1
           end
+
+          socket_lock.synchronize do
+            case message
+            in Protocol::Binary
+              socket.stream(binary: true) do |io|
+                message.as(Protocol::Binary).to_io(io)
+              end
+            in Protocol::Text
+              socket.send(message.as(Protocol::Text).to_json)
+            end
+          end
+        rescue e
+          connection_errors.send(e)
         end
       end
     end
