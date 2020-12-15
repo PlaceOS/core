@@ -17,7 +17,7 @@ module PlaceOS::Edge
     macro method_missing(call)
       # {{ call.name }} per edge
       edges_lock.read do
-        edges.transform_values &.{{call.name.id}}
+        edges.transform_values &.{{call.name.id}}({{call.args.join(", ").id}})
       end
     end
 

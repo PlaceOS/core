@@ -175,12 +175,11 @@ module PlaceOS::Core
       alias Error = NamedTuple(name: String, reason: String)
       alias RunCount = NamedTuple(modules: Int32, drivers: Int32)
 
-      getter compiled_drivers : Array(String)
       getter available_repositories : Array(String)
-      getter run_count : RunCount
-      getter edge_run_count : Hash(String, RunCount)
       getter unavailable_repositories : Array(Error)
+      getter compiled_drivers : Array(String)
       getter unavailable_drivers : Array(Error)
+      getter run_count : NamedTuple(local: RunCount, edge: Hash(String, RunCount))
     end
 
     # Core status
@@ -191,7 +190,7 @@ module PlaceOS::Core
 
     struct Load < BaseResponse
       getter local : SystemLoad
-      getter edge : Array(NamedTuple(edge: String, load: SystemLoad))
+      getter edge : Hash(String, SystemLoad)
     end
 
     struct SystemLoad < BaseResponse
@@ -210,7 +209,7 @@ module PlaceOS::Core
       Load.from_json(response.body)
     end
 
-    struct DriverStatus < BaseResponse
+    struct DriverMetadata < BaseResponse
       getter running : Bool = false
       getter module_instances : Int32 = -1
       getter last_exit_code : Int32 = -1
@@ -220,6 +219,14 @@ module PlaceOS::Core
       getter percentage_cpu : Float64? = nil
       getter memory_total : Int64? = nil
       getter memory_usage : Int64? = nil
+
+      def initialize
+      end
+    end
+
+    struct DriverStatus < BaseResponse
+      getter local : DriverMetadata? = nil
+      getter edge : Hash(String, DriverMetadata?) = {} of String => DriverMetadata?
 
       def initialize
       end

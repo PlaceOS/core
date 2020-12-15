@@ -16,12 +16,14 @@ module PlaceOS::Core::Api
     # General statistics related to the process
     def index
       render json: {
-        compiled_drivers:         PlaceOS::Compiler::Helper.compiled_drivers,
         available_repositories:   PlaceOS::Compiler::Helper.repositories,
-        run_count:                module_manager.local_processes.run_count,
-        edge_run_count:           module_manager.edge_processes.run_count,
         unavailable_repositories: resource_manager.cloning.errors,
+        compiled_drivers:         PlaceOS::Compiler::Helper.compiled_drivers,
         unavailable_drivers:      resource_manager.compilation.errors,
+        run_count:                {
+          local: module_manager.local_processes.run_count,
+          edge:  module_manager.edge_processes.run_count,
+        },
       }
     end
 
@@ -31,18 +33,10 @@ module PlaceOS::Core::Api
       driver_path = params["path"]?
       head :unprocessable_entity unless driver_path
 
-      manager = module_manager.local_processes.proc_manager_by_driver?(driver_path)
-      head :not_found unless manager
-
-      response = {
-        running:          manager.running?,
-        module_instances: manager.module_instances,
-        last_exit_code:   manager.last_exit_code,
-        launch_count:     manager.launch_count,
-        launch_time:      manager.launch_time,
+      render json: {
+        local: module_manager.local_processes.driver_status(driver_path),
+        edge:  module_manager.edge_processes.driver_status(driver_path),
       }
-
-      render json: response
     end
 
     # details about the overall machine load
