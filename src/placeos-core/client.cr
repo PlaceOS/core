@@ -159,8 +159,12 @@ module PlaceOS::Core
       post("/command/#{module_id}/load").success?
     end
 
-    alias Processes = Hash(String, Array(String))
-    alias Loaded = NamedTuple(edge: Hash(String, Processes), local: Processes)
+    struct Loaded < BaseResponse
+      alias Processes = Hash(String, Array(String))
+
+      getter edge : Hash(String, Processes) = {} of String => PlaceOS::Core::Client::Loaded::Processes
+      getter local : Processes = PlaceOS::Core::Client::Loaded::Processes.new { |h, k| h[k] = [] of String }
+    end
 
     # Returns the loaded modules on the node
     def loaded
@@ -209,24 +213,24 @@ module PlaceOS::Core
       Load.from_json(response.body)
     end
 
-    struct DriverMetadata < BaseResponse
-      getter running : Bool = false
-      getter module_instances : Int32 = -1
-      getter last_exit_code : Int32 = -1
-      getter launch_count : Int32 = -1
-      getter launch_time : Int64 = -1
-
-      getter percentage_cpu : Float64? = nil
-      getter memory_total : Int64? = nil
-      getter memory_usage : Int64? = nil
-
-      def initialize
-      end
-    end
-
     struct DriverStatus < BaseResponse
-      getter local : DriverMetadata? = nil
-      getter edge : Hash(String, DriverMetadata?) = {} of String => DriverMetadata?
+      struct Metadata < BaseResponse
+        getter running : Bool = false
+        getter module_instances : Int32 = -1
+        getter last_exit_code : Int32 = -1
+        getter launch_count : Int32 = -1
+        getter launch_time : Int64 = -1
+
+        getter percentage_cpu : Float64? = nil
+        getter memory_total : Int64? = nil
+        getter memory_usage : Int64? = nil
+
+        def initialize
+        end
+      end
+
+      getter local : Metadata? = nil
+      getter edge : Hash(String, Metadata?) = {} of String => PlaceOS::Core::Client::DriverStatus::Metadata?
 
       def initialize
       end
