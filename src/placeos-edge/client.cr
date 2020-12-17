@@ -85,21 +85,22 @@ module PlaceOS::Edge
         end
       end
 
-      spawn { transport.connect(uri, initial_socket) }
+      spawn(same_thread: true) { transport.connect(uri, initial_socket) }
 
       while transport.closed?
         sleep 0.01
         Fiber.yield
       end
 
+      # Send ping frames
+      spawn(same_thread: true) { transport.ping if ping? }
+
       handshake unless skip_handshake?
 
       yield
 
-      # Send ping frames
-      spawn { transport.ping if ping? }
-
       close_channel.receive?
+      transport.disconnect
     end
 
     # :ditto:
@@ -113,6 +114,8 @@ module PlaceOS::Edge
 
     # ameba:disable Metrics/CyclomaticComplexity
     def handle_request(sequence_id : UInt64, request : Protocol::Server::Request)
+      Log.debug { {sequence_id: sequence_id.to_s, type: request.type.to_s, message: "received request"} }
+
       case request
       in Protocol::Message::Debug
         boolean_command(sequence_id, request) do
@@ -170,7 +173,7 @@ module PlaceOS::Edge
     end
 
     def handshake
-      Retriable.retry do
+      Retriable.retry(max_interval: 5.seconds) do
         begin
           response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
           unless response
@@ -239,6 +242,7 @@ module PlaceOS::Edge
     # Load binary, first checking if present locally then fetch from core
     #
     def load_binary(key : String) : Bool
+      Log.debug { {key: key, message: "loading binary"} }
       return true if File.exists?(path(key))
 
       binary = begin
@@ -252,7 +256,7 @@ module PlaceOS::Edge
         nil
       end
 
-      add_binary(key, binary) if binary
+      add_binary(key, binary) unless binary.nil?
 
       !binary.nil?
     end
@@ -263,8 +267,12 @@ module PlaceOS::Edge
     end
 
     def add_binary(key : String, binary : Bytes)
+      path = path(key)
+      Log.debug { {path: path, message: "writing binary"} }
+      return true if File.exists?(path(key))
+
       # Default permissions + execute for owner
-      File.open(path(key), mode: "w+", perm: 0o744) do |file|
+      File.open(path, mode: "w+", perm: 0o744) do |file|
         file.write(binary)
       end
     end
@@ -308,6 +316,7 @@ module PlaceOS::Edge
           }
 
           manager.on_redis = ->(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?) {
+            Log.debug { {action: action.to_s, message: "on_redis"} }
             on_redis(action, hash_id, key_name, status_value)
           }
 

@@ -26,6 +26,7 @@ module PlaceOS::Edge
     end
   end
 
+  Log.info { "starting #{APP_NAME} v#{VERSION}" }
   Client.new(uri, secret).connect do
     Log.info { "started #{APP_NAME} connected to #{uri}" }
   end

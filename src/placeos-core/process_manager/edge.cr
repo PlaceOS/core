@@ -26,10 +26,13 @@ module PlaceOS::Core
         end
       end
 
-      spawn { transport.listen(socket) }
+      spawn(same_thread: true) { transport.listen(socket) }
+      Fiber.yield
     end
 
     def handle_request(sequence_id : UInt64, request : Protocol::Client::Request)
+      Log.debug { {sequence_id: sequence_id.to_s, type: request.type.to_s, message: "received request"} }
+
       case request
       when Protocol::Message::DebugMessage
         boolean_response(sequence_id, request) do

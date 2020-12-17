@@ -30,7 +30,7 @@ module PlaceOS::Edge
       &@on_request : {UInt64, ::PlaceOS::Edge::Protocol::Request} ->
     )
       @sequence_atomic = Atomic(UInt64).new(sequence_id)
-      spawn { write_websocket }
+      spawn(same_thread: true) { write_websocket }
     end
 
     def sequence_id : UInt64
@@ -59,7 +59,7 @@ module PlaceOS::Edge
           initial = nil
         }) do
         socket = initial || HTTP::WebSocket.new(uri)
-        run_socket(socket.as(HTTP::WebSocket))
+        run_socket(socket.as(HTTP::WebSocket)).run
       end
     rescue error
       disconnect
@@ -94,20 +94,6 @@ module PlaceOS::Edge
 
       socket_lock.synchronize do
         @socket = socket
-      end
-
-      spawn do
-        begin
-          socket.run
-        rescue e
-          connection_errors.send(e)
-        end
-      end
-
-      select
-      when close_channel.receive?
-      when error = connection_errors.receive
-        raise error
       end
     end
 
@@ -210,7 +196,7 @@ module PlaceOS::Edge
           end
         end
       in Protocol::Request
-        spawn do
+        spawn(same_thread: true) do
           # TODO: remove casts once crystal correctly trims union here
           begin
             on_request.call({message.sequence_id, body}.as(Tuple(UInt64, Protocol::Request)))

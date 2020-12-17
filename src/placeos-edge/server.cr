@@ -24,6 +24,7 @@ module PlaceOS::Edge
     # Maintains an Edge API, cleaning up after the socket closes
     #
     def manage_edge(edge_id : String, socket : HTTP::WebSocket)
+      Log.info { {edge_id: edge_id, message: "managing edge"} }
       socket.on_close do
         edges_lock.write do
           edges.delete(edge_id)
