@@ -122,7 +122,7 @@ module PlaceOS::Core
       Log.info { {message: "module mappings set", system_id: control_system.id, mappings: mappings} }
 
       # Notify subscribers of a system module ordering change
-      storage.redis.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id)
+      Driver::RedisStorage.with_redis(&.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id))
     end
 
     def start
