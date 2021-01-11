@@ -74,6 +74,18 @@ module PlaceOS::Core
       super()
     end
 
+    def start
+      # Start clustering process
+      clustering.start(on_stable: ->publish_version(String)) do |nodes|
+        stabilize(nodes)
+      end
+
+      super
+
+      @started = true
+      self
+    end
+
     def process_resource(action : Resource::Action, resource : Model::Module) : Resource::Result
       mod = resource
       case action
@@ -100,122 +112,8 @@ module PlaceOS::Core
       end
     end
 
-    def on_managed_edge?(mod : Model::Module)
-      mod.on_edge? && own_node?(mod.edge_id.as(String))
-    end
-
-    def start
-      # Start clustering process
-      clustering.start(on_stable: ->publish_version(String)) do |nodes|
-        stabilize(nodes)
-      end
-
-      super
-
-      @started = true
-      self
-    end
-
-    def start_module(mod : Model::Module)
-      module_id = mod.id.as(String)
-
-      process_manager(mod) { |manager| manager.start(module_id, ModuleManager.start_payload(mod)) }
-
-      Log.info { {message: "started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
-    end
-
-    def process_manager(mod : Model::Module | String, & : ProcessManager ->)
-      edge_id = case mod
-                in Model::Module
-                  mod.edge_id if mod.on_edge?
-                in String
-                  # TODO: Cache module to edge relation
-                  Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
-                end
-
-      if edge_id
-        if (manager = edge_processes.for?(edge_id)).nil?
-          Log.error { "missing edge manager for #{edge_id}" }
-          return
-        end
-        yield manager
-      else
-        yield local_processes
-      end
-    end
-
-    def restart_module(mod : Model::Module)
-      module_id = mod.id.as(String)
-
-      stopped = process_manager(mod) { |manager| manager.stop(module_id) }
-
-      if stopped
-        start_module(mod)
-        Log.info { {message: "restarted module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
-      else
-        Log.info { {message: "failed to restart module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
-      end
-    end
-
-    # Stop module on node
-    #
-    def stop_module(mod : Model::Module)
-      module_id = mod.id.as(String)
-
-      process_manager(mod, &.stop(module_id))
-      Log.info { {message: "stopped module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
-    end
-
-    # Stop and unload the module from node
-    #
-    def unload_module(mod : Model::Module)
-      stop_module(mod)
-
-      module_id = mod.id.as(String)
-      process_manager(mod, &.unload(module_id))
-      Log.info { {message: "unloaded module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
-    end
-
-    def stabilize(nodes : Array(HoundDog::Service::Node))
-      # create a one off rendezvous hash with nodes from the stabilization event
-      rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
-      Model::Module.all.each do |m|
-        begin
-          load_module(m, rendezvous_hash)
-        rescue e
-          Log.error(exception: e) { {message: "failed to load module during stabilization", module_id: m.id, name: m.name, custom_name: m.custom_name} }
-        end
-      end
-    end
-
-    # Publish cluster version to redis
-    #
-    def publish_version(cluster_version : String)
-      redis.publish(REDIS_VERSION_CHANNEL, cluster_version)
-
-      nil
-    end
-
-    # Route via `edge_id` if the Module is on an Edge, otherwise the Module's id
-    #
-    def self.hash_id(mod : String | Model::Module)
-      case mod
-      in String
-        if Model::Module.has_edge_hint?(mod)
-          Model::Module.find!(mod).edge_id.as(String)
-        else
-          mod
-        end
-      in Model::Module
-        mod.on_edge? ? mod.edge_id.as(String) : mod.id.as(String)
-      end
-    end
-
-    def self.core_uri(mod : Model::Module | String, rendezvous_hash : RendezvousHash)
-      rendezvous_hash[hash_id(mod)]?.try do |hash_value|
-        HoundDog::Discovery.from_hash_value(hash_value)[:uri]
-      end
-    end
+    # Module lifecycle
+    ###############################################################################################
 
     # Load the module if current node is responsible
     #
@@ -252,16 +150,124 @@ module PlaceOS::Core
       end
     end
 
+    # Stop and unload the module from node
+    #
+    def unload_module(mod : Model::Module)
+      stop_module(mod)
+
+      module_id = mod.id.as(String)
+      process_manager(mod, &.unload(module_id))
+      Log.info { {message: "unloaded module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+    end
+
+    def start_module(mod : Model::Module)
+      module_id = mod.id.as(String)
+
+      process_manager(mod) { |manager| manager.start(module_id, ModuleManager.start_payload(mod)) }
+
+      Log.info { {message: "started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+    end
+
+    def restart_module(mod : Model::Module)
+      module_id = mod.id.as(String)
+
+      stopped = process_manager(mod) { |manager| manager.stop(module_id) }
+
+      if stopped
+        start_module(mod)
+        Log.info { {message: "restarted module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+      else
+        Log.info { {message: "failed to restart module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+      end
+    end
+
+    # Stop module on node
+    #
+    def stop_module(mod : Model::Module)
+      module_id = mod.id.as(String)
+
+      process_manager(mod, &.stop(module_id))
+      Log.info { {message: "stopped module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+    end
+
     # Update/start modules with new configuration
     #
     def refresh_module(mod : Model::Module)
       process_manager(mod) do |_manager|
-        if mod.running
-          start_module(mod)
-          true
-        else
-          false
+        mod.running.tap { |running| start_module(mod) if running }
+      end
+    end
+
+    ###############################################################################################
+
+    # Delegate `Model::Module` to a `ProcessManager`, either local or on an edge
+    #
+    def process_manager(mod : Model::Module | String, & : ProcessManager ->)
+      edge_id = case mod
+                in Model::Module
+                  mod.edge_id if mod.on_edge?
+                in String
+                  # TODO: Cache module to edge relation
+                  Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
+                end
+
+      if edge_id
+        if (manager = edge_processes.for?(edge_id)).nil?
+          Log.error { "missing edge manager for #{edge_id}" }
+          return
         end
+        yield manager
+      else
+        yield local_processes
+      end
+    end
+
+    # Clustering
+    ###############################################################################################
+
+    def on_managed_edge?(mod : Model::Module)
+      mod.on_edge? && own_node?(mod.edge_id.as(String))
+    end
+
+    # Run through modules an load
+    def stabilize(nodes : Array(HoundDog::Service::Node))
+      # Create a one off rendezvous hash with nodes from the stabilization event
+      rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
+      Model::Module.all.each do |m|
+        begin
+          load_module(m, rendezvous_hash)
+        rescue e
+          Log.error(exception: e) { {message: "failed to load module during stabilization", module_id: m.id, name: m.name, custom_name: m.custom_name} }
+        end
+      end
+    end
+
+    # Publish cluster version to redis
+    #
+    def publish_version(cluster_version : String)
+      redis.publish(REDIS_VERSION_CHANNEL, cluster_version)
+
+      nil
+    end
+
+    # Route via `edge_id` if the Module is on an Edge, otherwise the Module's id
+    #
+    def self.hash_id(mod : String | Model::Module)
+      case mod
+      in String
+        if Model::Module.has_edge_hint?(mod)
+          Model::Module.find!(mod).edge_id.as(String)
+        else
+          mod
+        end
+      in Model::Module
+        mod.on_edge? ? mod.edge_id.as(String) : mod.id.as(String)
+      end
+    end
+
+    def self.core_uri(mod : Model::Module | String, rendezvous_hash : RendezvousHash)
+      rendezvous_hash[hash_id(mod)]?.try do |hash_value|
+        HoundDog::Discovery.from_hash_value(hash_value)[:uri]
       end
     end
 
