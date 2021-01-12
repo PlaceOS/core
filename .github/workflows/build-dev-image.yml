@@ -12,7 +12,7 @@ jobs:
       name: Extract names
       run: |
         echo ::set-output name=image::$(echo ${GITHUB_REPOSITORY,,})
-        echo ::set-output name=tag::$(echo ${GITHUB_REF#refs/heads/})
+        echo ::set-output name=tag::$(echo ${GITHUB_REF#refs/heads/} | sed 's/[^[:alnum:]\.\_\-]/-/g')
       id: name
     -
       name: Set up QEMU
