@@ -159,7 +159,7 @@ module PlaceOS::Core::ProcessManager
       with_edge do |ctx, client, pm|
         test_starting(pm, ctx.module, ctx.driver_key)
 
-        pid = client.proc_manager_by_driver?(ctx.driver_key).try(&.pid).not_nil!
+        pid = client.protocol_manager_by_driver?(ctx.driver_key).try(&.pid).not_nil!
 
         Process.exists?(pid).should be_true
         pm.kill(ctx.driver_path).should be_true

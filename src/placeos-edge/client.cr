@@ -25,7 +25,7 @@ module PlaceOS::Edge
     private getter! uri : URI
     protected getter! transport : Transport
 
-    # NOTE: For testing
+    # NOTE: For testing purposes
     private getter? skip_handshake : Bool
     private getter? ping : Bool
 
@@ -296,10 +296,10 @@ module PlaceOS::Edge
     def load(module_id, driver_key)
       Log.context.set({module_id: module_id, driver_key: driver_key})
 
-      if !proc_manager_by_module?(module_id)
-        if (existing_driver_manager = proc_manager_by_driver?(driver_key))
+      if !protocol_manager_by_module?(module_id)
+        if (existing_driver_manager = protocol_manager_by_driver?(driver_key))
           # Use the existing driver protocol manager
-          set_module_proc_manager(module_id, existing_driver_manager)
+          set_module_protocol_manager(module_id, existing_driver_manager)
         else
           unless load_binary(driver_key)
             Log.error { "failed to load binary for module" }
@@ -320,8 +320,8 @@ module PlaceOS::Edge
             on_redis(action, hash_id, key_name, status_value)
           }
 
-          set_module_proc_manager(module_id, manager)
-          set_driver_proc_manager(driver_key, manager)
+          set_module_protocol_manager(module_id, manager)
+          set_driver_protocol_manager(driver_key, manager)
         end
 
         Log.info { "module loaded" }
@@ -333,8 +333,8 @@ module PlaceOS::Edge
     # List the modules running on this client
     #
     def modules
-      proc_manager_lock.synchronize do
-        @module_proc_managers.keys.to_set
+      protocol_manager_lock.synchronize do
+        @module_protocol_managers.keys.to_set
       end
     end
 
@@ -349,7 +349,7 @@ module PlaceOS::Edge
         unless debug_callbacks.has_key?(module_id)
           callback = ->(message : String) { forward_debug_message(module_id, message); nil }
           debug_callbacks[module_id] = callback
-          proc_manager_by_module?(module_id).try &.debug(module_id, &callback)
+          protocol_manager_by_module?(module_id).try &.debug(module_id, &callback)
         end
       end
     end
@@ -357,7 +357,7 @@ module PlaceOS::Edge
     def ignore(module_id : String)
       debug_lock.synchronize do
         callback = debug_callbacks.delete(module_id)
-        proc_manager_by_module?(module_id).try &.ignore(module_id, &callback) unless callback.nil?
+        protocol_manager_by_module?(module_id).try &.ignore(module_id, &callback) unless callback.nil?
       end
     end
 

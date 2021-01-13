@@ -138,7 +138,7 @@ module PlaceOS::Core::ProcessManager
         it "kill" do
           pm = Local.new(discovery_mock)
           test_starting(pm, mod, driver_path)
-          pid = pm.proc_manager_by_driver?(driver_path).try(&.pid).not_nil!
+          pid = pm.protocol_manager_by_driver?(driver_path).try(&.pid).not_nil!
 
           Process.exists?(pid).should be_true
           pm.kill(driver_path).should be_true

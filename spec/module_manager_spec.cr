@@ -62,10 +62,10 @@ module PlaceOS::Core
 
         module_manager.local_processes.run_count.should eq ({modules: 1, drivers: 1})
 
-        module_manager.local_processes.proc_manager_by_module?(mod_id).should_not be_nil
-        module_manager.local_processes.proc_manager_by_driver?(driver_path).should_not be_nil
+        module_manager.local_processes.protocol_manager_by_module?(mod_id).should_not be_nil
+        module_manager.local_processes.protocol_manager_by_driver?(driver_path).should_not be_nil
 
-        module_manager.local_processes.proc_manager_by_module?(mod_id).should eq(module_manager.local_processes.proc_manager_by_driver?(driver_path))
+        module_manager.local_processes.protocol_manager_by_module?(mod_id).should eq(module_manager.local_processes.protocol_manager_by_driver?(driver_path))
 
         module_manager.stop
         resource_manager.stop

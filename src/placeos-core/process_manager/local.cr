@@ -8,16 +8,16 @@ module PlaceOS::Core
     # Methods for interacting with module processes common across a local and edge node
     module Common
       def execute(module_id : String, payload : String | IO)
-        manager = proc_manager_by_module?(module_id)
+        manager = protocol_manager_by_module?(module_id)
 
-        return if manager.nil?
+        raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
 
         request_body = payload.is_a?(IO) ? payload.gets_to_end : payload
         manager.execute(module_id, request_body)
       end
 
       def start(module_id : String, payload : String)
-        manager = proc_manager_by_module?(module_id)
+        manager = protocol_manager_by_module?(module_id)
 
         raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
 
@@ -25,7 +25,7 @@ module PlaceOS::Core
       end
 
       def stop(module_id : String)
-        !!proc_manager_by_module?(module_id).try do |manager|
+        !!protocol_manager_by_module?(module_id).try do |manager|
           manager.stop(module_id)
         end
       end
@@ -42,12 +42,12 @@ module PlaceOS::Core
 
           stop(module_id)
 
-          existing_manager = set_module_proc_manager(module_id, nil)
+          existing_manager = set_module_protocol_manager(module_id, nil)
 
           Log.info { "unloaded module" }
 
-          no_module_references = (existing_manager.nil? || proc_manager_lock.synchronize {
-            @module_proc_managers.none? do |_, manager|
+          no_module_references = (existing_manager.nil? || protocol_manager_lock.synchronize {
+            @module_protocol_managers.none? do |_, manager|
               manager == existing_manager
             end
           })
@@ -61,7 +61,7 @@ module PlaceOS::Core
       end
 
       def kill(driver_path : String) : Bool
-        !!proc_manager_by_driver?(driver_path).try do |manager|
+        !!protocol_manager_by_driver?(driver_path).try do |manager|
           pid = manager.pid
           Process.signal(Signal::KILL, pid)
           true
@@ -71,14 +71,14 @@ module PlaceOS::Core
       end
 
       def debug(module_id : String, &on_message : String ->)
-        manager = proc_manager_by_module?(module_id)
+        manager = protocol_manager_by_module?(module_id)
         raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
 
         manager.debug(module_id, &on_message)
       end
 
       def ignore(module_id : String, &on_message : String ->)
-        manager = proc_manager_by_module?(module_id)
+        manager = protocol_manager_by_module?(module_id)
         raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
 
         manager.ignore(module_id, &on_message)
@@ -113,7 +113,7 @@ module PlaceOS::Core
       end
 
       def driver_status(driver_path : String) : DriverStatus?
-        manager = proc_manager_by_driver?(driver_path)
+        manager = protocol_manager_by_driver?(driver_path)
         return if manager.nil?
 
         # Obtain process statistics - anything that might be useful for debugging
@@ -142,18 +142,18 @@ module PlaceOS::Core
       end
 
       def module_loaded?(module_id : String) : Bool
-        !proc_manager_by_module?(module_id).nil?
+        !protocol_manager_by_module?(module_id).nil?
       end
 
       def driver_loaded?(driver_path : String) : Bool
-        !proc_manager_by_driver?(driver_path).nil?
+        !protocol_manager_by_driver?(driver_path).nil?
       end
 
       def run_count : NamedTuple(drivers: Int32, modules: Int32)
-        proc_manager_lock.synchronize do
+        protocol_manager_lock.synchronize do
           {
-            drivers: @driver_proc_managers.size,
-            modules: @module_proc_managers.size,
+            drivers: @driver_protocol_managers.size,
+            modules: @module_protocol_managers.size,
           }
         end
       end
@@ -161,8 +161,8 @@ module PlaceOS::Core
       # Map reduce the querying of what modules are loaded on running drivers
       #
       def loaded_modules : Hash(String, Array(String))
-        proc_manager_lock.synchronize do
-          Promise.all(@driver_proc_managers.map { |driver, manager|
+        protocol_manager_lock.synchronize do
+          Promise.all(@driver_protocol_managers.map { |driver, manager|
             Promise.defer { {driver, manager.info} }
           }).then { |driver_info|
             driver_info.to_h
@@ -175,58 +175,60 @@ module PlaceOS::Core
 
       # HACK: get the driver path from the module_id
       def path_for?(module_id)
-        proc_manager_lock.synchronize do
-          @module_proc_managers[module_id]?.try do |manager|
-            @driver_proc_managers.key_for?(manager)
+        protocol_manager_lock.synchronize do
+          @module_protocol_managers[module_id]?.try do |manager|
+            @driver_protocol_managers.key_for?(manager)
           end
         end
       end
 
       def remove_driver_manager(key)
-        set_driver_proc_manager(key, nil)
+        set_driver_protocol_manager(key, nil)
       end
 
-      private getter proc_manager_lock = Mutex.new
+      private getter protocol_manager_lock = Mutex.new
 
       # Mapping from module_id to protocol manager
-      @module_proc_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
+      @module_protocol_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
 
       # Mapping from driver path to protocol manager
-      @driver_proc_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
+      @driver_protocol_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
 
-      protected def proc_manager_by_module?(module_id) : Driver::Protocol::Management?
-        proc_manager_lock.synchronize do
-          @module_proc_managers[module_id]?.tap do |manager|
+      protected def protocol_manager_by_module?(module_id) : Driver::Protocol::Management?
+        protocol_manager_lock.synchronize do
+          @module_protocol_managers[module_id]?.tap do |manager|
             Log.info { "missing module manager for #{module_id}" } if manager.nil?
           end
         end
       end
 
-      protected def proc_manager_by_driver?(driver_path) : Driver::Protocol::Management?
-        proc_manager_lock.synchronize do
-          @driver_proc_managers[driver_path]?.tap do |manager|
+      protected def protocol_manager_by_driver?(driver_path) : Driver::Protocol::Management?
+        protocol_manager_lock.synchronize do
+          @driver_protocol_managers[driver_path]?.tap do |manager|
             Log.info { "missing module manager for #{driver_path}" } if manager.nil?
           end
         end
       end
 
-      protected def set_module_proc_manager(module_id, manager : Driver::Protocol::Management?)
-        proc_manager_lock.synchronize do
+      protected def set_module_protocol_manager(module_id, manager : Driver::Protocol::Management?)
+        protocol_manager_lock.synchronize do
+          Log.trace { {message: "#{manger.nil? ? "removing" : "setting"} module process manager", module_id: module_id } }
           if manager.nil?
-            @module_proc_managers.delete(module_id)
+            @module_protocol_managers.delete(module_id)
           else
-            @module_proc_managers[module_id] = manager
+            @module_protocol_managers[module_id] = manager
             manager
           end
         end
       end
 
-      protected def set_driver_proc_manager(driver_path, manager : Driver::Protocol::Management?)
-        proc_manager_lock.synchronize do
+      protected def set_driver_protocol_manager(driver_path, manager : Driver::Protocol::Management?)
+        protocol_manager_lock.synchronize do
+          Log.trace { {message: "#{manger.nil? ? "removing" : "setting"} driver process manager", driver_path: driver_path } }
           if manager.nil?
-            @driver_proc_managers.delete(driver_path)
+            @driver_protocol_managers.delete(driver_path)
           else
-            @driver_proc_managers[driver_path] = manager
+            @driver_protocol_managers[driver_path] = manager
             manager
           end
         end
@@ -248,14 +250,14 @@ module PlaceOS::Core
           driver_path: driver_path,
         })
 
-        if proc_manager_by_module?(module_id)
+        if protocol_manager_by_module?(module_id)
           Log.info { "module already loaded" }
           return true
         end
 
-        if (existing_driver_manager = proc_manager_by_driver?(driver_path))
+        if (existing_driver_manager = protocol_manager_by_driver?(driver_path))
           Log.debug { "using existing protocol manager" }
-          set_module_proc_manager(module_id, existing_driver_manager)
+          set_module_protocol_manager(module_id, existing_driver_manager)
         else
           Log.debug { "creating new protocol manager" }
           manager = Driver::Protocol::Management.new(driver_path)
@@ -269,8 +271,8 @@ module PlaceOS::Core
             on_setting(id, setting_name, setting_value)
           }
 
-          set_module_proc_manager(module_id, manager)
-          set_driver_proc_manager(driver_path, manager)
+          set_module_protocol_manager(module_id, manager)
+          set_driver_protocol_manager(driver_path, manager)
         end
 
         Log.info { "loaded module" }
@@ -297,7 +299,7 @@ module PlaceOS::Core
 
       # If module maps to this node
       if core_uri == discovery.uri
-        if manager = proc_manager_by_module?(remote_module_id)
+        if manager = protocol_manager_by_module?(remote_module_id)
           # responds with a JSON string
           request.payload = manager.execute(remote_module_id, raw_execute_json)
         else
