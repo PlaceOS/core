@@ -8,6 +8,7 @@ require "./cloning"
 require "./module_manager"
 
 module PlaceOS
+  # TODO: Remove after this is resolved https://github.com/place-technology/roadmap/issues/24
   class Core::Compilation < Resource(Model::Driver)
     private getter? startup : Bool = true
     private getter module_manager : ModuleManager

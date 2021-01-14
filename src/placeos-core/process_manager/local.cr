@@ -212,7 +212,7 @@ module PlaceOS::Core
 
       protected def set_module_protocol_manager(module_id, manager : Driver::Protocol::Management?)
         protocol_manager_lock.synchronize do
-          Log.trace { {message: "#{manger.nil? ? "removing" : "setting"} module process manager", module_id: module_id } }
+          Log.trace { {message: "#{manager.nil? ? "removing" : "setting"} module process manager", module_id: module_id} }
           if manager.nil?
             @module_protocol_managers.delete(module_id)
           else
@@ -224,7 +224,7 @@ module PlaceOS::Core
 
       protected def set_driver_protocol_manager(driver_path, manager : Driver::Protocol::Management?)
         protocol_manager_lock.synchronize do
-          Log.trace { {message: "#{manger.nil? ? "removing" : "setting"} driver process manager", driver_path: driver_path } }
+          Log.trace { {message: "#{manager.nil? ? "removing" : "setting"} driver process manager", driver_path: driver_path} }
           if manager.nil?
             @driver_protocol_managers.delete(driver_path)
           else

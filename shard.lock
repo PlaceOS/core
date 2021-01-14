@@ -114,11 +114,11 @@ shards:
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
-    version: 3.1.0
+    version: 3.2.0
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 3.6.3
+    version: 3.6.7
 
   placeos-models:
     git: https://github.com/placeos/models.git

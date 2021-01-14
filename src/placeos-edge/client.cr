@@ -272,7 +272,7 @@ module PlaceOS::Edge
       return true if File.exists?(path(key))
 
       # Default permissions + execute for owner
-      File.open(path, mode: "w+", perm: 0o744) do |file|
+      File.open(path, mode: "w+", perm: File::Permissions.new(0o744)) do |file|
         file.write(binary)
       end
     end
