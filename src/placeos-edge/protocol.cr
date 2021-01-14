@@ -292,7 +292,7 @@ module PlaceOS::Edge::Protocol
     struct ExecuteResponse < Client::Response
       getter output : String?
 
-      def initialize(@output)
+      def initialize(@success, @output)
       end
     end
 
@@ -373,7 +373,7 @@ module PlaceOS::Edge::Protocol
     )
   end
 
-  macro request(message, expect)
+  macro request(message, expect, preserve_response = false)
     begin
       %response = send_request({{ message }})
 
@@ -388,7 +388,11 @@ module PlaceOS::Edge::Protocol
           {% end %}
           message: "{{@def.name}} failed",
         } }
-        nil
+        {% if preserve_response %}
+          %response if %response.is_a?({{expect}})
+        {% else %}
+          nil
+        {% end %}
       end
     end
   end

@@ -69,8 +69,21 @@ module PlaceOS::Core
     end
 
     def execute(module_id : String, payload : String)
-      response = Protocol.request(Protocol::Message::Execute.new(module_id, payload), expect: Protocol::Message::ExecuteResponse)
-      response.try &.output
+      response = Protocol.request(Protocol::Message::Execute.new(module_id, payload), expect: Protocol::Message::ExecuteResponse, preserve_response: true)
+      if response.nil?
+        raise PlaceOS::Driver::RemoteException.new("No response received from edge received", IO::TimeoutError)
+      elsif !response.success
+        output = response.output
+        if output
+          error = NamedTuple(message: String, backtrace: Array(String)).from_json(output)
+          backtrace = error[:backtrace]
+          message, error_class = ProcessManager::Edge.extract_remote_error_class(error[:message])
+        end
+
+        raise PlaceOS::Driver::RemoteException.new(message, error_class, backtrace || [] of String)
+      else
+        response.output
+      end
     end
 
     def load(module_id : String, driver_path : String)
@@ -270,6 +283,16 @@ module PlaceOS::Core
 
     # Utilities
     ###############################################################################################
+
+    # Uses a `Regex` to extract the remote exception
+    #
+    # TODO: refactor PlaceOS::Driver::RemoteException
+    def self.extract_remote_error_class(message : String) : {String, String}
+      match = message.match(/\((.*?)\)$/)
+      exception = match.try &.captures.first || "Exception"
+      message = match.pre_match unless match.nil?
+      {message, exception}
+    end
 
     def self.path_to_key(driver_path : String)
       driver_path.lchop(PlaceOS::Compiler.bin_dir).lstrip('/')

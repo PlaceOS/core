@@ -129,8 +129,17 @@ module PlaceOS::Edge
         status = driver_status(request.driver_key)
         send_response(sequence_id, Protocol::Message::DriverStatusResponse.new(status))
       in Protocol::Message::Execute
-        response = Protocol::Message::ExecuteResponse.new(execute(request.module_id, request.payload))
-        send_response(sequence_id, response)
+        success, output = begin
+          ({true, execute(request.module_id, request.payload)})
+        rescue error : PlaceOS::Driver::RemoteException
+          Log.error(exception: error) { {
+            module_id: request.module_id,
+            message:   "execute errored",
+          } }
+          ({false, {message: error.message, backtrace: error.backtrace?}.to_json})
+        end
+
+        send_response(sequence_id, Protocol::Message::ExecuteResponse.new(success, output))
       in Protocol::Message::Ignore
         boolean_command(sequence_id, request) do
           ignore(request.module_id)
@@ -310,13 +319,13 @@ module PlaceOS::Edge
           manager = Driver::Protocol::Management.new(path(driver_key), on_edge: true)
 
           # Callbacks
-
           manager.on_setting = ->(id : String, setting_name : String, setting_value : YAML::Any) {
+            Log.debug { {module_id: module_id, driver_key: driver_key, message: "on_setting"} }
             on_setting(id, setting_name, setting_value.to_yaml)
           }
 
           manager.on_redis = ->(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?) {
-            Log.debug { {action: action.to_s, message: "on_redis"} }
+            Log.debug { {module_id: module_id, driver_key: driver_key, action: action.to_s, message: "on_redis"} }
             on_redis(action, hash_id, key_name, status_value)
           }
 
