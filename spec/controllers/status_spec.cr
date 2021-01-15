@@ -25,8 +25,7 @@ module PlaceOS::Core
 
         status.compiled_drivers.should contain binary
         status.available_repositories.should contain repo.folder_name
-        status.running_drivers.should eq 0
-        status.module_instances.should eq 0
+        status.run_count.should eq ({local: {modules: 0, drivers: 0}, edge: {} of String => NamedTuple(modules: Int32, drivers: Int32)})
       end
 
       pending "deletes standalone driver binary used for metadata"

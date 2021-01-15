@@ -159,10 +159,17 @@ module PlaceOS::Core
       post("/command/#{module_id}/load").success?
     end
 
+    struct Loaded < BaseResponse
+      alias Processes = Hash(String, Array(String))
+
+      getter edge : Hash(String, Processes) = {} of String => PlaceOS::Core::Client::Loaded::Processes
+      getter local : Processes = PlaceOS::Core::Client::Loaded::Processes.new { |h, k| h[k] = [] of String }
+    end
+
     # Returns the loaded modules on the node
     def loaded
       response = get("/status/loaded")
-      Hash(String, Array(String)).from_json(response.body)
+      Loaded.from_json(response.body)
     end
 
     # Status
@@ -170,12 +177,13 @@ module PlaceOS::Core
 
     struct CoreStatus < BaseResponse
       alias Error = NamedTuple(name: String, reason: String)
-      getter compiled_drivers : Array(String)
+      alias RunCount = NamedTuple(modules: Int32, drivers: Int32)
+
       getter available_repositories : Array(String)
-      getter running_drivers : Int32
-      getter module_instances : Int32
       getter unavailable_repositories : Array(Error)
+      getter compiled_drivers : Array(String)
       getter unavailable_drivers : Array(Error)
+      getter run_count : NamedTuple(local: RunCount, edge: Hash(String, RunCount))
     end
 
     # Core status
@@ -184,7 +192,12 @@ module PlaceOS::Core
       CoreStatus.from_json(response.body)
     end
 
-    struct CoreLoad < BaseResponse
+    struct Load < BaseResponse
+      getter local : SystemLoad
+      getter edge : Hash(String, SystemLoad)
+    end
+
+    struct SystemLoad < BaseResponse
       getter hostname : String
       getter cpu_count : Int32
       getter core_cpu : Float64
@@ -195,21 +208,29 @@ module PlaceOS::Core
     end
 
     # Details about machine load
-    def core_load : CoreLoad
+    def core_load : Load
       response = get("/status/load")
-      CoreLoad.from_json(response.body)
+      Load.from_json(response.body)
     end
 
     struct DriverStatus < BaseResponse
-      getter running : Bool = false
-      getter module_instances : Int32 = -1
-      getter last_exit_code : Int32 = -1
-      getter launch_count : Int32 = -1
-      getter launch_time : Int64 = -1
+      struct Metadata < BaseResponse
+        getter running : Bool = false
+        getter module_instances : Int32 = -1
+        getter last_exit_code : Int32 = -1
+        getter launch_count : Int32 = -1
+        getter launch_time : Int64 = -1
 
-      getter percentage_cpu : Float64? = nil
-      getter memory_total : Int64? = nil
-      getter memory_usage : Int64? = nil
+        getter percentage_cpu : Float64? = nil
+        getter memory_total : Int64? = nil
+        getter memory_usage : Int64? = nil
+
+        def initialize
+        end
+      end
+
+      getter local : Metadata? = nil
+      getter edge : Hash(String, Metadata?) = {} of String => PlaceOS::Core::Client::DriverStatus::Metadata?
 
       def initialize
       end

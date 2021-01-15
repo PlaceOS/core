@@ -11,12 +11,18 @@ module PlaceOS::Core::Api
     # terminate a process
     post "/terminate", :terminate do
       driver_path = params["path"]
-      protocol_manager = module_manager.proc_manager_by_driver?(driver_path)
-      head :not_found unless protocol_manager
-      head :ok unless protocol_manager.running?
+      edge_id = params["edge_id"]?.presence
 
-      pid = protocol_manager.pid
-      Process.run("kill", {"-9", pid.to_s})
+      # TODO: move this to ModuleManager
+      manager = if edge_id.nil? || !module_manager.own_node?(edge_id)
+                  module_manager.local_processes
+                else
+                  module_manager.edge_processes.for?(edge_id)
+                end
+
+      head :not_found unless manager && manager.driver_loaded?(driver_path)
+
+      manager.kill(driver_path)
 
       head :ok
     end

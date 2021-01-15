@@ -25,6 +25,7 @@ services:
       context: ./
       dockerfile: Dockerfile.test
     hostname: core
+    container_name: test_core
     volumes:
       - ./spec:/app/spec
       - ./src:/app/src

@@ -21,25 +21,22 @@ module PlaceOS::Core::Api
     # Executes a command against a module
     post "/:module_id/execute", :execute do
       module_id = params["module_id"]
-      protocol_manager = module_manager.proc_manager_by_module?(module_id)
 
-      unless protocol_manager
+      unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
         Log.info { {module_id: module_id, message: "module not loaded"} }
         head :not_found
       end
 
-      body = request.body
-      unless body
+      body = request.body.try &.gets_to_end
+      if body.nil?
         Log.info { "no request body" }
         head :not_acceptable
       end
 
-      # We don't parse the request here or parse the response, just proxy it.
-      exec_request = body.gets_to_end
-
       begin
+        execute_output = module_manager.process_manager(module_id, &.execute(module_id, body))
         response.content_type = "application/json"
-        render text: protocol_manager.execute(module_id, exec_request)
+        render text: execute_output
       rescue error : PlaceOS::Driver::RemoteException
         Log.error(exception: error) { "execute errored" }
         render :non_authoritative_information, json: {
@@ -53,15 +50,13 @@ module PlaceOS::Core::Api
     # a common operation and limited to system administrators
     ws "/:module_id/debugger", :module_debugger do |socket|
       module_id = params["module_id"]
-      protocol_manager = module_manager.proc_manager_by_module?(module_id)
-      raise "module not loaded" unless protocol_manager
 
       # Forward debug messages to the websocket
-      callback = ->(message : String) { socket.send(message); nil }
-      protocol_manager.debug(module_id, &callback)
-
-      # Stop debugging when the socket closes
-      socket.on_close { protocol_manager.as(Driver::Protocol::Management).ignore(module_id, &callback) }
+      module_manager.process_manager(module_id) do |manager|
+        manager.debug(module_id, &->(message : String) { socket.send(message) })
+        # Stop debugging when the socket closes
+        socket.on_close { manager.ignore(module_id) }
+      end
     end
 
     # In the long term we should move to a single websocket between API instances

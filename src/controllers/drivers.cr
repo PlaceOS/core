@@ -41,7 +41,7 @@ module PlaceOS::Core::Api
 
       cached = Api::Drivers.cached_details?(driver, repository, commit)
       unless cached.nil?
-        Log.debug { "details cache hit!" }
+        Log.debug { "details cache hit" }
 
         response.headers["Content-Type"] = "application/json"
         render text: cached

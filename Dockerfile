@@ -1,23 +1,23 @@
-FROM crystallang/crystal:0.35.1-alpine
+# One of `core` | `edge`
+ARG TARGET=core
+
+FROM crystallang/crystal:0.35.1-alpine as build
+
+ARG PLACE_COMMIT=DEV
+ARG TARGET
 
 WORKDIR /app
 
-# Set the commit through a build arg
-ARG PLACE_COMMIT="DEV"
-
 # Install the latest version of LibSSH2, ping
-RUN apk add --no-cache libssh2 libssh2-dev iputils
+RUN apk add --no-cache libssh2 libssh2-dev libssh2-static iputils
 
 # Add trusted CAs for communicating with external services
 RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
 
 # Create a non-privileged user
-# defaults are appuser:10001
 ARG IMAGE_UID="10001"
 ENV UID=$IMAGE_UID
 ENV USER=appuser
-
-# See https://stackoverflow.com/a/55757473/12429735RUN
 RUN adduser \
     --disabled-password \
     --gecos "" \
@@ -27,28 +27,73 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
-# Create binary directory
-RUN mkdir -p /app/repositories /app/bin/drivers
-
-RUN chown appuser -R /app
-
+# Install deps
 COPY shard.yml /app
 COPY shard.lock /app
-RUN PLACE_COMMIT=$PLACE_COMMIT \
-    shards install --production
+RUN shards install --production
 
 # Add source last for efficient caching
 COPY src /app/src
 
-# Build application
-RUN crystal build --error-trace --release --debug -o bin/core src/app.cr
+# Build the required target
+RUN UNAME_AT_COMPILE_TIME=true \
+    PLACE_COMMIT=${PLACE_COMMIT} \
+    shards build ${TARGET} --production --static --error-trace
+
+# Create binary directories
+RUN mkdir -p repositories bin/drivers
+RUN chown appuser -R /app
+
+###############################################################################
+
+FROM scratch as minimal
+
+WORKDIR /
+
+# These are required for communicating with external services
+COPY --from=build /etc/hosts /etc/hosts
+
+# These provide certificate chain validation where communicating with external services over TLS
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+# This is required for Timezone support
+COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
+
+# Copy the user information over
+COPY --from=build /etc/passwd /etc/passwd
+COPY --from=build /etc/group /etc/group
 
 # These provide certificate chain validation where communicating with external services over TLS
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
+# Service binary
+COPY --from=build /app/bin /bin
+
 USER appuser:appuser
 
-# Run the app binding on port 3000
+###############################################################################
+
+FROM minimal as edge
+
+CMD ["/bin/edge"]
+
+###############################################################################
+
+# FIXME: core currently has a number of dependandancies on the runtime for
+# retreiving repositories and compiling drivers. When the migrates into an
+# external service, this can base from `minimal` instead for cleaner images.
+FROM build as core
+
+COPY --from=build /app/bin /bin
+
+WORKDIR /app
+
+USER appuser:appuser
+
 EXPOSE 3000
 HEALTHCHECK CMD wget -qO- http://localhost:3000/api/core/v1
-CMD ["/app/bin/core", "-b", "0.0.0.0", "-p", "3000"]
+CMD ["/bin/core", "-b", "0.0.0.0", "-p", "3000"]
+
+###############################################################################
+
+FROM ${TARGET}

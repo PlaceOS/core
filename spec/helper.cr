@@ -21,9 +21,6 @@ CORE_URL = ENV["CORE_URL"]? || "http://core:3000"
 # - Use setup(fresh: true) if you require a clean working directory
 TEMP_DIR = get_temp
 
-# Set the working directory before specs
-set_temporary_working_directory
-
 def get_temp
   "#{Dir.tempdir}/core-spec-#{UUID.random.to_s.split('-').first}"
 end
@@ -37,10 +34,12 @@ def clear_tables
   PlaceOS::Model::Repository.clear
   PlaceOS::Model::Driver.clear
   PlaceOS::Model::Module.clear
+  PlaceOS::Model::Edge.clear
 end
 
-# Remove the shared test directory
-Spec.after_suite &->teardown
+def discovery_mock
+  DiscoveryMock.new("core", uri: CORE_URL)
+end
 
 macro around_suite(block)
   Spec.before_suite do
@@ -57,13 +56,17 @@ around_suite ->{
 }
 
 Spec.before_suite do
+  # Set the working directory before specs
+  set_temporary_working_directory
   Log.builder.bind("*", backend: PlaceOS::Core::LOG_BACKEND, level: Log::Severity::Debug)
-  teardown
 end
 
 Spec.after_suite do
   PlaceOS::Core::ResourceManager.instance.stop
-  `pkill -f "core-spec"`
+  Log.builder.bind("*", backend: PlaceOS::Core::LOG_BACKEND, level: Log::Severity::Error)
+  puts "\n> Terminating stray driver processes"
+  `pkill -f ".*core-spec.*"` rescue nil
+  teardown
 end
 
 # Set up a temporary directory
@@ -81,7 +84,7 @@ def set_temporary_working_directory(fresh : Bool = false) : String
 end
 
 # Create models for a test
-def setup(fresh : Bool = false)
+def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::Driver::Role? = nil)
   # Set up a temporary directory
   temp_dir = set_temporary_working_directory(fresh)
 
@@ -95,20 +98,18 @@ def setup(fresh : Bool = false)
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
   driver_commit = "HEAD"
-  driver_role = PlaceOS::Model::Driver::Role::Logic
+  driver_role = role || PlaceOS::Model::Driver::Role::Logic
 
   existing_repo = PlaceOS::Model::Repository.where(uri: repository_uri).first?
   existing_driver = existing_repo.try(&.drivers.first?)
   existing_module = existing_driver.try(&.modules.first?)
 
-  if existing_repo && existing_driver && existing_module
+  needs_control_system = driver_role.logic? && !existing_module.try(&.control_system)
+
+  if existing_repo && existing_driver && existing_module && !needs_control_system
     repository, driver, mod = existing_repo, existing_driver, existing_module
   else
-    # Clear tables
-    PlaceOS::Model::ControlSystem.clear
-    PlaceOS::Model::Driver.clear
-    PlaceOS::Model::Module.clear
-    PlaceOS::Model::Repository.clear
+    clear_tables
 
     repository = PlaceOS::Model::Generator.repository(type: PlaceOS::Model::Repository::Type::Driver)
     repository.uri = repository_uri
@@ -131,9 +132,15 @@ def setup(fresh : Bool = false)
     mod.running = true
     mod.save!
 
-    control_system = mod.control_system!
+    control_system = if needs_control_system
+                       mod.control_system = PlaceOS::Model::Generator.control_system.save! unless mod.control_system
+                       mod.control_system.as(PlaceOS::Model::ControlSystem)
+                     else
+                       PlaceOS::Model::Generator.control_system
+                     end
+
     control_system.modules = [mod.id.as(String)]
-    control_system.save!
+    control_system.save
   end
 
   {temp_dir, repository, driver, mod}

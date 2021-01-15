@@ -5,17 +5,20 @@ require "redis"
 
 require "placeos-compiler/compiler"
 require "placeos-compiler/helper"
-require "placeos-driver/protocol/management"
 require "placeos-models/control_system"
 require "placeos-models/driver"
 require "placeos-models/module"
 require "placeos-models/settings"
 require "placeos-resource"
 
-require "../constants"
+require "../placeos-edge/server"
 
-module PlaceOS
-  class Core::ModuleManager < Resource(Model::Module)
+require "../constants"
+require "./process_manager/edge"
+require "./process_manager/local"
+
+module PlaceOS::Core
+  class ModuleManager < Resource(Model::Module)
     include Compiler::Helper
 
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
@@ -24,6 +27,13 @@ module PlaceOS
     getter discovery : HoundDog::Discovery
 
     delegate stop, to: clustering
+
+    # TODO: Remove after this is resolved https://github.com/place-technology/roadmap/issues/24
+    delegate path_for?, to: local_processes
+
+    delegate manage_edge, to: edge_processes
+
+    delegate own_node?, to: discovery
 
     getter? started = false
 
@@ -34,6 +44,12 @@ module PlaceOS
 
     # Singleton configured from environment
     class_getter instance : ModuleManager { ModuleManager.new(uri: self.uri) }
+
+    # Manager for remote edge module processes
+    getter edge_processes : Edge::Server = Edge::Server.new
+
+    # Manager for local module processes
+    getter local_processes : ProcessManager::Local { ProcessManager::Local.new(discovery) }
 
     # Start up process is as follows..
     # - registered
@@ -58,6 +74,18 @@ module PlaceOS
       super()
     end
 
+    def start
+      # Start clustering process
+      clustering.start(on_stable: ->publish_version(String)) do |nodes|
+        stabilize(nodes)
+      end
+
+      super
+
+      @started = true
+      self
+    end
+
     def process_resource(action : Resource::Action, resource : Model::Module) : Resource::Result
       mod = resource
       case action
@@ -65,10 +93,10 @@ module PlaceOS
         load_module(mod)
         Resource::Result::Success
       in .deleted?
-        remove_module(mod)
+        unload_module(mod)
         Resource::Result::Success
       in .updated?
-        return Resource::Result::Skipped unless discovery.own_node?(mod.id.as(String))
+        return Resource::Result::Skipped unless own_node?(mod.id.as(String))
 
         if ModuleManager.needs_restart?(mod)
           # Changes to Module state which requires a restart
@@ -84,116 +112,126 @@ module PlaceOS
       end
     end
 
-    # The number of drivers loaded on current node
-    def running_drivers
-      proc_manager_lock.synchronize do
-        @driver_proc_managers.size
+    # Module lifecycle
+    ###############################################################################################
+
+    # Load the module if current node is responsible
+    #
+    def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
+      module_id = mod.id.as(String)
+
+      if ModuleManager.core_uri(mod, rendezvous_hash) == uri
+        driver = mod.driver!
+        driver_id = driver.id.as(String)
+
+        ::Log.with_context do
+          Log.context.set({
+            module_id:     module_id,
+            module_name:   mod.name,
+            custom_name:   mod.custom_name,
+            driver_name:   driver.name,
+            driver_commit: driver.commit,
+          })
+
+          # Check if the driver is built
+          unless (driver_path = PlaceOS::Compiler.is_built?(driver.file_name, driver.commit, id: driver_id))
+            Log.error { "driver does not exist for module" }
+            return
+          end
+
+          process_manager(mod, &.load(module_id, driver_path))
+        end
+
+        start_module(mod) if mod.running
+      elsif process_manager(mod, &.module_loaded?(module_id))
+        # Not on node, but protocol manager exists
+        Log.info { {message: "unloading module no longer on node", module_id: module_id} }
+        unload_module(mod)
       end
     end
 
-    # The number of module processes on current node
-    def running_modules
-      proc_manager_lock.synchronize do
-        @module_proc_managers.size
-      end
-    end
+    # Stop and unload the module from node
+    #
+    def unload_module(mod : Model::Module)
+      stop_module(mod)
 
-    # Map reduce the querying of what modules are loaded on running drivers
-    def loaded_modules : Hash(String, Array(String))
-      proc_manager_lock.synchronize do
-        Promise.all(@driver_proc_managers.map { |driver, manager|
-          Promise.defer { {driver, manager.info} }
-        }).then { |driver_info|
-          loaded = {} of String => Array(String)
-          driver_info.each { |(driver, info)| loaded[driver] = info }
-          loaded
-        }.get
-      end
-    end
-
-    def start
-      # Start clustering process
-      clustering.start(on_stable: ->publish_version(String)) do |nodes|
-        stabilize(nodes)
-      end
-
-      super
-
-      @started = true
-      self
+      module_id = mod.id.as(String)
+      process_manager(mod, &.unload(module_id))
+      Log.info { {message: "unloaded module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
     end
 
     def start_module(mod : Model::Module)
-      begin
-        # Merge module settings
-        merged_settings = mod.merge_settings
-      rescue e
-        raise ModuleError.new("Failed to merge module settings")
-      end
+      module_id = mod.id.as(String)
 
-      # Start format
-      payload = mod.to_json.rchop
-      # The settings object needs to be unescaped
-      payload = %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{merged_settings}})
+      process_manager(mod) { |manager| manager.start(module_id, ModuleManager.start_payload(mod)) }
 
-      mod_id = mod.id.as(String)
-      proc_manager = proc_manager_by_module?(mod_id)
-
-      raise ModuleError.new("No protocol manager for #{mod_id}") unless proc_manager
-
-      proc_manager.start(mod_id, payload)
       Log.info { {message: "started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
     end
 
     def restart_module(mod : Model::Module)
-      mod_id = mod.id.as(String)
-      manager = proc_manager_by_module?(mod_id)
+      module_id = mod.id.as(String)
 
-      if manager
-        Log.info { {message: "restarting module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
-        manager.stop(mod_id)
+      stopped = process_manager(mod) { |manager| manager.stop(module_id) }
+
+      if stopped
         start_module(mod)
+        Log.info { {message: "restarted module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
       else
-        Log.error { {message: "missing protocol manager on restart", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+        Log.info { {message: "failed to restart module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
       end
     end
 
     # Stop module on node
     #
     def stop_module(mod : Model::Module)
-      mod_id = mod.id.as(String)
-      manager = proc_manager_by_module?(mod_id)
-
-      if manager
-        manager.stop(mod_id)
-        Log.info { {message: "stopped module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
-      end
-    end
-
-    # Stop and remove the module from node
-    def remove_module(mod : Model::Module)
       module_id = mod.id.as(String)
-      stop_module(mod)
 
-      driver_path = path_for?(module_id)
-      existing_manager = set_module_proc_manager(module_id, nil)
-      Log.info { {message: "removed module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+      process_manager(mod, &.stop(module_id))
+      Log.info { {message: "stopped module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+    end
 
-      no_module_references = existing_manager.nil? || proc_manager_lock.synchronize do
-        @module_proc_managers.select do |_, manager|
-          manager == existing_manager
-        end.empty?
-      end
-
-      # Delete driver indexed manager if there are no other module references.
-      if driver_path && no_module_references
-        set_driver_proc_manager(driver_path, nil)
-        Log.info { {message: "removed driver manager", driver: mod.driver.try(&.name), module_name: mod.name} }
+    # Update/start modules with new configuration
+    #
+    def refresh_module(mod : Model::Module)
+      process_manager(mod) do |_manager|
+        mod.running.tap { |running| start_module(mod) if running }
       end
     end
 
+    ###############################################################################################
+
+    # Delegate `Model::Module` to a `ProcessManager`, either local or on an edge
+    #
+    def process_manager(mod : Model::Module | String, & : ProcessManager ->)
+      edge_id = case mod
+                in Model::Module
+                  mod.edge_id if mod.on_edge?
+                in String
+                  # TODO: Cache module to edge relation
+                  Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
+                end
+
+      if edge_id
+        if (manager = edge_processes.for?(edge_id)).nil?
+          Log.error { "missing edge manager for #{edge_id}" }
+          return
+        end
+        yield manager
+      else
+        yield local_processes
+      end
+    end
+
+    # Clustering
+    ###############################################################################################
+
+    def on_managed_edge?(mod : Model::Module)
+      mod.on_edge? && own_node?(mod.edge_id.as(String))
+    end
+
+    # Run through modules an load
     def stabilize(nodes : Array(HoundDog::Service::Node))
-      # create a one off rendezvous hash with nodes from the stabilization event
+      # Create a one off rendezvous hash with nodes from the stabilization event
       rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
       Model::Module.all.each do |m|
         begin
@@ -212,147 +250,24 @@ module PlaceOS
       nil
     end
 
-    # Used in `on_exec` for locating the remote module
-    def which_core(hash_id : String) : URI
-      node = discovery.find?(hash_id)
-      raise "no registered core instances" unless node
-      node[:uri]
-    end
-
-    def on_exec(request : Request, response_cb : Proc(Request, Nil))
-      # Protocol.instance.expect_response(@module_id, @reply_id, "exec", request, raw: true)
-      remote_module_id = request.id
-      raw_execute_json = request.payload.not_nil!
-
-      core_uri = which_core(remote_module_id)
-
-      # If module maps to this node
-      if core_uri == uri
-        if manager = proc_manager_by_module?(remote_module_id)
-          # responds with a JSON string
-          request.payload = manager.execute(remote_module_id, raw_execute_json)
-        else
-          raise "could not locate module #{remote_module_id}. It may not be running."
-        end
-      else
-        # build request
-        core_uri.path = "/api/core/v1/command/#{remote_module_id}/execute"
-        response = HTTP::Client.post(
-          core_uri,
-          headers: HTTP::Headers{"X-Request-ID" => "int-#{request.reply}-#{remote_module_id}-#{Time.utc.to_unix_ms}"},
-          body: raw_execute_json
-        )
-
-        case response.status_code
-        when 200
-          # exec was successful, json string returned
-          request.payload = response.body
-        when 203
-          # exec sent to module and it raised an error
-          info = NamedTuple(message: String, backtrace: Array(String)?).from_json(response.body)
-          request.payload = info[:message]
-          request.backtrace = info[:backtrace]
-          request.error = "RequestFailed"
-        else
-          # some other failure 3
-          request.payload = "unexpected response code #{response.status_code}"
-          request.error = "UnexpectedFailure"
-        end
-      end
-
-      response_cb.call(request)
-    rescue error
-      request.set_error(error)
-      response_cb.call(request)
-    end
-
-    def save_setting(module_id : String, setting_name : String, setting_value : YAML::Any)
-      mod = PlaceOS::Model::Module.find(module_id).not_nil!
-      if setting = mod.settings_at?(:none)
-      else
-        setting = PlaceOS::Model::Settings.new
-        setting.parent = mod
-        setting.encryption_level = :none
-      end
-
-      settings_hash = setting.any
-      settings_hash[YAML::Any.new(setting_name)] = setting_value
-      setting.settings_string = settings_hash.to_yaml
-      setting.save!
-    end
-
-    alias Request = PlaceOS::Driver::Protocol::Request
-
-    # Load the module if current node is responsible
+    # Route via `edge_id` if the Module is on an Edge, otherwise the Module's id
     #
-    def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
-      mod_id = mod.id.as(String)
-      module_uri = rendezvous_hash[mod_id]?.try do |hash_value|
+    def self.hash_id(mod : String | Model::Module)
+      case mod
+      in String
+        if Model::Module.has_edge_hint?(mod)
+          Model::Module.find!(mod).edge_id.as(String)
+        else
+          mod
+        end
+      in Model::Module
+        mod.on_edge? ? mod.edge_id.as(String) : mod.id.as(String)
+      end
+    end
+
+    def self.core_uri(mod : Model::Module | String, rendezvous_hash : RendezvousHash)
+      rendezvous_hash[hash_id(mod)]?.try do |hash_value|
         HoundDog::Discovery.from_hash_value(hash_value)[:uri]
-      end
-
-      if module_uri == uri
-        driver = mod.driver!
-        driver_id = driver.id.as(String)
-
-        ::Log.with_context do
-          Log.context.set({
-            module_id:     mod_id,
-            module_name:   mod.name,
-            custom_name:   mod.custom_name,
-            driver_name:   driver.name,
-            driver_commit: driver.commit,
-          })
-
-          # Check if the module is on the current node
-          unless (driver_path = PlaceOS::Compiler.is_built?(driver.file_name, driver.commit, id: driver_id))
-            Log.error { "driver does not exist for module" }
-            return
-          end
-
-          if !proc_manager_by_module?(mod_id)
-            if (existing_driver_manager = proc_manager_by_driver?(driver_path))
-              # Use the existing driver protocol manager
-              set_module_proc_manager(mod_id, existing_driver_manager)
-            else
-              # Create a new protocol manager
-              proc_manager = Driver::Protocol::Management.new(driver_path)
-
-              # Hook up the callbacks
-              proc_manager.on_exec = ->(request : Request, response_cb : Proc(Request, Nil)) {
-                on_exec(request, response_cb); nil
-              }
-              proc_manager.on_setting = ->(module_id : String, setting_name : String, setting_value : YAML::Any) {
-                save_setting(module_id, setting_name, setting_value); nil
-              }
-
-              set_module_proc_manager(mod_id, proc_manager)
-              set_driver_proc_manager(driver_path, proc_manager)
-            end
-
-            Log.info { "loaded module" }
-          else
-            Log.info { "module already loaded" }
-          end
-        end
-
-        start_module(mod) if mod.running
-      elsif proc_manager_by_module?(mod_id)
-        # Not on node, but protocol manager exists
-        Log.info { {message: "removing module no longer on node", module_id: mod_id} }
-        remove_module(mod)
-      end
-    end
-
-    # Update/start modules with new configuration
-    #
-    def refresh_module(mod : Model::Module)
-      if proc_manager_by_module?(mod.id.as(String)) && mod.running
-        # Start with updates if the module is running
-        start_module(mod)
-        true
-      else
-        false
       end
     end
 
@@ -361,62 +276,30 @@ module PlaceOS
     # Helpers
     ###########################################################################
 
+    def self.start_payload(mod : Model::Module)
+      begin
+        # Merge module settings
+        merged_settings = mod.merge_settings
+      rescue e
+        raise ModuleError.new("Failed to merge module settings #{e.message}")
+      end
+
+      # Start format
+      payload = mod.to_json.rchop
+
+      # The settings object needs to be unescaped
+      %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{merged_settings}})
+    end
+
+    def self.execute_payload(method : String | Symbol, args : Enumerable? = nil, named_args : Hash | NamedTuple | Nil = nil)
+      {
+        "__exec__" => method,
+        method     => args || named_args,
+      }.to_json
+    end
+
     def self.needs_restart?(mod : Model::Module) : Bool
       mod.ip_changed? || mod.port_changed? || mod.tls_changed? || mod.udp_changed? || mod.makebreak_changed? || mod.uri_changed?
-    end
-
-    # Protocol Managers
-    ###########################################################################
-
-    private getter proc_manager_lock = Mutex.new
-
-    # Mapping from module_id to protocol manager
-    @module_proc_managers = {} of String => Driver::Protocol::Management
-
-    # Mapping from driver path to protocol manager
-    @driver_proc_managers = {} of String => Driver::Protocol::Management
-
-    protected def proc_manager_by_module?(module_id) : Driver::Protocol::Management?
-      proc_manager_lock.synchronize do
-        @module_proc_managers[module_id]?
-      end
-    end
-
-    protected def proc_manager_by_driver?(driver_path) : Driver::Protocol::Management?
-      proc_manager_lock.synchronize do
-        @driver_proc_managers[driver_path]?
-      end
-    end
-
-    protected def set_module_proc_manager(module_id, manager : Driver::Protocol::Management?)
-      proc_manager_lock.synchronize do
-        if manager.nil?
-          @module_proc_managers.delete(module_id)
-        else
-          @module_proc_managers[module_id] = manager
-          manager
-        end
-      end
-    end
-
-    protected def set_driver_proc_manager(driver_path, manager : Driver::Protocol::Management?)
-      proc_manager_lock.synchronize do
-        if manager.nil?
-          @driver_proc_managers.delete(driver_path)
-        else
-          @driver_proc_managers[driver_path] = manager
-          manager
-        end
-      end
-    end
-
-    # HACK: get the driver path from the module_id
-    protected def path_for?(module_id)
-      proc_manager_lock.synchronize do
-        @module_proc_managers[module_id]?.try do |manager|
-          @driver_proc_managers.key_for?(manager)
-        end
-      end
     end
   end
 end

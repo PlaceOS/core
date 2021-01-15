@@ -8,7 +8,6 @@ crystal tool format --check
 echo '### `ameba`'
 crystal lib/ameba/bin/ameba.cr
 
-
 watch="false"
 multithreaded="false"
 while [[ $# -gt 0 ]]
@@ -33,10 +32,8 @@ else
   args=""
 fi
 
-echo "### \`crystal spec ${args}\`"
-
 if [[ "$watch" == "true" ]]; then
-  CRYSTAL_WORKERS=$(nproc) watchexec -e cr -c -r -w src -w spec -- crystal spec --error-trace -v ${args}
+  CRYSTAL_WORKERS=$(nproc) watchexec -e cr -c -r -w src -w spec -- scripts/crystal-spec.sh -v ${args}
 else
-  CRYSTAL_WORKERS=$(nproc) crystal spec --error-trace -v ${args}
+  CRYSTAL_WORKERS=$(nproc) scripts/crystal-spec.sh -v ${args}
 fi

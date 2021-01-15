@@ -1,10 +1,12 @@
 name: placeos-core
-version: 2.5.10
+version: 3.0.0
 crystal: ~> 0.35
 
 targets:
   core:
-    main: src/app.cr
+    main: src/core-app.cr
+  edge:
+    main: src/edge-app.cr
 
 dependencies:
   action-controller:
@@ -45,16 +47,22 @@ dependencies:
 
   placeos-resource:
     github: place-labs/resource
-    branch: master
     version: ~> 1
 
   promise:
     github: spider-gazelle/promise
     version: ~> 2
 
+  redis-cluster:
+    github: caspiano/redis-cluster.cr
+    version: ">= 0.8.4"
+
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
     version: ~> 3
+
+  rwlock:
+    github: spider-gazelle/readers-writer
 
   simple_retry:
     github: spider-gazelle/simple_retry

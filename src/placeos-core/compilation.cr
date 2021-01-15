@@ -8,9 +8,11 @@ require "./cloning"
 require "./module_manager"
 
 module PlaceOS
+  # TODO: Remove after this is resolved https://github.com/place-technology/roadmap/issues/24
   class Core::Compilation < Resource(Model::Driver)
     private getter? startup : Bool = true
     private getter module_manager : ModuleManager
+    private getter compiler_lock = Mutex.new
 
     def initialize(
       @startup : Bool = true,
@@ -19,7 +21,6 @@ module PlaceOS
       repository_dir : String = Compiler.repository_dir,
       @module_manager : ModuleManager = ModuleManager.instance
     )
-      @compiler_lock = Mutex.new
       buffer_size = System.cpu_count.to_i
 
       Compiler.bin_dir = bin_dir
@@ -33,7 +34,7 @@ module PlaceOS
       driver = resource
       case action
       in .created?, .updated?
-        success, output = @compiler_lock.synchronize { Compilation.compile_driver(driver, startup?, module_manager) }
+        success, output = compiler_lock.synchronize { Compilation.compile_driver(driver, startup?, module_manager) }
         raise Resource::ProcessingError.new(driver.name, output) unless success
         Resource::Result::Success
       in .deleted?
@@ -157,8 +158,8 @@ module PlaceOS
         # Save a lookup
         mod.driver = driver
 
-        # Remove the module running on the stale driver
-        module_manager.remove_module(mod)
+        # Unload the module running on the stale driver
+        module_manager.unload_module(mod)
 
         if module_manager.started?
           # Reload module on new driver binary
