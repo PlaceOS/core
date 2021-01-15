@@ -38,7 +38,7 @@ COPY src /app/src
 # Build the required target
 RUN UNAME_AT_COMPILE_TIME=true \
     PLACE_COMMIT=${PLACE_COMMIT} \
-    shards build ${TARGET} --production --static --error-trace
+    shards build ${TARGET} --release --production --static --error-trace
 
 # Create binary directories
 RUN mkdir -p repositories bin/drivers
