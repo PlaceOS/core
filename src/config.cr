@@ -43,3 +43,9 @@ log_level = PlaceOS::Core.production? ? Log::Severity::Info : Log::Severity::Deb
 ::Log.setup "*", log_level, PlaceOS::Core::LOG_BACKEND
 ::Log.builder.bind "action-controller.*", log_level, PlaceOS::Core::LOG_BACKEND
 ::Log.builder.bind "place_os.core.*", log_level, PlaceOS::Core::LOG_BACKEND
+
+# Extra verbose coordination logging
+if ENV["PLACE_VERBOSE_CLUSTERING"]?.presence.try &.downcase.==("true")
+  ::Log.builder.bind "hound_dog.*", Log::Severity::Debug, PlaceOS::Core::LOG_BACKEND
+  ::Log.builder.bind "clustering.*", Log::Severity::Debug, PlaceOS::Core::LOG_BACKEND
+end
