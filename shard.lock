@@ -1,20 +1,21 @@
+# NOTICE: This lockfile contains some overrides from shard.override.yml
 version: 2.0
 shards:
   CrystalEmail:
     git: https://github.com/Nephos/CrystalEmail.git
     version: 0.2.4
 
-  action-controller:
+  action-controller: # Overridden
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 3.4.2
+    version: 3.5.1
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
-    version: 2.0.2
+    version: 2.0.3
 
   ameba:
     git: https://github.com/crystal-ameba/ameba.git
-    version: 0.13.3
+    version: 0.13.4
 
   bindata:
     git: https://github.com/spider-gazelle/bindata.git
@@ -30,7 +31,7 @@ shards:
 
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
-    version: 1.0.0
+    version: 1.0.1
 
   crc16:
     git: https://github.com/maiha/crc16.cr.git
@@ -50,7 +51,7 @@ shards:
 
   etcd:
     git: https://github.com/place-labs/crystal-etcd.git
-    version: 1.0.3
+    version: 1.0.4
 
   exec_from:
     git: https://github.com/place-labs/exec_from.git
@@ -77,8 +78,8 @@ shards:
     version: 2.6.0
 
   http-params-serializable:
-    git: https://github.com/vladfaust/http-params-serializable.git
-    version: 0.4.0
+    git: https://github.com/caspiano/http-params-serializable.git
+    version: 0.4.1+git.commit.1610a206f676269c1b862281cda3ed82548ced34
 
   ipaddress:
     git: https://github.com/Sija/ipaddress.cr.git
@@ -90,7 +91,7 @@ shards:
 
   jwt:
     git: https://github.com/crystal-community/jwt.git
-    version: 1.4.2
+    version: 1.5.0
 
   log_helper:
     git: https://github.com/spider-gazelle/log_helper.git
@@ -109,8 +110,8 @@ shards:
     version: 1.7.1
 
   openssl_ext:
-    git: https://github.com/stakach/openssl_ext.git
-    version: 1.2.2
+    git: https://github.com/spider-gazelle/openssl_ext.git
+    version: 2.0.0
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
@@ -118,11 +119,11 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 3.6.7
+    version: 3.7.0
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 4.8.3
+    version: 4.10.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -162,9 +163,9 @@ shards:
 
   rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 3.1.2
+    version: 3.2.0
 
-  retriable:
+  retriable: # Overridden
     git: https://github.com/Sija/retriable.cr.git
     version: 0.2.2
 
@@ -174,7 +175,7 @@ shards:
 
   secrets-env:
     git: https://github.com/place-labs/secrets-env.git
-    version: 1.1.0
+    version: 1.2.0
 
   simple_retry:
     git: https://github.com/spider-gazelle/simple_retry.git
