@@ -53,9 +53,10 @@ module PlaceOS::Core::Api
 
       # Forward debug messages to the websocket
       module_manager.process_manager(module_id) do |manager|
-        manager.debug(module_id, &->(message : String) { socket.send(message) })
+        callback = ->(message : String) { socket.send(message); nil }
+        manager.debug(module_id, &callback)
         # Stop debugging when the socket closes
-        socket.on_close { manager.ignore(module_id) }
+        socket.on_close { manager.ignore(module_id, &callback) }
       end
     end
 

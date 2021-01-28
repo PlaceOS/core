@@ -141,8 +141,9 @@ module PlaceOS
       commit.try(&.upcase) == "HEAD"
     end
 
-    # Returns the stale driver path
+    # Stops modules on stale driver and starts them on the new driver
     #
+    # Returns the stale driver path
     protected def self.reload_modules(
       driver : Model::Driver,
       module_manager : ModuleManager
