@@ -104,7 +104,7 @@ module PlaceOS::Edge::Protocol
       {% begin %}
         use_json_discriminator "type", {
         {% for response in Type.constants.map { |t| ({t.underscore, t}) } %}
-          {{ response[0] }} => {{ response[1].id }},
+          {{ response[0] }}: {{ response[1].id }},
         {% end %}
         }
       {% end %}

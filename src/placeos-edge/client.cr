@@ -43,7 +43,7 @@ module PlaceOS::Edge
     end
 
     def host
-      uri.to_s.gsub(uri.full_path, "")
+      uri.to_s.gsub(uri.request_target, "")
     end
 
     def initialize(

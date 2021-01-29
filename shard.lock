@@ -27,7 +27,7 @@ shards:
 
   clustering:
     git: https://github.com/place-labs/clustering.git
-    version: 2.0.2
+    version: 2.0.3
 
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
@@ -111,7 +111,7 @@ shards:
 
   openssl_ext:
     git: https://github.com/spider-gazelle/openssl_ext.git
-    version: 2.0.0
+    version: 2.0.1
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
@@ -183,7 +183,7 @@ shards:
 
   ssh2:
     git: https://github.com/spider-gazelle/ssh2.cr.git
-    version: 1.4.2
+    version: 1.5.1
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
