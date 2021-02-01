@@ -104,7 +104,7 @@ module PlaceOS::Edge::Protocol
       {% begin %}
         use_json_discriminator "type", {
         {% for response in Type.constants.map { |t| ({t.underscore, t}) } %}
-          {{ response[0] }}: {{ response[1].id }},
+          {{ response[0].stringify }} => {{ response[1].id }},
         {% end %}
         }
       {% end %}
@@ -376,7 +376,6 @@ module PlaceOS::Edge::Protocol
   macro request(message, expect, preserve_response = false)
     begin
       %response = send_request({{ message }})
-
       %success = %response.responds_to?(:success) ?  %response.success : true
 
       if %response.is_a?({{expect}}) && %success
@@ -394,6 +393,14 @@ module PlaceOS::Edge::Protocol
           nil
         {% end %}
       end
+    rescue e
+      Log.error { {
+        {% for arg in @def.args %}
+          {{arg.name}}: {{arg.name}}.is_a?(::Log::Metadata::Value::Type) ? {{arg.name.id}} : {{arg.name.id}}.to_s,
+        {% end %}
+        message: "{{@def.name}} errored",
+      } }
+      nil
     end
   end
 
