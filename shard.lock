@@ -163,7 +163,7 @@ shards:
 
   rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 3.2.0
+    version: 3.2.1
 
   retriable: # Overridden
     git: https://github.com/Sija/retriable.cr.git
