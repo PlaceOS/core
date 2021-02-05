@@ -105,8 +105,9 @@ def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::
   existing_module = existing_driver.try(&.modules.first?)
 
   needs_control_system = driver_role.logic? && !existing_module.try(&.control_system)
+  right_driver_role = role ? !!existing_driver.try(&.role.== role) : true
 
-  if existing_repo && existing_driver && existing_module && !needs_control_system
+  if existing_repo && existing_driver && existing_module && !needs_control_system && right_driver_role
     repository, driver, mod = existing_repo, existing_driver, existing_module
   else
     clear_tables

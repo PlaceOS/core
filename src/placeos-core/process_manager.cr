@@ -70,7 +70,7 @@ module PlaceOS::Core
 
     # Generate a system status report
     #
-    abstract def driver_status(driver_path) : DriverStatus?
+    abstract def driver_status(driver_path : String) : DriverStatus?
 
     record(
       SystemStatus,
@@ -91,11 +91,11 @@ module PlaceOS::Core
 
     # Check for the presence of a module on a ProcessManager
     #
-    abstract def module_loaded?(module_id) : Bool
+    abstract def module_loaded?(module_id : String) : Bool
 
     # Check for the presence of a running driver on a ProcessManager
     #
-    abstract def driver_loaded?(driver_path) : Bool
+    abstract def driver_loaded?(driver_path : String) : Bool
 
     # Returns the count of ...
     # - unique drivers running
