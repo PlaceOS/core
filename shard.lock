@@ -51,7 +51,7 @@ shards:
 
   etcd:
     git: https://github.com/place-labs/crystal-etcd.git
-    version: 1.0.4
+    version: 1.0.5
 
   exec_from:
     git: https://github.com/place-labs/exec_from.git
@@ -119,7 +119,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 4.1.1
+    version: 4.1.2
 
   placeos-models:
     git: https://github.com/placeos/models.git
@@ -175,7 +175,7 @@ shards:
 
   secrets-env:
     git: https://github.com/place-labs/secrets-env.git
-    version: 1.2.0
+    version: 1.3.0
 
   simple_retry:
     git: https://github.com/spider-gazelle/simple_retry.git
