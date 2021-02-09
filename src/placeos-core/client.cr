@@ -179,6 +179,9 @@ module PlaceOS::Core
       alias Error = NamedTuple(name: String, reason: String)
       alias RunCount = NamedTuple(modules: Int32, drivers: Int32)
 
+      getter ready : Bool
+      getter leader : Bool
+      getter cluster_version : String
       getter available_repositories : Array(String)
       getter unavailable_repositories : Array(Error)
       getter compiled_drivers : Array(String)

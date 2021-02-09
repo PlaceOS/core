@@ -11,12 +11,15 @@ module PlaceOS::Core::Api
     end
 
     get("/ready") do
-      if resource_manager.started?
+      if Root.ready?
         head :ok
       else
-        Log.warn { "startup has not completed" }
         head :service_unavailable
       end
+    end
+
+    def self.ready?(resource_manager : ResourceManager = ResourceManager.instance)
+      resource_manager.started?.tap { |ready| Log.warn { "startup has not completed" } unless ready }
     end
   end
 end

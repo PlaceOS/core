@@ -16,6 +16,9 @@ module PlaceOS::Core::Api
     # General statistics related to the process
     def index
       render json: {
+        ready:                    Root.ready?,
+        leader:                   module_manager.clustering.leader?,
+        cluster_version:          module_manager.clustering.cluster_version,
         available_repositories:   PlaceOS::Compiler::Helper.repositories,
         unavailable_repositories: resource_manager.cloning.errors,
         compiled_drivers:         PlaceOS::Compiler::Helper.compiled_drivers,
