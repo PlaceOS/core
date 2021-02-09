@@ -70,18 +70,21 @@ module PlaceOS::Core
         false
       end
 
-      def debug(module_id : String, &on_message : String ->)
+      def debug(module_id : String, &on_message : DebugCallback)
         manager = protocol_manager_by_module?(module_id)
         raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
 
         manager.debug(module_id, &on_message)
       end
 
-      def ignore(module_id : String, &on_message : String ->)
-        manager = protocol_manager_by_module?(module_id)
-        raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
-
+      def ignore(module_id : String, &on_message : DebugCallback)
+        return if (manager = protocol_manager_by_module?(module_id)).nil?
         manager.ignore(module_id, &on_message)
+      end
+
+      def ignore(module_id : String) : Array(DebugCallback)
+        return [] of DebugCallback if (manager = protocol_manager_by_module?(module_id)).nil?
+        manager.ignore_all(module_id)
       end
 
       # Metadata

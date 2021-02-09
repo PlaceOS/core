@@ -68,7 +68,7 @@ module PlaceOS
 
         if !force_recompile && !driver.commit_changed? && Compiler::Helper.compiled?(driver.file_name, commit, driver_id)
           Log.info { "commit unchanged and driver already compiled" }
-          Compilation.reload_modules(driver, module_manager)
+          module_manager.reload_modules(driver)
           return {true, ""}
         end
 
@@ -101,7 +101,7 @@ module PlaceOS
       } }
 
       # (Re)load modules onto the newly compiled driver
-      stale_path = Compilation.reload_modules(driver, module_manager)
+      stale_path = module_manager.reload_modules(driver)
 
       # Remove the stale driver if there was one
       remove_stale_driver(
@@ -139,48 +139,6 @@ module PlaceOS
 
     protected def self.pull?(commit : String?)
       commit.try(&.upcase) == "HEAD"
-    end
-
-    # Stops modules on stale driver and starts them on the new driver
-    #
-    # Returns the stale driver path
-    protected def self.reload_modules(
-      driver : Model::Driver,
-      module_manager : ModuleManager
-    )
-      driver_id = driver.id.as(String)
-      # Set when a module_manager found for stale driver
-      stale_path = driver.modules.reduce(nil) do |path, mod|
-        module_id = mod.id.as(String)
-
-        # Grab the stale driver path, if there is one
-        path = module_manager.path_for?(module_id) unless path
-
-        # Save a lookup
-        mod.driver = driver
-
-        # Unload the module running on the stale driver
-        module_manager.unload_module(mod)
-
-        if module_manager.started?
-          # Reload module on new driver binary
-          Log.debug { {
-            message:   "loading module after compilation",
-            module_id: module_id,
-            driver_id: driver_id,
-            file_name: driver.file_name,
-            commit:    driver.commit,
-          } }
-          module_manager.load_module(mod)
-        end
-
-        path
-      end
-
-      stale_path || driver.commit_was.try { |commit|
-        # Try to create a driver path from what the commit used to be
-        Compiler::Helper.driver_binary_path(driver.file_name, commit, driver_id)
-      }
     end
 
     def start

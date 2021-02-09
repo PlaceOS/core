@@ -198,6 +198,56 @@ module PlaceOS::Core
       end
     end
 
+    # Stops modules on stale driver and starts them on the new driver
+    #
+    # Returns the stale driver path
+    def reload_modules(driver : Model::Driver)
+      driver_id = driver.id.as(String)
+      # Set when a module_manager found for stale driver
+      stale_path = driver.modules.reduce(nil) do |path, mod|
+        module_id = mod.id.as(String)
+
+        # Grab the stale driver path, if there is one
+        path = path_for?(module_id) unless path
+
+        # Save a lookup
+        mod.driver = driver
+
+        callbacks = process_manager(mod) do |manager|
+          # Remove debug callbacks
+          manager.ignore(module_id).tap do
+            # Unload the module running on the stale driver
+            manager.stop(module_id)
+            unload_module(mod)
+          end
+        end
+
+        if started?
+          # Reload module on new driver binary
+          Log.debug { {
+            message:   "loading module after compilation",
+            module_id: module_id,
+            driver_id: driver_id,
+            file_name: driver.file_name,
+            commit:    driver.commit,
+          } }
+          load_module(mod)
+          process_manager(mod) do |manager|
+            # Move callbacks to new module instance
+            callbacks.try &.each do |callback|
+              manager.debug(module_id, &callback)
+            end
+          end
+        end
+        path
+      end
+
+      stale_path || driver.commit_was.try { |commit|
+        # Try to create a driver path from what the commit used to be
+        Compiler::Helper.driver_binary_path(driver.file_name, commit, driver_id)
+      }
+    end
+
     ###############################################################################################
 
     # Delegate `Model::Module` to a `ProcessManager`, either local or on an edge
