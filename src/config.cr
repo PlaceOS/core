@@ -43,3 +43,4 @@ log_level = PlaceOS::Core.production? ? Log::Severity::Info : Log::Severity::Deb
 ::Log.setup "*", log_level, PlaceOS::Core::LOG_BACKEND
 ::Log.builder.bind "action-controller.*", log_level, PlaceOS::Core::LOG_BACKEND
 ::Log.builder.bind "place_os.core.*", log_level, PlaceOS::Core::LOG_BACKEND
+::Log.builder.bind "etcd.*", Log::Severity::Warn, PlaceOS::Core::LOG_BACKEND

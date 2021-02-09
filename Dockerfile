@@ -31,7 +31,7 @@ RUN adduser \
 COPY shard.yml /app
 COPY shard.override.yml /app
 COPY shard.lock /app
-RUN shards install --production
+RUN shards install --production --release
 
 # Add source last for efficient caching
 COPY src /app/src
@@ -39,7 +39,7 @@ COPY src /app/src
 # Build the required target
 RUN UNAME_AT_COMPILE_TIME=true \
     PLACE_COMMIT=${PLACE_COMMIT} \
-    shards build ${TARGET} --release --production --static --error-trace
+    shards build ${TARGET} --static --error-trace
 
 # Create binary directories
 RUN mkdir -p repositories bin/drivers

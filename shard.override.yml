@@ -1,6 +1,3 @@
 dependencies:
-  placeos-driver:
-    github: PlaceOS/driver
-    branch: feat/forward-debug-listeners
   retriable:
     github: Sija/retriable.cr

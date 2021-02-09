@@ -189,7 +189,7 @@ module PlaceOS::Core
         set_driver_protocol_manager(key, nil)
       end
 
-      private getter protocol_manager_lock = Mutex.new
+      private getter protocol_manager_lock = Mutex.new(protection: :reentrant)
 
       # Mapping from module_id to protocol manager
       @module_protocol_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
