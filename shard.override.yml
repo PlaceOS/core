@@ -1,6 +1,6 @@
 dependencies:
+  placeos-driver:
+    github: PlaceOS/driver
+    branch: feat/forward-debug-listeners
   retriable:
     github: Sija/retriable.cr
-  action-controller:
-    github: spider-gazelle/action-controller
-    version: 3.5.1

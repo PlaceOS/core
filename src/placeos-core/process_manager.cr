@@ -5,6 +5,7 @@ require "./error"
 module PlaceOS::Core
   module ProcessManager
     alias Request = PlaceOS::Driver::Protocol::Request
+    alias DebugCallback = PlaceOS::Driver::Protocol::Management::DebugCallback
 
     macro included
       Log = ::Log.for(self)
@@ -18,15 +19,13 @@ module PlaceOS::Core
 
     abstract def stop(module_id : String)
 
-    abstract def debug(module_id : String, &on_message : String ->)
+    abstract def debug(module_id : String, &on_message : DebugCallback)
 
-    abstract def ignore(module_id : String, &on_message : String ->)
+    abstract def ignore(module_id : String, &on_message : DebugCallback)
+
+    abstract def ignore(module_id : String) : Array(DebugCallback)
 
     abstract def kill(driver_path : String)
-
-    def ignore(module_id : String)
-      ignore(module_id) { }
-    end
 
     # Execute a driver method on a module
     #

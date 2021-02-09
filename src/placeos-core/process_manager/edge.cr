@@ -136,7 +136,7 @@ module PlaceOS::Core
     ###############################################################################################
 
     private getter debug_lock : Mutex { Mutex.new }
-    private getter debug_callbacks = Hash(String, Array(Proc(String, Nil))).new { |h, k| h[k] = [] of String -> }
+    private getter debug_callbacks = Hash(String, Array(DebugCallback)).new { |h, k| h[k] = [] of DebugCallback }
 
     def forward_debug_message(module_id : String, message : String)
       debug_lock.synchronize do
@@ -144,7 +144,7 @@ module PlaceOS::Core
       end
     end
 
-    def debug(module_id : String, &on_message : String -> Nil)
+    def debug(module_id : String, &on_message : DebugCallback)
       signal = debug_lock.synchronize do
         callbacks = debug_callbacks[module_id]
         callbacks << on_message
@@ -154,7 +154,7 @@ module PlaceOS::Core
       send_request(Protocol::Message::Debug.new(module_id)) if signal
     end
 
-    def ignore(module_id : String, &on_message : String ->)
+    def ignore(module_id : String, &on_message : DebugCallback)
       signal = debug_lock.synchronize do
         module_callbacks = debug_callbacks[module_id]
         initial_size = module_callbacks.size
@@ -170,6 +170,18 @@ module PlaceOS::Core
       end
 
       send_request(Protocol::Message::Ignore.new(module_id)) if signal
+    end
+
+    # Remove all debug listeners on a module, returning the debug callback array
+    #
+    def ignore(module_id : String) : Array(DebugCallback)
+      debug_lock.synchronize do
+        debug_callbacks[module_id].dup.tap do |callbacks|
+          callbacks.each do |callback|
+            ignore(module_id, &callback)
+          end
+        end
+      end
     end
 
     def on_exec(request : Request, response_callback : Request ->)
