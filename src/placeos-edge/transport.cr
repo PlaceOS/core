@@ -111,10 +111,10 @@ module PlaceOS::Edge
             case message
             in Protocol::Binary
               socket.stream(binary: true) do |io|
-                message.as(Protocol::Binary).to_io(io)
+                message.to_io(io)
               end
             in Protocol::Text
-              socket.send(message.as(Protocol::Text).to_json)
+              socket.send(message.to_json)
             end
           end
         rescue e
@@ -132,8 +132,7 @@ module PlaceOS::Edge
                   m.sequence_id = id
                   m.status = response.success ? Protocol::Binary::Status::Success : Protocol::Binary::Status::Fail
                   m.key = response.key
-                  binary = response.binary || Bytes.empty
-                  m.body = binary
+                  m.path = response.path
                   m
                 end
 
@@ -177,7 +176,7 @@ module PlaceOS::Edge
 
     private def handle_message(message : Protocol::Container)
       body, message_type = if message.is_a? Protocol::Binary
-                             {Protocol::Message::BinaryBody.new(success: message.success, key: message.key, binary: message.body), "Binary"}
+                             {Protocol::Message::BinaryBody.new(success: message.success, key: message.key, io: message.binary), "Binary"}
                            else
                              {message.body, message.body.type}
                            end
@@ -186,7 +185,7 @@ module PlaceOS::Edge
       in Protocol::Response
         response_lock.read do
           if channel = responses[message.sequence_id]?
-            channel.send(body.as(Protocol::Response))
+            channel.send(body)
           else
             Log.error { {
               sequence_id: message.sequence_id.to_s,
@@ -199,12 +198,12 @@ module PlaceOS::Edge
         spawn(same_thread: true) do
           # TODO: remove casts once crystal correctly trims union here
           begin
-            on_request.call({message.sequence_id, body}.as(Tuple(UInt64, Protocol::Request)))
+            on_request.call({message.sequence_id, body})
           rescue e
             Log.error(exception: e) { {
               message:           e.message,
               sequence_id:       message.sequence_id.to_s,
-              transport_message: body.as(Protocol::Request).to_json,
+              transport_message: body.to_json,
             } }
           end
         end

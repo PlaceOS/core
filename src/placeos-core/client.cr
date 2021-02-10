@@ -60,11 +60,7 @@ module PlaceOS::Core
       @connection = HTTP::Client.new(host: @host, port: @port)
     end
 
-    @connection : HTTP::Client?
-
-    protected def connection
-      @connection.as(HTTP::Client)
-    end
+    protected getter! connection : HTTP::Client
 
     protected getter connection_lock : Mutex = Mutex.new
 
