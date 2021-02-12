@@ -221,10 +221,7 @@ module PlaceOS::Core
 
     def fetch_binary(driver_key : String) : Protocol::Message::BinaryBody
       path = File.join(PlaceOS::Compiler.bin_dir, driver_key)
-
-      binary = Edge.read_file?(path)
-
-      Protocol::Message::BinaryBody.new(success: !binary.nil?, key: driver_key, binary: binary)
+      Protocol::Message::BinaryBody.new(success: File.exists?(path), key: driver_key, path: path)
     end
 
     # Metadata
@@ -308,17 +305,6 @@ module PlaceOS::Core
 
     def self.path_to_key(driver_path : String)
       driver_path.lchop(PlaceOS::Compiler.bin_dir).lstrip('/')
-    end
-
-    def self.read_file?(path : String) : Bytes?
-      File.open(path) do |file|
-        memory = IO::Memory.new
-        IO.copy file, memory
-        memory.to_slice
-      end
-    rescue e
-      Log.error(exception: e) { "failed to read #{path} into slice" }
-      nil
     end
   end
 end
