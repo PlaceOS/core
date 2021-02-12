@@ -270,19 +270,19 @@ module PlaceOS::Edge
       !binary.nil?
     end
 
-    def fetch_binary(key : String) : Bytes?
+    def fetch_binary(key : String) : IO?
       response = Protocol.request(Protocol::Message::FetchBinary.new(key), expect: Protocol::Message::BinaryBody)
-      response.try &.binary
+      response.try &.io
     end
 
-    def add_binary(key : String, binary : Bytes)
+    def add_binary(key : String, binary : IO)
       path = path(key)
       Log.debug { {path: path, message: "writing binary"} }
       return true if File.exists?(path(key))
 
       # Default permissions + execute for owner
       File.open(path, mode: "w+", perm: File::Permissions.new(0o744)) do |file|
-        file.write(binary)
+        IO.copy(binary, file)
       end
     end
 

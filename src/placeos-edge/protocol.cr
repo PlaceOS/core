@@ -22,10 +22,49 @@ module PlaceOS::Edge::Protocol
     int32 :length, value: ->{ key.bytesize }
     string :key, length: ->{ length }
 
-    remaining_bytes :body
+    # Keep a reference to the remainder of the message
+    protected setter binary : IO
+    getter! binary : IO
+
+    property! path : String
 
     def success
       status.success?
+    end
+
+    private def write_binary_io(io : IO)
+      if binary?.nil?
+        # Write from the file IO directly
+        File.open(path) do |file_io|
+          IO.copy(file_io, io)
+        end
+      else
+        IO.copy(binary, io)
+      end
+    end
+
+    def write(io : IO)
+      result = super(io)
+      write_binary_io(io)
+      result
+    end
+
+    def to_slice
+      io = IO::Memory.new
+      io.write_bytes self
+      write_binary_io(io)
+      io.to_slice
+    end
+
+    def self.from_io(io : IO, format : IO::ByteFormat = IO::ByteFormat::SystemEndian)
+      data = super(io, format)
+      data.binary = io
+      data
+    end
+
+    def self.from_slice(bytes : Slice, format : IO::ByteFormat = IO::ByteFormat::SystemEndian)
+      io = IO::Memory.new(bytes, writeable: false)
+      from_io(io, format)
     end
   end
 
@@ -330,10 +369,12 @@ module PlaceOS::Edge::Protocol
     # Binary response constructor
     class BinaryBody
       getter key : String
-      getter binary : Bytes?
       getter success : Bool
 
-      def initialize(@success, @key, @binary)
+      getter! path : String
+      getter! io : IO
+
+      def initialize(@success, @key, @path = nil, @io = nil)
       end
     end
 
