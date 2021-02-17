@@ -40,7 +40,8 @@ ActionController::Server.before(
 
 # Configure logging
 log_level = PlaceOS::Core.production? ? Log::Severity::Info : Log::Severity::Debug
-::Log.setup "*", log_level, PlaceOS::Core::LOG_BACKEND
-::Log.builder.bind "action-controller.*", log_level, PlaceOS::Core::LOG_BACKEND
-::Log.builder.bind "place_os.core.*", log_level, PlaceOS::Core::LOG_BACKEND
-::Log.builder.bind "etcd.*", Log::Severity::Warn, PlaceOS::Core::LOG_BACKEND
+log_backend = PlaceOS::Core.log_backend
+
+::Log.setup "*", :warn, log_backend
+::Log.builder.bind "action-controller.*", log_level, log_backend
+::Log.builder.bind "place_os.core.*", log_level, log_backend

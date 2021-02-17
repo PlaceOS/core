@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 3.5.2
+    version: 4.1.0
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -163,7 +163,7 @@ shards:
 
   rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 3.2.1
+    version: 3.2.2
 
   retriable: # Overridden
     git: https://github.com/Sija/retriable.cr.git
@@ -174,7 +174,7 @@ shards:
     version: 1.0.6
 
   secrets-env:
-    git: https://github.com/place-labs/secrets-env.git
+    git: https://github.com/spider-gazelle/secrets-env.git
     version: 1.3.0
 
   simple_retry:

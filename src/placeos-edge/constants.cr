@@ -12,8 +12,8 @@ module PlaceOS::Edge
 
   PROD = ENV["SG_ENV"]? == "production"
 
-  LOG_BACKEND = ActionController.default_backend
-  Log         = ::Log.for(self)
+  LOG_STDOUT = ActionController.default_backend
+  Log        = ::Log.for(self)
 
   def self.production?
     PROD

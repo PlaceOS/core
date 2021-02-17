@@ -58,12 +58,12 @@ around_suite ->{
 Spec.before_suite do
   # Set the working directory before specs
   set_temporary_working_directory
-  Log.builder.bind("*", backend: PlaceOS::Core::LOG_BACKEND, level: Log::Severity::Debug)
+  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Debug)
 end
 
 Spec.after_suite do
   PlaceOS::Core::ResourceManager.instance.stop
-  Log.builder.bind("*", backend: PlaceOS::Core::LOG_BACKEND, level: Log::Severity::Error)
+  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Error)
   puts "\n> Terminating stray driver processes"
   `pkill -f ".*core-spec.*"` rescue nil
   teardown

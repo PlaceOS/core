@@ -1,6 +1,6 @@
 name: placeos-core
-version: 3.0.1
-crystal: ~> 0.35
+version: 3.0.2
+crystal: ~> 0.36
 
 targets:
   core:
@@ -11,7 +11,7 @@ targets:
 dependencies:
   action-controller:
     github: spider-gazelle/action-controller
-    version: ~> 3.3
+    version: ~> 4.1
 
   clustering:
     github: place-labs/clustering
@@ -39,11 +39,11 @@ dependencies:
 
   placeos-driver:
     github: placeos/driver
-    version: ~> 4
+    version: ~> 4.2
 
   placeos-models:
     github: placeos/models
-    version: ~> 4
+    version: ~> 4.12
 
   placeos-resource:
     github: place-labs/resource
@@ -69,7 +69,7 @@ dependencies:
     version: ~> 1
 
   secrets-env:
-    github: place-labs/secrets-env
+    github: spider-gazelle/secrets-env
     version: ~> 1
 
 development_dependencies:
