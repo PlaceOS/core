@@ -35,7 +35,7 @@ filter_params = ["password", "bearer_token"]
 # Add handlers that should run before your application
 ActionController::Server.before(
   HTTP::ErrorHandler.new(PlaceOS::Core.production?),
-  ActionController::LogHandler.new(filter_params)
+  ActionController::LogHandler.new(filter_params, ms: true)
 )
 
 # Configure logging
