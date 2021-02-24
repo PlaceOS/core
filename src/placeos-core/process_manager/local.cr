@@ -266,13 +266,9 @@ module PlaceOS::Core
           manager = Driver::Protocol::Management.new(driver_path)
 
           # Hook up the callbacks
-          manager.on_exec = ->(request : Request, response_callback : Request ->) {
-            on_exec(request, response_callback)
-          }
-
-          manager.on_setting = ->(id : String, setting_name : String, setting_value : YAML::Any) {
-            on_setting(id, setting_name, setting_value)
-          }
+          manager.on_exec = ->on_exec(Request, (Request ->))
+          manager.on_system_model = ->on_system_model(Request, (Request ->))
+          manager.on_setting = ->on_setting(String, String, YAML::Any)
 
           set_module_protocol_manager(module_id, manager)
           set_driver_protocol_manager(driver_path, manager)
@@ -292,6 +288,14 @@ module PlaceOS::Core
 
     # Callbacks
     ###############################################################################################
+
+    def on_system_model(request : Request, response_callback : Request ->)
+      request.payload = PlaceOS::Model::ControlSystem.find!(request.id).to_json
+    rescue error
+      request.set_error(error)
+    ensure
+      response_callback.call(request)
+    end
 
     def on_exec(request : Request, response_callback : Request ->)
       # Protocol.instance.expect_response(@module_id, @reply_id, "exec", request, raw: true)

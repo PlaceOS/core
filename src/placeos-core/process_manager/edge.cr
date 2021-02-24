@@ -188,6 +188,10 @@ module PlaceOS::Core
       {{ raise "Edge modules cannot make execute requests" }}
     end
 
+    def on_system_model(request : Request, response_callback : Request ->)
+      {{ raise "Edge modules cannot request control systems" }}
+    end
+
     private getter redis_lock = Mutex.new
 
     def on_redis(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?)

@@ -52,6 +52,10 @@ module PlaceOS::Core
       setting.save!
     end
 
+    # Handler for retrieving `PlaceOS::Model::ControlSystem`s for logic modules
+    #
+    abstract def on_system_model(request : Request, response_callback : Request ->)
+
     # Metadata
     ###############################################################################################
 
