@@ -1,5 +1,6 @@
 # Application dependencies
 require "action-controller"
+require "placeos-log-backend"
 
 # Required to convince Crystal this class is not a module
 
@@ -40,7 +41,7 @@ ActionController::Server.before(
 
 # Configure logging
 log_level = PlaceOS::Core.production? ? Log::Severity::Info : Log::Severity::Debug
-log_backend = PlaceOS::Core.log_backend
+log_backend = PlaceOS::LogBackend.log_backend
 
 ::Log.setup "*", :warn, log_backend
 ::Log.builder.bind "action-controller.*", log_level, log_backend
