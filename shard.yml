@@ -41,6 +41,9 @@ dependencies:
     github: placeos/driver
     version: ~> 4.2
 
+  placeos-log-backend:
+    github: place-labs/log-backend
+
   placeos-models:
     github: placeos/models
     version: ~> 4.12

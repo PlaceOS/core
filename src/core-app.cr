@@ -62,7 +62,7 @@ Signal::TERM.trap &terminate
 # Allow signals to change the log level at run-time
 logging = Proc(Signal, Nil).new do |signal|
   log_level = signal.usr1? ? Log::Severity::Debug : Log::Severity::Info
-  log_backend = PlaceOS::Core.log_backend
+  log_backend = PlaceOS::LogBackend.log_backend
   puts " > Log level changed to #{log_level}"
   Log.builder.bind "action-controller.*", log_level, log_backend
   Log.builder.bind "place_os.core.*", log_level, log_backend
