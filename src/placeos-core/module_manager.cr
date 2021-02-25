@@ -171,7 +171,7 @@ module PlaceOS::Core
     def restart_module(mod : Model::Module)
       module_id = mod.id.as(String)
 
-      stopped = process_manager(mod) { |manager| manager.stop(module_id) }
+      stopped = process_manager(mod, &.stop(module_id))
 
       if stopped
         start_module(mod)
