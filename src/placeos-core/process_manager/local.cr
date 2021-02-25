@@ -25,9 +25,7 @@ module PlaceOS::Core
       end
 
       def stop(module_id : String)
-        !!protocol_manager_by_module?(module_id).try do |manager|
-          manager.stop(module_id)
-        end
+        !!protocol_manager_by_module?(module_id).try(&.stop(module_id))
       end
 
       # Stop and unload the module from node
@@ -167,9 +165,7 @@ module PlaceOS::Core
         protocol_manager_lock.synchronize do
           Promise.all(@driver_protocol_managers.map { |driver, manager|
             Promise.defer { {driver, manager.info} }
-          }).then { |driver_info|
-            driver_info.to_h
-          }.get
+          }).then(&.to_h).get
         end
       end
 

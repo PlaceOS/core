@@ -11,10 +11,7 @@ require "placeos-models/spec/generator"
 require "spec"
 
 SPEC_DRIVER = "drivers/place/private_helper.cr"
-
-require "spec"
-
-CORE_URL = ENV["CORE_URL"]? || "http://core:3000"
+CORE_URL    = ENV["CORE_URL"]? || "http://core:3000"
 
 # To reduce the run-time of the very setup heavy specs.
 # - Use teardown if you need to clear a temporary repository
