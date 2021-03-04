@@ -21,9 +21,7 @@ module PlaceOS::Core
   CORE_HOST = ENV["CORE_HOST"]? || System.hostname
   CORE_PORT = (ENV["CORE_PORT"]? || "3000").to_i
 
-  PROD = ENV["SG_ENV"]? == "production"
+  PROD = ENV["SG_ENV"]?.try(&.downcase) == "production"
 
-  def self.production?
-    PROD
-  end
+  class_getter? production : Bool = PROD
 end
