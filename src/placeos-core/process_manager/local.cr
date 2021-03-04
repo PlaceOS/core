@@ -164,7 +164,11 @@ module PlaceOS::Core
       def loaded_modules : Hash(String, Array(String))
         protocol_manager_lock.synchronize do
           Promise.all(@driver_protocol_managers.map { |driver, manager|
-            Promise.defer { {driver, manager.info} }
+            Promise.defer do
+              info = manager.info
+              Log.trace { {info: manager.info.to_json, driver: driver} }
+              {driver, info}
+            end
           }).then(&.to_h).get
         end
       end

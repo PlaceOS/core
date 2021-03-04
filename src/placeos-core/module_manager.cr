@@ -74,10 +74,12 @@ module PlaceOS::Core
       super()
     end
 
+    private getter stabilize_lock = Mutex.new
+
     def start
       # Start clustering process
       clustering.start(on_stable: ->publish_version(String)) do |nodes|
-        stabilize(nodes)
+        stabilize_lock.synchronize { stabilize(nodes) }
       end
 
       super
