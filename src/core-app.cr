@@ -1,5 +1,6 @@
 require "option_parser"
 
+require "./ext"
 require "./config"
 
 # Server defaults

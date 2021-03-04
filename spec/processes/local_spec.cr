@@ -5,24 +5,25 @@ module PlaceOS::Core::ProcessManager
     _working_directory, repository, driver, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
     Cloning.clone_and_install(repository)
     result = Compiler::Helper.compile_driver(driver.file_name, repository.folder_name, driver.commit, id: driver.id)
-    yield mod, result[:executable], driver
+    path = result[:executable]
+    yield mod, path, ProcessManager.path_to_key(path), driver
   end
 
-  def self.test_starting(manager, mod, driver_path)
+  def self.test_starting(manager, mod, driver_key)
     module_id = mod.id.as(String)
-    manager.load(module_id: module_id, driver_path: driver_path)
+    manager.load(module_id: module_id, driver_key: driver_key)
     manager.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
-    manager.loaded_modules.should eq({driver_path => [module_id]})
+    manager.loaded_modules.should eq({driver_key => [module_id]})
   end
 
   describe Local do
-    with_driver do |mod, driver_path, _driver|
+    with_driver do |mod, driver_path, driver_key, _driver|
       describe Local::Common do
         describe "driver_loaded?" do
           it "confirms a driver is loaded" do
             pm = Local.new(discovery_mock)
-            pm.load(module_id: "mod", driver_path: driver_path)
-            pm.driver_loaded?(driver_path).should be_true
+            pm.load(module_id: "mod", driver_key: driver_key)
+            pm.driver_loaded?(driver_key).should be_true
           end
 
           it "confirms a driver is not loaded" do
@@ -33,9 +34,9 @@ module PlaceOS::Core::ProcessManager
         describe "driver_status" do
           it "returns driver status if present" do
             pm = Local.new(discovery_mock)
-            pm.load(module_id: "mod", driver_path: driver_path)
+            pm.load(module_id: "mod", driver_key: driver_key)
 
-            status = pm.driver_status(driver_path)
+            status = pm.driver_status(driver_key)
             status.should_not be_nil
           end
 
@@ -47,7 +48,7 @@ module PlaceOS::Core::ProcessManager
         it "execute" do
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
-          pm.load(module_id: module_id, driver_path: driver_path)
+          pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
           result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:used_for_place_testing))
           result.should eq %("you can delete this file")
@@ -56,7 +57,7 @@ module PlaceOS::Core::ProcessManager
         it "debug" do
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
-          pm.load(module_id: module_id, driver_path: driver_path)
+          pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
           message_channel = Channel(String).new
 
@@ -79,7 +80,7 @@ module PlaceOS::Core::ProcessManager
         it "ignore" do
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
-          pm.load(module_id: module_id, driver_path: driver_path)
+          pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
           message_channel = Channel(String).new
 
@@ -115,20 +116,20 @@ module PlaceOS::Core::ProcessManager
         it "start" do
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
-          pm.load(module_id: module_id, driver_path: driver_path)
+          pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
-          pm.loaded_modules.should eq({driver_path => [module_id]})
-          pm.kill(driver_path)
+          pm.loaded_modules.should eq({driver_key => [module_id]})
+          pm.kill(driver_key)
         end
 
         it "stop" do
           pm = Local.new(discovery_mock)
-          pm.kill(driver_path)
-          test_starting(pm, mod, driver_path)
+          pm.kill(driver_key)
+          test_starting(pm, mod, driver_key)
           pm.stop(mod.id.as(String))
 
           sleep 0.1
-          pm.loaded_modules.should eq({driver_path => [] of String})
+          pm.loaded_modules.should eq({driver_key => [] of String})
         end
 
         it "system_status" do
@@ -137,11 +138,11 @@ module PlaceOS::Core::ProcessManager
 
         it "kill" do
           pm = Local.new(discovery_mock)
-          test_starting(pm, mod, driver_path)
-          pid = pm.protocol_manager_by_driver?(driver_path).try(&.pid).not_nil!
+          test_starting(pm, mod, driver_key)
+          pid = pm.protocol_manager_by_driver?(driver_key).try(&.pid).not_nil!
 
           Process.exists?(pid).should be_true
-          pm.kill(driver_path).should be_true
+          pm.kill(driver_key).should be_true
 
           success = Channel(Nil).new
 
@@ -162,14 +163,14 @@ module PlaceOS::Core::ProcessManager
 
         it "loaded_modules" do
           pm = Local.new(discovery_mock)
-          test_starting(pm, mod, driver_path)
-          pm.kill(driver_path)
+          test_starting(pm, mod, driver_key)
+          pm.kill(driver_key)
         end
 
         describe "module_loaded?" do
           it "confirms a module is loaded" do
             pm = Local.new(discovery_mock)
-            pm.load(module_id: "mod", driver_path: driver_path)
+            pm.load(module_id: "mod", driver_key: driver_key)
             pm.module_loaded?("mod").should be_true
           end
 
@@ -180,7 +181,7 @@ module PlaceOS::Core::ProcessManager
 
         it "run_count" do
           pm = Local.new(discovery_mock)
-          pm.load(module_id: "mod", driver_path: driver_path)
+          pm.load(module_id: "mod", driver_key: driver_key)
           pm.run_count.should eq({drivers: 1, modules: 1})
         end
 
@@ -191,7 +192,7 @@ module PlaceOS::Core::ProcessManager
             File.copy(driver_path, path)
 
             pm = Local.new(discovery_mock)
-            pm.load(module_id: module_id, driver_path: path)
+            pm.load(module_id: module_id, driver_key: path)
             pm.driver_loaded?(path).should be_true
             pm.module_loaded?(module_id).should be_true
             pm.unload(module_id)
@@ -209,8 +210,8 @@ module PlaceOS::Core::ProcessManager
             File.copy(driver_path, path)
 
             pm = Local.new(discovery_mock)
-            pm.load(module_id: module0, driver_path: path)
-            pm.load(module_id: module1, driver_path: path)
+            pm.load(module_id: module0, driver_key: path)
+            pm.load(module_id: module1, driver_key: path)
             pm.driver_loaded?(path).should be_true
             pm.module_loaded?(module0).should be_true
             pm.module_loaded?(module1).should be_true
@@ -227,10 +228,10 @@ module PlaceOS::Core::ProcessManager
 
       it "load" do
         pm = Local.new(discovery_mock)
-        pm.driver_loaded?(driver_path).should be_false
+        pm.driver_loaded?(driver_key).should be_false
         pm.module_loaded?("mod").should be_false
-        pm.load(module_id: "mod", driver_path: driver_path)
-        pm.driver_loaded?(driver_path).should be_true
+        pm.load(module_id: "mod", driver_key: driver_key)
+        pm.driver_loaded?(driver_key).should be_true
         pm.module_loaded?("mod").should be_true
       end
 

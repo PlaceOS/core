@@ -11,7 +11,7 @@ module PlaceOS::Core
       Log = ::Log.for(self)
     end
 
-    abstract def load(module_id : String, driver_path : String)
+    abstract def load(module_id : String, driver_key : String)
 
     abstract def unload(module_id : String)
 
@@ -25,7 +25,7 @@ module PlaceOS::Core
 
     abstract def ignore(module_id : String) : Array(DebugCallback)
 
-    abstract def kill(driver_path : String)
+    abstract def kill(driver_key : String)
 
     # Execute a driver method on a module
     #
@@ -73,7 +73,7 @@ module PlaceOS::Core
 
     # Generate a system status report
     #
-    abstract def driver_status(driver_path : String) : DriverStatus?
+    abstract def driver_status(driver_key : String) : DriverStatus?
 
     record(
       SystemStatus,
@@ -98,7 +98,7 @@ module PlaceOS::Core
 
     # Check for the presence of a running driver on a ProcessManager
     #
-    abstract def driver_loaded?(driver_path : String) : Bool
+    abstract def driver_loaded?(driver_key : String) : Bool
 
     # Returns the count of ...
     # - unique drivers running
@@ -109,5 +109,11 @@ module PlaceOS::Core
     # Count of distinct modules loaded on a ProcessManager
     #
     abstract def loaded_modules
+
+    # Helper for extracting the driver key
+    #
+    def self.path_to_key(path : String) : String
+      Path[path].basename
+    end
   end
 end

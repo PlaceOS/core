@@ -203,14 +203,14 @@ module PlaceOS::Core
     # Stops modules on stale driver and starts them on the new driver
     #
     # Returns the stale driver path
-    def reload_modules(driver : Model::Driver)
+    def reload_modules(driver : Model::Driver) : Path?
       driver_id = driver.id.as(String)
       # Set when a module_manager found for stale driver
       stale_path = driver.modules.reduce(nil) do |path, mod|
         module_id = mod.id.as(String)
 
         # Grab the stale driver path, if there is one
-        path = path_for?(module_id) unless path
+        path = path_for?(module_id) if path.nil?
 
         # Save a lookup
         mod.driver = driver
@@ -246,7 +246,7 @@ module PlaceOS::Core
 
       stale_path || driver.commit_was.try { |commit|
         # Try to create a driver path from what the commit used to be
-        Compiler::Helper.driver_binary_path(driver.file_name, commit, driver_id)
+        Path[Compiler::Helper.driver_binary_path(driver.file_name, commit, driver_id)]
       }
     end
 
@@ -283,6 +283,8 @@ module PlaceOS::Core
 
     # Run through modules an load
     def stabilize(nodes : Array(HoundDog::Service::Node))
+      Log.debug { {message: "stabilizing", nodes: nodes.to_json} }
+
       # Create a one off rendezvous hash with nodes from the stabilization event
       rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
       Model::Module.all.each do |m|
