@@ -104,8 +104,7 @@ module PlaceOS
       stale_path = module_manager.reload_modules(driver)
 
       # Remove the stale driver if there was one
-      remove_stale_driver(
-        driver_id: driver_id,
+      remove_stale_driver(driver_id: driver_id,
         path: stale_path,
       )
 
@@ -119,12 +118,12 @@ module PlaceOS
 
     # Remove the stale driver binary if there was one
     #
-    def self.remove_stale_driver(path : String?, driver_id : String)
+    def self.remove_stale_driver(path : Path?, driver_id : String)
       return unless path
-      Log.info { {message: "removing stale driver binary", driver_id: driver_id, path: path} }
+      Log.info { {message: "removing stale driver binary", driver_id: driver_id, path: path.to_s} }
       File.delete(path) if File.exists?(path)
     rescue
-      Log.error { {message: "failed to remove stale binary", driver_id: driver_id, path: path} }
+      Log.error { {message: "failed to remove stale binary", driver_id: driver_id, path: path.to_s} }
     end
 
     def self.update_driver_commit(driver : Model::Driver, commit : String, startup : Bool)

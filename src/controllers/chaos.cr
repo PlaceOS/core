@@ -10,7 +10,7 @@ module PlaceOS::Core::Api
 
     # terminate a process
     post "/terminate", :terminate do
-      driver_path = params["path"]
+      driver_key = params["path"]
       edge_id = params["edge_id"]?.presence
 
       # TODO: move this to ModuleManager
@@ -20,9 +20,9 @@ module PlaceOS::Core::Api
                   module_manager.edge_processes.for?(edge_id)
                 end
 
-      head :not_found unless manager && manager.driver_loaded?(driver_path)
+      head :not_found unless manager && manager.driver_loaded?(driver_key)
 
-      manager.kill(driver_path)
+      manager.kill(driver_key)
 
       head :ok
     end

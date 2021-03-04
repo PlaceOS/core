@@ -86,8 +86,8 @@ module PlaceOS::Core
       end
     end
 
-    def load(module_id : String, driver_path : String)
-      !!Protocol.request(Protocol::Message::Load.new(module_id, Edge.path_to_key(driver_path)), expect: Protocol::Message::Success)
+    def load(module_id : String, driver_key : String)
+      !!Protocol.request(Protocol::Message::Load.new(module_id, ProcessManager.path_to_key(driver_key)), expect: Protocol::Message::Success)
     end
 
     def unload(module_id : String)
@@ -102,8 +102,8 @@ module PlaceOS::Core
       !!Protocol.request(Protocol::Message::Stop.new(module_id), expect: Protocol::Message::Success)
     end
 
-    def kill(driver_path : String)
-      !!Protocol.request(Protocol::Message::Kill.new(Edge.path_to_key(driver_path)), expect: Protocol::Message::Success)
+    def kill(driver_key : String)
+      !!Protocol.request(Protocol::Message::Kill.new(ProcessManager.path_to_key(driver_key)), expect: Protocol::Message::Success)
     end
 
     alias Module = Protocol::Message::RegisterResponse::Module
@@ -231,8 +231,8 @@ module PlaceOS::Core
     # Metadata
     ###############################################################################################
 
-    def driver_loaded?(driver_path : String) : Bool
-      !!Protocol.request(Protocol::Message::DriverLoaded.new(Edge.path_to_key(driver_path)), expect: Protocol::Message::Success)
+    def driver_loaded?(driver_key : String) : Bool
+      !!Protocol.request(Protocol::Message::DriverLoaded.new(ProcessManager.path_to_key(driver_key)), expect: Protocol::Message::Success)
     end
 
     def module_loaded?(module_id : String) : Bool
@@ -262,10 +262,10 @@ module PlaceOS::Core
       response.status
     end
 
-    def driver_status(driver_path : String) : DriverStatus?
-      response = Protocol.request(Protocol::Message::DriverStatus.new(Edge.path_to_key(driver_path)), expect: Protocol::Message::DriverStatusResponse)
+    def driver_status(driver_key : String) : DriverStatus?
+      response = Protocol.request(Protocol::Message::DriverStatus.new(ProcessManager.path_to_key(driver_key)), expect: Protocol::Message::DriverStatusResponse)
 
-      Log.warn { {message: "failed to request driver status", driver_path: driver_path} } if response.nil?
+      Log.warn { {message: "failed to request driver status", driver_key: driver_key} } if response.nil?
 
       response.try &.status
     end
@@ -305,10 +305,6 @@ module PlaceOS::Core
       exception = match.try &.captures.first || "Exception"
       message = match.pre_match unless match.nil?
       {message, exception}
-    end
-
-    def self.path_to_key(driver_path : String)
-      driver_path.lchop(PlaceOS::Compiler.bin_dir).lstrip('/')
     end
   end
 end

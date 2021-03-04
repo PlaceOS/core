@@ -40,7 +40,7 @@ module PlaceOS::Core::ProcessManager
         module: mod,
         edge: edge,
         driver_path: driver_path,
-        driver_key: Edge.path_to_key(driver_path),
+        driver_key: ProcessManager.path_to_key(driver_path),
       )
 
       client, process_manager = client_server(edge.id.as(String))
@@ -53,7 +53,7 @@ module PlaceOS::Core::ProcessManager
     it "debug" do
       with_edge do |ctx, _client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_path: ctx.driver_path)
+        pm.load(module_id: module_id, driver_key: ctx.driver_path)
         pm.start(module_id: module_id, payload: ModuleManager.start_payload(ctx.module))
 
         message_channel = Channel(String).new
@@ -77,7 +77,7 @@ module PlaceOS::Core::ProcessManager
     describe "driver_loaded?" do
       it "confirms a driver is loaded" do
         with_edge do |ctx, client, pm|
-          pm.load(module_id: "mod", driver_path: ctx.driver_key)
+          pm.load(module_id: "mod", driver_key: ctx.driver_key)
           client.driver_loaded?(ctx.driver_key).should be_true
           pm.driver_loaded?(ctx.driver_key).should be_true
         end
@@ -95,7 +95,7 @@ module PlaceOS::Core::ProcessManager
       it "returns driver status if present" do
         # TODO: Could do with a double check of values
         with_edge do |ctx, client, pm|
-          pm.load(module_id: "mod", driver_path: ctx.driver_path)
+          pm.load(module_id: "mod", driver_key: ctx.driver_path)
 
           pm.driver_status(ctx.driver_path).should_not be_nil
           client.driver_status(ctx.driver_key).should_not be_nil
@@ -113,7 +113,7 @@ module PlaceOS::Core::ProcessManager
     it "execute" do
       with_edge do |ctx, _client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_path: ctx.driver_path)
+        pm.load(module_id: module_id, driver_key: ctx.driver_path)
         pm.start(module_id: module_id, payload: ModuleManager.start_payload(ctx.module))
         result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:used_for_place_testing))
         result.should eq %("you can delete this file")
@@ -123,7 +123,7 @@ module PlaceOS::Core::ProcessManager
     it "ignore" do
       with_edge do |ctx, _client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_path: ctx.driver_path)
+        pm.load(module_id: module_id, driver_key: ctx.driver_path)
         pm.start(module_id: module_id, payload: ModuleManager.start_payload(ctx.module))
         message_channel = Channel(String).new
 
@@ -188,7 +188,7 @@ module PlaceOS::Core::ProcessManager
         pm.module_loaded?("mod").should be_false
         client.module_loaded?("mod").should be_false
 
-        pm.load(module_id: "mod", driver_path: ctx.driver_path)
+        pm.load(module_id: "mod", driver_key: ctx.driver_path)
 
         pm.driver_loaded?(ctx.driver_path).should be_true
         client.driver_loaded?(ctx.driver_key).should be_true
@@ -207,7 +207,7 @@ module PlaceOS::Core::ProcessManager
     describe "module_loaded?" do
       it "confirms a module is loaded" do
         with_edge do |ctx, _client, pm|
-          pm.load(module_id: "mod", driver_path: ctx.driver_path)
+          pm.load(module_id: "mod", driver_key: ctx.driver_path)
           pm.module_loaded?("mod").should be_true
         end
       end
@@ -221,7 +221,7 @@ module PlaceOS::Core::ProcessManager
 
     it "run_count" do
       with_edge do |ctx, _client, pm|
-        pm.load(module_id: "mod", driver_path: ctx.driver_path)
+        pm.load(module_id: "mod", driver_key: ctx.driver_path)
         pm.run_count.should eq({drivers: 1, modules: 1})
       end
     end
@@ -235,7 +235,7 @@ module PlaceOS::Core::ProcessManager
     it "start" do
       with_edge do |ctx, client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_path: ctx.driver_path)
+        pm.load(module_id: module_id, driver_key: ctx.driver_path)
         pm.start(module_id: module_id, payload: ModuleManager.start_payload(ctx.module))
         pm.loaded_modules.should eq({ctx.driver_key => [module_id]})
         client.loaded_modules.should eq({ctx.driver_key => [module_id]})
@@ -268,7 +268,7 @@ module PlaceOS::Core::ProcessManager
           module_id = "mod"
           File.copy(ctx.driver_path, path)
 
-          pm.load(module_id: module_id, driver_path: path)
+          pm.load(module_id: module_id, driver_key: path)
           pm.driver_loaded?(path).should be_true
           pm.module_loaded?(module_id).should be_true
           pm.unload(module_id)
@@ -284,8 +284,8 @@ module PlaceOS::Core::ProcessManager
           module1 = "mod1"
           File.copy(ctx.driver_path, path)
 
-          pm.load(module_id: module0, driver_path: path)
-          pm.load(module_id: module1, driver_path: path)
+          pm.load(module_id: module0, driver_key: path)
+          pm.load(module_id: module1, driver_key: path)
           pm.driver_loaded?(path).should be_true
           pm.module_loaded?(module0).should be_true
           pm.module_loaded?(module1).should be_true

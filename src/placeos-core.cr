@@ -1,5 +1,7 @@
 require "action-controller/logger"
 require "log_helper"
+
+require "./ext"
 require "./placeos-core/*"
 require "./constants"
 
