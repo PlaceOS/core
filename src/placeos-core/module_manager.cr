@@ -74,12 +74,10 @@ module PlaceOS::Core
       super()
     end
 
-    private getter stabilize_lock = Mutex.new
-
     def start
       # Start clustering process
       clustering.start(on_stable: ->publish_version(String)) do |nodes|
-        stabilize_lock.synchronize { stabilize(nodes) }
+        stabilize(nodes)
       end
 
       super
@@ -281,17 +279,28 @@ module PlaceOS::Core
       mod.on_edge? && own_node?(mod.edge_id.as(String))
     end
 
-    # Run through modules an load
-    def stabilize(nodes : Array(HoundDog::Service::Node))
-      Log.debug { {message: "stabilizing", nodes: nodes.to_json} }
+    private getter semaphore = Atomic(Int32).new(0)
+    private getter stabilize_lock = Mutex.new
 
-      # Create a one off rendezvous hash with nodes from the stabilization event
-      rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
-      Model::Module.all.each do |m|
-        begin
-          load_module(m, rendezvous_hash)
-        rescue e
-          Log.error(exception: e) { {message: "failed to load module during stabilization", module_id: m.id, name: m.name, custom_name: m.custom_name} }
+    # Run through modules and load to a stable state.
+    #
+    # Uses a semaphore to ensure intermediary cluster events don't trigger stabilization.
+    def stabilize(nodes : Array(HoundDog::Service::Node))
+      semaphore.add(1)
+      stabilize_lock.synchronize do
+        semaphore.add(-1)
+        return unless semaphore.get.zero?
+
+        Log.debug { {message: "stabilizing", nodes: nodes.to_json} }
+
+        # Create a one off rendezvous hash with nodes from the stabilization event
+        rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
+        Model::Module.all.each do |m|
+          begin
+            load_module(m, rendezvous_hash)
+          rescue e
+            Log.error(exception: e) { {message: "failed to load module during stabilization", module_id: m.id, name: m.name, custom_name: m.custom_name} }
+          end
         end
       end
     end
