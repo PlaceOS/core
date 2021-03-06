@@ -285,11 +285,11 @@ module PlaceOS::Core
     # Run through modules and load to a stable state.
     #
     # Uses a semaphore to ensure intermediary cluster events don't trigger stabilization.
-    def stabilize(nodes : Array(HoundDog::Service::Node))
+    def stabilize(nodes : Array(HoundDog::Service::Node)) : Bool
       semaphore.add(1)
       stabilize_lock.synchronize do
         semaphore.add(-1)
-        return unless semaphore.get.zero?
+        return false unless semaphore.get.zero?
 
         Log.debug { {message: "stabilizing", nodes: nodes.to_json} }
 
@@ -302,6 +302,7 @@ module PlaceOS::Core
             Log.error(exception: e) { {message: "failed to load module during stabilization", module_id: m.id, name: m.name, custom_name: m.custom_name} }
           end
         end
+        true
       end
     end
 

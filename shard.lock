@@ -27,7 +27,7 @@ shards:
 
   clustering:
     git: https://github.com/place-labs/clustering.git
-    version: 2.0.4
+    version: 3.0.0
 
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
@@ -51,7 +51,7 @@ shards:
 
   etcd:
     git: https://github.com/place-labs/crystal-etcd.git
-    version: 1.0.7
+    version: 1.1.1
 
   exec_from:
     git: https://github.com/place-labs/exec_from.git
@@ -75,7 +75,7 @@ shards:
 
   hound-dog:
     git: https://github.com/place-labs/hound-dog.git
-    version: 2.6.0
+    version: 2.6.1
 
   http-params-serializable:
     git: https://github.com/caspiano/http-params-serializable.git
