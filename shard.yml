@@ -15,7 +15,7 @@ dependencies:
 
   clustering:
     github: place-labs/clustering
-    version: ~> 2.0
+    version: ~> 3.0
 
   habitat:
     github: luckyframework/habitat
