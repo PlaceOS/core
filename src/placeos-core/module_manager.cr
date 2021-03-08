@@ -275,35 +275,53 @@ module PlaceOS::Core
     # Clustering
     ###############################################################################################
 
-    def on_managed_edge?(mod : Model::Module)
-      mod.on_edge? && own_node?(mod.edge_id.as(String))
-    end
-
-    private getter semaphore = Atomic(Int32).new(0)
+    private getter queued_stabilization_events = Atomic(Int32).new(0)
     private getter stabilize_lock = Mutex.new
 
     # Run through modules and load to a stable state.
     #
     # Uses a semaphore to ensure intermediary cluster events don't trigger stabilization.
     def stabilize(nodes : Array(HoundDog::Service::Node)) : Bool
-      semaphore.add(1)
+      queued_stabilization_events.add(1)
       stabilize_lock.synchronize do
-        semaphore.add(-1)
-        return false unless semaphore.get.zero?
+        queued_stabilization_events.add(-1)
+        return false unless queued_stabilization_events.get.zero?
 
         Log.debug { {message: "stabilizing", nodes: nodes.to_json} }
 
         # Create a one off rendezvous hash with nodes from the stabilization event
         rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
-        Model::Module.all.each do |m|
-          begin
-            load_module(m, rendezvous_hash)
-          rescue e
-            Log.error(exception: e) { {message: "failed to load module during stabilization", module_id: m.id, name: m.name, custom_name: m.custom_name} }
+
+        success_count, fail_count, waiting = 0_i64, 0_i64, [] of Promise::DeferredPromise(Nil)
+        Model::Module.all.in_groups_of(32, reuse: true) do |modules|
+          modules.each.reject(Nil).each do |mod|
+            waiting << Promise.defer(same_thread: true) do
+              begin
+                load_module(mod, rendezvous_hash)
+                success_count += 1
+
+                nil
+              rescue e
+                Log.error(exception: e) { {message: "failed to load module during stabilization", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+                fail_count += 1
+
+                nil
+              end
+            end
+            Promise.all(waiting).get
+            waiting.clear
           end
         end
+
+        Log.info { {message: "finished loading modules stabilization", success: success_count, failure: fail_count} }
         true
       end
+    end
+
+    # Determine if a module is an edge module and allocated to the current core node.
+    #
+    def on_managed_edge?(mod : Model::Module)
+      mod.on_edge? && own_node?(mod.edge_id.as(String))
     end
 
     # Publish cluster version to redis
