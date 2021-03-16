@@ -12,7 +12,7 @@ WORKDIR /app
 RUN apk add --no-cache libssh2 libssh2-dev libssh2-static iputils yaml-static
 
 # Add trusted CAs for communicating with external services
-RUN apk update && apk add --no-cache ca-certificates tzdata && update-ca-certificates
+RUN apk add --no-cache ca-certificates tzdata && update-ca-certificates
 
 # Create a non-privileged user
 ARG IMAGE_UID="10001"
