@@ -24,7 +24,7 @@ module PlaceOS::Core
 
         ctx.response.status_code.should eq 200
         result.should_not be_nil
-        result.not_nil!.sort.should eq ["drivers/place/feature_test.cr", "drivers/place/private_helper.cr"]
+        result.not_nil!.sort.should eq ["drivers/place/edge_demo.cr", "drivers/place/feature_test.cr", "drivers/place/private_helper.cr"]
       end
     end
 
