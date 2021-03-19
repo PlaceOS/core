@@ -59,7 +59,7 @@ shards:
 
   faker:
     git: https://github.com/askn/faker.git
-    version: 0.4.1
+    version: 0.5.0
 
   future:
     git: https://github.com/crystal-community/future.cr.git
@@ -111,7 +111,7 @@ shards:
 
   openssl_ext:
     git: https://github.com/spider-gazelle/openssl_ext.git
-    version: 2.1.1
+    version: 2.1.2
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
@@ -127,7 +127,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 4.12.1
+    version: 4.13.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
