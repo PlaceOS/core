@@ -35,7 +35,15 @@ module PlaceOS
       case action
       in .created?, .updated?
         success, output = compiler_lock.synchronize { Compilation.compile_driver(driver, startup?, module_manager) }
-        raise Resource::ProcessingError.new(driver.name, output) unless success
+
+        unless success
+          if driver.compilation_output.nil? || driver.recompile_commit? || driver.commit_changed?
+            driver.update_fields(compilation_output: output)
+          end
+          raise Resource::ProcessingError.new(driver.name, output)
+        end
+
+        driver.update_fields(compilation_output: nil) unless driver.compilation_output.nil?
         Resource::Result::Success
       in .deleted?
         Result::Skipped
