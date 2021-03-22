@@ -12,6 +12,15 @@ class PlaceOS::Driver::Protocol; end
 
 # Application code
 require "./constants"
+
+# Configure logging
+log_level = PlaceOS::Core.production? ? ::Log::Severity::Info : ::Log::Severity::Debug
+log_backend = PlaceOS::LogBackend.log_backend
+
+::Log.setup "*", :warn, log_backend
+::Log.builder.bind "action-controller.*", log_level, log_backend
+::Log.builder.bind "place_os.core.*", log_level, log_backend
+
 require "./placeos-core"
 require "./controllers/*"
 
@@ -38,11 +47,3 @@ ActionController::Server.before(
   HTTP::ErrorHandler.new(PlaceOS::Core.production?),
   ActionController::LogHandler.new(filter_params, ms: true)
 )
-
-# Configure logging
-log_level = PlaceOS::Core.production? ? Log::Severity::Info : Log::Severity::Debug
-log_backend = PlaceOS::LogBackend.log_backend
-
-::Log.setup "*", :warn, log_backend
-::Log.builder.bind "action-controller.*", log_level, log_backend
-::Log.builder.bind "place_os.core.*", log_level, log_backend
