@@ -1,7 +1,5 @@
 require "option_parser"
 
-require "./config"
-
 # Server defaults
 port = 3000
 host = "127.0.0.1"
@@ -41,8 +39,11 @@ OptionParser.parse(ARGV.dup) do |parser|
   end
 end
 
+require "./config"
+
 # Load the routes
-puts "Launching #{PlaceOS::Core::APP_NAME} v#{PlaceOS::Core::VERSION} (#{PlaceOS::Core::BUILD_COMMIT} @ #{PlaceOS::Core::BUILD_TIME})"
+PlaceOS::Core::Log.info { "launching #{PlaceOS::Core::APP_NAME} v#{PlaceOS::Core::VERSION} (#{PlaceOS::Core::BUILD_COMMIT} @ #{PlaceOS::Core::BUILD_TIME})" }
+
 server = ActionController::Server.new(port, host)
 
 # Start clustering
@@ -63,9 +64,9 @@ Signal::TERM.trap &terminate
 logging = Proc(Signal, Nil).new do |signal|
   log_level = signal.usr1? ? Log::Severity::Trace : Log::Severity::Info
   log_backend = PlaceOS::LogBackend.log_backend
-  puts " > Log level changed to #{log_level}"
-  Log.builder.bind "action-controller.*", log_level, log_backend
-  Log.builder.bind "place_os.core.*", log_level, log_backend
+  PlaceOS::Core::Log.info { "log level changed to #{log_level}" }
+  ::Log.builder.bind "action-controller.*", log_level, log_backend
+  ::Log.builder.bind "place_os.core.*", log_level, log_backend
   signal.ignore
 end
 
@@ -78,7 +79,7 @@ spawn(same_thread: true) do
   begin
     PlaceOS::Core.start_managers
   rescue error
-    puts " > startup failed"
+    PlaceOS::Core::Log.error { "startup failed" }
     server.close
     raise error
   end
@@ -86,8 +87,8 @@ end
 
 # Start the server
 server.run do
-  puts "Listening on #{server.print_addresses}"
+  PlaceOS::Core::Log.info { "listening on #{server.print_addresses}" }
 end
 
 # Shutdown message
-puts "#{PlaceOS::Core::APP_NAME} leaps through the veldt\n"
+PlaceOS::Core::Log.info { "#{PlaceOS::Core::APP_NAME} leaps through the veldt" }
