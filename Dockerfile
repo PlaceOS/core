@@ -1,7 +1,7 @@
 # One of `core` | `edge`
 ARG TARGET=core
 
-FROM crystallang/crystal:0.36.1-alpine as build
+FROM crystallang/crystal:1.0.0-alpine as build
 
 ARG PLACE_COMMIT=DEV
 ARG TARGET
@@ -31,7 +31,7 @@ RUN adduser \
 COPY shard.yml /app
 COPY shard.override.yml /app
 COPY shard.lock /app
-RUN shards install --production --release
+RUN shards install --production --ignore-crystal-version
 
 # Add source last for efficient caching
 COPY src /app/src
