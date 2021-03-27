@@ -1,6 +1,6 @@
 name: placeos-core
-version: 3.6.0
-crystal: ~> 0.36
+version: 3.7.0
+crystal: ~> 1.0
 
 targets:
   core:
@@ -39,7 +39,7 @@ dependencies:
 
   placeos-driver:
     github: placeos/driver
-    version: ~> 4.2
+    version: ~> 5
 
   placeos-log-backend:
     github: place-labs/log-backend
@@ -63,7 +63,7 @@ dependencies:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    version: ~> 3
+    version: ~> 4
 
   rwlock:
     github: spider-gazelle/readers-writer
