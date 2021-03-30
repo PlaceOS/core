@@ -1,5 +1,5 @@
 name: placeos-core
-version: 3.7.0
+version: 3.7.1
 crystal: ~> 1.0
 
 targets:
