@@ -7,10 +7,10 @@ module PlaceOS::Core::Api
   class Root < Application
     base "/api/core/v1/"
 
-    getter resource_manager : ResourceManager { ResourceManager.instance }
+    class_getter resource_manager : ResourceManager { ResourceManager.instance }
     class_getter module_manager : ModuleManager { ModuleManager.instance }
 
-    # Healthcheck
+    # Health Check
     ###############################################################################################
 
     def index
@@ -58,12 +58,16 @@ module PlaceOS::Core::Api
         .first?
     end
 
+    # Readiness Check
+    ###############################################################################################
+
     get("/ready") do
-      if resource_manager.started?
-        head :ok
-      else
-        Log.warn { "startup has not completed" }
-        head :service_unavailable
+      head self.class.ready? ? HTTP::Status::OK : HTTP::Status::SERVICE_UNAVAILABLE
+    end
+
+    def self.ready?
+      resource_manager.started?.tap do |ready|
+        Log.warn { "startup has not completed" } unless ready
       end
     end
   end
