@@ -14,12 +14,12 @@ class PlaceOS::Driver::Protocol; end
 require "./constants"
 
 # Configure logging
-log_level = PlaceOS::Core.production? ? ::Log::Severity::Info : ::Log::Severity::Debug
 log_backend = PlaceOS::LogBackend.log_backend
-
-namespaces = ["action-controller.*", "place_os.*"]
+log_level = PlaceOS::Core.production? ? ::Log::Severity::Info : ::Log::Severity::Debug
 
 ::Log.setup "*", :warn, log_backend
+
+namespaces = ["action-controller.*", "place_os.*"]
 namespaces.each do |namespace|
   ::Log.builder.bind(namespace, log_level, log_backend)
 end
