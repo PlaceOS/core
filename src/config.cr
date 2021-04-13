@@ -17,9 +17,18 @@ require "./constants"
 log_level = PlaceOS::Core.production? ? ::Log::Severity::Info : ::Log::Severity::Debug
 log_backend = PlaceOS::LogBackend.log_backend
 
+namespaces = ["action-controller.*", "place_os.*"]
+
 ::Log.setup "*", :warn, log_backend
-::Log.builder.bind "action-controller.*", log_level, log_backend
-::Log.builder.bind "place_os.core.*", log_level, log_backend
+namespaces.each do |namespace|
+  ::Log.builder.bind(namespace, log_level, log_backend)
+end
+
+PlaceOS::LogBackend.register_severity_switch_signals(
+  production: PlaceOS::Core.production?,
+  namespaces: namespaces,
+  backend: log_backend,
+)
 
 require "./placeos-core"
 require "./controllers/*"
