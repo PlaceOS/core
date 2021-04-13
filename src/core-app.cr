@@ -60,21 +60,6 @@ Signal::INT.trap &terminate
 # Docker containers use the term signal
 Signal::TERM.trap &terminate
 
-# Allow signals to change the log level at run-time
-logging = Proc(Signal, Nil).new do |signal|
-  log_level = signal.usr1? ? Log::Severity::Trace : Log::Severity::Info
-  log_backend = PlaceOS::LogBackend.log_backend
-  PlaceOS::Core::Log.info { "log level changed to #{log_level}" }
-  ::Log.builder.bind "action-controller.*", log_level, log_backend
-  ::Log.builder.bind "place_os.core.*", log_level, log_backend
-  signal.ignore
-end
-
-# Turn on DEBUG level logging `kill -s USR1 %PID`
-# Default production log levels (INFO and above) `kill -s USR2 %PID`
-Signal::USR1.trap &logging
-Signal::USR2.trap &logging
-
 spawn(same_thread: true) do
   begin
     PlaceOS::Core.start_managers
