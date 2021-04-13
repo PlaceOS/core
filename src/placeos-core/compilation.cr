@@ -48,9 +48,8 @@ module PlaceOS
       in .deleted?
         Result::Skipped
       end
-    rescue e
-      # Add compilation errors
-      raise Resource::ProcessingError.new(resource.name, "#{e} #{e.message}")
+    rescue exception
+      raise Resource::ProcessingError.new(resource.name, "#{exception} #{exception.message}", cause: exception)
     end
 
     # ameba:disable Metrics/CyclomaticComplexity
