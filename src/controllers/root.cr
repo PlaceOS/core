@@ -34,8 +34,8 @@ module PlaceOS::Core::Api
     private def self.check_resource?(resource)
       Log.trace { "healthchecking #{resource}" }
       !!yield
-    rescue e
-      Log.error(exception: e) { {"connection check to #{resource} failed"} }
+    rescue exception
+      Log.error(exception: exception) { {"connection check to #{resource} failed"} }
       false
     end
 

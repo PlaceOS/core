@@ -24,9 +24,9 @@ module PlaceOS::Core
       else
         Resource::Result::Skipped
       end
-    rescue e
-      Log.error(exception: e) { {message: "while updating mapping for module", name: resource.name, custom_name: resource.custom_name} }
-      raise Resource::ProcessingError.new(resource.name, "#{e} #{e.message}")
+    rescue exception
+      Log.error(exception: exception) { {message: "while updating mapping for module", name: resource.name, custom_name: resource.custom_name} }
+      raise Resource::ProcessingError.new(resource.name, "#{exception} #{exception.message}", cause: exception)
     end
 
     def self.update_module_mapping(

@@ -21,9 +21,9 @@ module PlaceOS
       end
 
       SettingsUpdate.update_modules(settings: settings, module_manager: module_manager)
-    rescue e
+    rescue exception
       name = "Setting<#{resource.id}> for #{resource.parent_type}<#{resource.parent_id}>"
-      raise Resource::ProcessingError.new(name, "#{e} #{e.message}")
+      raise Resource::ProcessingError.new(name, "#{exception} #{exception.message}", cause: exception)
     end
 
     def self.update_modules(

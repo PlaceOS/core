@@ -46,9 +46,8 @@ module PlaceOS
           working_dir: @working_dir,
         )
       end
-    rescue e
-      # Add cloning errors
-      raise Resource::ProcessingError.new(resource.name, "#{e} #{e.message}")
+    rescue exception
+      raise Resource::ProcessingError.new(resource.name, "#{exception} #{exception.message}", cause: exception)
     end
 
     def self.clone_and_install(

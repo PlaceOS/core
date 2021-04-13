@@ -88,9 +88,9 @@ module PlaceOS::Core::Api
       begin
         # Set the details in redis
         Api::Drivers.cache_details(driver, repository, commit, execute_output)
-      rescue e
+      rescue exception
         # No drama if the details aren't cached
-        Log.warn(exception: e) { "failed to cache driver details" }
+        Log.warn(exception: exception) { "failed to cache driver details" }
       end
 
       response.headers["Content-Type"] = "application/json"
