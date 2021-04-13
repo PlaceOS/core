@@ -47,7 +47,7 @@ shards:
 
   debug:
     git: https://github.com/sija/debug.cr.git
-    version: 2.0.0
+    version: 2.0.1
 
   etcd:
     git: https://github.com/place-labs/crystal-etcd.git
@@ -119,7 +119,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 5.0.5
+    version: 5.0.8
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -131,7 +131,7 @@ shards:
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 1.1.0
+    version: 1.2.1
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
