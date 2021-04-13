@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 4.3.2
+    version: 4.3.5
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -19,7 +19,7 @@ shards:
 
   bindata:
     git: https://github.com/spider-gazelle/bindata.git
-    version: 1.8.3
+    version: 1.9.0
 
   bisect:
     git: https://github.com/spider-gazelle/bisect.git
@@ -59,11 +59,11 @@ shards:
 
   faker:
     git: https://github.com/askn/faker.git
-    version: 0.5.0
+    version: 0.6.0
 
   future:
     git: https://github.com/crystal-community/future.cr.git
-    version: 0.1.0
+    version: 1.0.0
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
@@ -87,7 +87,7 @@ shards:
 
   json_mapping:
     git: https://github.com/crystal-lang/json_mapping.cr.git
-    version: 0.1.0
+    version: 0.1.1
 
   jwt:
     git: https://github.com/crystal-community/jwt.git
@@ -99,7 +99,7 @@ shards:
 
   lucky_router:
     git: https://github.com/luckyframework/lucky_router.git
-    version: 0.4.1
+    version: 0.4.2
 
   murmur3:
     git: https://github.com/aca-labs/murmur3.git
@@ -123,7 +123,7 @@ shards:
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.3.0
+    version: 0.4.0
 
   placeos-models:
     git: https://github.com/placeos/models.git
@@ -135,7 +135,7 @@ shards:
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
-    version: 0.2.3
+    version: 0.2.4
 
   priority-queue:
     git: https://github.com/spider-gazelle/priority-queue.git
@@ -199,5 +199,5 @@ shards:
 
   yaml_mapping:
     git: https://github.com/crystal-lang/yaml_mapping.cr.git
-    version: 0.1.0
+    version: 0.1.1
 
