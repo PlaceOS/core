@@ -26,10 +26,10 @@ module PlaceOS
       repository = resource
 
       # Ignore interface repositories
-      return Result::Skipped if repository.repo_type == Model::Repository::Type::Interface
+      return Result::Skipped if repository.repo_type.interface?
 
       case action
-      in Action::Created, Action::Updated
+      in .created?, .updated?
         # Clone and install the repository
         Cloning.clone_and_install(
           repository: repository,
@@ -39,7 +39,7 @@ module PlaceOS
           startup: startup?,
           testing: testing?,
         )
-      in Action::Deleted
+      in .deleted?
         # Delete the repository folder
         Cloning.delete_repository(
           repository: repository,
