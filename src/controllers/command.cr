@@ -51,6 +51,8 @@ module PlaceOS::Core::Api
     ws "/:module_id/debugger", :module_debugger do |socket|
       module_id = params["module_id"]
 
+      Log.trace { {message: "binding debug session to module", module_id: module_id} }
+
       # Forward debug messages to the websocket
       module_manager.process_manager(module_id) do |manager|
         callback = ->(message : String) { socket.send(message); nil }
