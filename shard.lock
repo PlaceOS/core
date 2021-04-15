@@ -27,7 +27,7 @@ shards:
 
   clustering:
     git: https://github.com/place-labs/clustering.git
-    version: 3.0.0
+    version: 3.1.0+git.commit.ac73b985e2d75c8e6e742c508be33ae9f8bb7514
 
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
@@ -51,7 +51,7 @@ shards:
 
   etcd:
     git: https://github.com/place-labs/crystal-etcd.git
-    version: 1.2.2
+    version: 1.2.3
 
   exec_from:
     git: https://github.com/place-labs/exec_from.git
