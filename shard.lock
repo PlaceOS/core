@@ -27,7 +27,7 @@ shards:
 
   clustering:
     git: https://github.com/place-labs/clustering.git
-    version: 3.1.0+git.commit.ac73b985e2d75c8e6e742c508be33ae9f8bb7514
+    version: 3.1.0+git.commit.79f23adf8c05fe26eb5c9596a31592b163e76f04
 
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
@@ -73,9 +73,9 @@ shards:
     git: https://github.com/crystal-community/hardware.git
     version: 0.5.2
 
-  hound-dog:
+  hound-dog: # Overridden
     git: https://github.com/place-labs/hound-dog.git
-    version: 2.8.0
+    version: 2.8.1+git.commit.86db340ccd35df8de4b7f7dc77f9c378e57df69a
 
   http-params-serializable:
     git: https://github.com/caspiano/http-params-serializable.git
