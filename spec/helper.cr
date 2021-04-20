@@ -55,7 +55,7 @@ around_suite ->{
 Spec.before_suite do
   # Set the working directory before specs
   set_temporary_working_directory
-  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Debug)
+  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Trace)
 end
 
 Spec.after_suite do
