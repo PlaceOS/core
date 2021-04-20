@@ -58,12 +58,22 @@ module PlaceOS
       startup : Bool = false,
       testing : Bool = false
     )
-      repository_id = repository.id.as(String)
-      # NOTE:: we want to use folder name at this level
+      Log.context.set({
+        branch:            repository.branch,
+        folder_name:       repository.folder_name,
+        uri:               repository.uri,
+        repository_commit: repository.commit_hash,
+      })
 
+      repository_id = repository.id.as(String)
+
+      Log.debug { "cloning repository" }
+
+      # NOTE:: `repository` argument maps to the folder on the filesystem
       Compiler.clone_and_install(
         repository: repository.folder_name,
         repository_uri: repository.uri,
+        branch: repository.branch,
         username: repository.username || username,
         password: repository.password || password,
         working_dir: working_dir,
@@ -77,17 +87,13 @@ module PlaceOS
       if current_commit != repository.commit_hash && own_node
         if startup
           Log.warn { {
-            message:           "updating commit on repository during startup",
-            current_commit:    current_commit,
-            repository_commit: repository.commit_hash,
-            folder_name:       repository.folder_name,
+            message:        "updating commit on repository during startup",
+            current_commit: current_commit,
           } }
         else
           Log.info { {
-            message:           "updating commit on repository",
-            current_commit:    current_commit,
-            repository_commit: repository.commit_hash,
-            folder_name:       repository.folder_name,
+            message:        "updating commit on repository",
+            current_commit: current_commit,
           } }
         end
 
@@ -96,10 +102,8 @@ module PlaceOS
       end
 
       Log.info { {
-        message:    "cloned repository",
-        commit:     current_commit,
-        repository: repository.folder_name,
-        uri:        repository.uri,
+        message: "cloned repository",
+        commit:  current_commit,
       } }
 
       Result::Success

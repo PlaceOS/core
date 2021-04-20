@@ -1,6 +1,3 @@
 dependencies:
   retriable:
     github: Sija/retriable.cr
-  hound-dog:
-    github: place-labs/hound-dog
-    branch: fix/retries
