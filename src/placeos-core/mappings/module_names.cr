@@ -17,10 +17,8 @@ module PlaceOS::Core
     end
 
     def process_resource(action : RethinkORM::Changefeed::Event, resource : PlaceOS::Model::Module) : Resource::Result
-      mod = resource
-
-      if action == Action::Updated
-        ModuleNames.update_module_mapping(mod, module_manager)
+      if action.updated?
+        ModuleNames.update_module_mapping(resource, module_manager)
       else
         Resource::Result::Skipped
       end
