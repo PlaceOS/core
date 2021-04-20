@@ -16,14 +16,12 @@ module PlaceOS::Core
       )
 
       # Commence compilation
-      compiler = Compilation.new.start
-      compiler.processed.size.should eq 1
-      compiler.processed.first[:resource].id.should eq driver.id
+      compiler = Compilation.new
+      compiler.process_resource(:created, driver).success?.should be_true
 
       driver.reload!
 
       PlaceOS::Compiler::Helper.compiled?(driver.file_name, driver.commit, driver.id.not_nil!).should be_true
-
       compiler.stop
     end
   end
