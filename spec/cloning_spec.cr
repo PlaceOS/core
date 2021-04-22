@@ -78,8 +78,8 @@ module PlaceOS::Core
 
       # Check the repository has been deleted
       Dir.exists?(full_repository_path).should be_false
-
-      cloner.stop
+    ensure
+      cloner.try &.stop
     end
   end
 end

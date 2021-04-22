@@ -9,7 +9,7 @@ module PlaceOS::Core
 
     describe "status/" do
       it "renders data about node" do
-        repo, driver, _ = create_resources
+        repo, driver, _, resource_manager = create_resources
 
         driver.reload!
 
@@ -26,6 +26,8 @@ module PlaceOS::Core
         status.compiled_drivers.should contain binary
         status.available_repositories.should contain repo.folder_name
         status.run_count.should eq ({local: {modules: 0, drivers: 0}, edge: {} of String => NamedTuple(modules: Int32, drivers: Int32)})
+      ensure
+        resource_manager.try &.stop
       end
 
       pending "deletes standalone driver binary used for metadata"

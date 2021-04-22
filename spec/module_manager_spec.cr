@@ -7,7 +7,7 @@ module PlaceOS::Core
 
     describe "local" do
       it "loads modules that hash to the node" do
-        create_resources
+        _, _, _, resource_manager = create_resources
 
         # Start module manager
         module_manager = module_manager_mock
@@ -16,6 +16,9 @@ module PlaceOS::Core
         # Check that the module is loaded, and the module manager can be received
         module_manager.local_processes.run_count[:modules].should eq 1
         module_manager.stop
+      ensure
+        module_manager.try &.stop
+        resource_manager.try &.stop
       end
 
       it "load_module" do
@@ -55,9 +58,9 @@ module PlaceOS::Core
         module_manager.local_processes.protocol_manager_by_driver?(driver_path).should_not be_nil
 
         module_manager.local_processes.protocol_manager_by_module?(mod_id).should eq(module_manager.local_processes.protocol_manager_by_driver?(driver_path))
-
-        module_manager.stop
-        resource_manager.stop
+      ensure
+        module_manager.try &.stop
+        resource_manager.try &.stop
       end
     end
 
@@ -84,7 +87,8 @@ module PlaceOS::Core
 
         # Check that the node is no longer registered in etcd
         module_manager.discovery.nodes.map(&.[:name]).should_not contain(module_manager.discovery.name)
-        module_manager.stop
+      ensure
+        module_manager.try &.stop
       end
     end
   end
