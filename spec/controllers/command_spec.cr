@@ -52,16 +52,7 @@ module PlaceOS::Core
         mod_id = mod.id.as(String)
 
         # Mock resources
-        clustering_mock = MockClustering.new(
-          uri: CORE_URL,
-          discovery: discovery_mock,
-        )
-
-        module_manager = ModuleManager.new(
-          uri: CORE_URL,
-          clustering: clustering_mock,
-          discovery: clustering_mock.discovery,
-        )
+        module_manager = module_manager_mock
 
         # Load module
         module_manager.load_module(mod)

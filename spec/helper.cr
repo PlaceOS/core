@@ -38,6 +38,12 @@ def discovery_mock
   DiscoveryMock.new("core", uri: CORE_URL)
 end
 
+def module_manager_mock
+  discovery = discovery_mock
+  clustering = MockClustering.new(uri: CORE_URL, discovery: discovery)
+  PlaceOS::Core::ModuleManager.new(CORE_URL, discovery: discovery, clustering: clustering)
+end
+
 macro around_suite(block)
   Spec.before_suite do
     {{ block }}.call

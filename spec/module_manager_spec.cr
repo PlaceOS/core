@@ -9,19 +9,8 @@ module PlaceOS::Core
       it "loads modules that hash to the node" do
         create_resources
 
-        discovery_mock = DiscoveryMock.new("core", uri: CORE_URL)
-        clustering_mock = MockClustering.new(
-          uri: CORE_URL,
-          discovery: discovery_mock,
-        )
-
-        module_manager = ModuleManager.new(
-          uri: CORE_URL,
-          clustering: clustering_mock,
-          discovery: discovery_mock,
-        )
-
         # Start module manager
+        module_manager = module_manager_mock
         module_manager.start
 
         # Check that the module is loaded, and the module manager can be received
@@ -32,7 +21,7 @@ module PlaceOS::Core
       it "load_module" do
         _, repo, driver, mod = setup
 
-        module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL))
+        module_manager = module_manager_mock
 
         cloning = Cloning.new(testing: true)
         compilation = Compilation.new(startup: true, module_manager: module_manager)
