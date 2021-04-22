@@ -19,9 +19,9 @@ module PlaceOS::Core
 
     describe "command/:module_id/execute" do
       it "executes a command on a running module" do
-        _, _, mod = create_resources
+        _, _, mod, resource_manager = create_resources
         mod_id = mod.id.as(String)
-        module_manager = ModuleManager.new(CORE_URL, discovery: DiscoveryMock.new("core", uri: CORE_URL)).start
+        module_manager = module_manager_mock
         module_manager.load_module(mod)
 
         route = File.join(namespace, mod_id, "execute")
@@ -36,19 +36,17 @@ module PlaceOS::Core
 
         ctx.response.status_code.should eq 200
 
-        result = begin
-          ctx.response.output.to_s
-        rescue
-          nil
-        end
+        result = ctx.response.output.to_s rescue nil
 
         result.should eq %("you can delete this file")
+      ensure
+        resource_manager.try &.stop
       end
     end
 
     describe "command/:module_id/debugger" do
       it "pipes debug output of a module" do
-        _, _, mod = create_resources
+        _, _, mod, resource_manager = create_resources
         mod_id = mod.id.as(String)
 
         # Mock resources
@@ -101,6 +99,8 @@ module PlaceOS::Core
         message = message_channel.receive
         message.empty?.should_not be_true
         message.should contain("this will be propagated to backoffice!")
+      ensure
+        resource_manager.try &.stop
       end
     end
 

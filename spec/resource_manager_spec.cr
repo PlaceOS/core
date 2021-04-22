@@ -25,7 +25,8 @@ module PlaceOS::Core
       {1, 2}.any?(resource_manager.compilation.processed.size).should be_true
 
       resource_manager.control_system_modules.processed.size.should eq 0
-      resource_manager.stop
+    ensure
+      resource_manager.try &.stop
     end
   end
 end

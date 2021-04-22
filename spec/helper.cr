@@ -155,11 +155,10 @@ def create_resources(fresh : Bool = false, process : Bool = true)
   _, repository, driver, mod = setup(fresh)
 
   # Clone, compile
-  if process
-    PlaceOS::Core::ResourceManager.instance(testing: true).start { }
-  end
+  resource_manager = PlaceOS::Core::ResourceManager.new(testing: true)
+  resource_manager.start { } if process
 
-  {repository, driver, mod}
+  {repository, driver, mod, resource_manager}
 end
 
 class DiscoveryMock < HoundDog::Discovery
