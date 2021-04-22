@@ -24,16 +24,16 @@ module PlaceOS::Core
       raise Resource::ProcessingError.new(resource.name, "#{exception} #{exception.message}", cause: exception)
     end
 
-    # Update the mappingg for a ControlSystem
+    # Update the mapping for a ControlSystem
     def self.update_mapping(
       system : Model::ControlSystem,
       startup : Bool = false,
       module_manager : ModuleManager = ModuleManager.instance
     ) : Resource::Result
-      destroyed = system.destroyed?
       relevant_node = startup || module_manager.discovery.own_node?(system.id.as(String))
-
       return Resource::Result::Skipped unless relevant_node
+
+      destroyed = system.destroyed?
 
       #                      Always load mappings during startup
       #                      |          Remove mappings
@@ -41,14 +41,14 @@ module PlaceOS::Core
       #                      |          |            |                   |
       mappings_need_update = startup || destroyed || !system.changed? || system.modules_changed?
 
-      updated_logic_modules = update_logic_modules(system, module_manager)
-
       if mappings_need_update
         set_mappings(system, nil)
         Log.info { {message: "#{destroyed ? "deleted" : "created"} indirect module mappings", system_id: system.id} }
       end
 
-      mappings_need_update || updated_logic_modules ? Resource::Result::Success : Resource::Result::Skipped
+      updated_logic_modules = update_logic_modules(system, module_manager)
+
+      mappings_need_update || updated_logic_modules > 0 ? Resource::Result::Success : Resource::Result::Skipped
     end
 
     # Update logic Module children for a ControlSystem
@@ -56,22 +56,24 @@ module PlaceOS::Core
     def self.update_logic_modules(
       system : Model::ControlSystem,
       module_manager : ModuleManager = ModuleManager.instance
-    )
-      return false if system.destroyed?
+    ) : Int32
+      return 0 if system.destroyed?
 
       control_system_id = system.id.as(String)
-      updated = Model::Module.logic_for(control_system_id).reduce(0) do |updates, mod|
-        if module_manager.refresh_module(mod)
-          Log.info { {message: "#{mod.running_was == false ? "started" : "updated"} system logic module", module_id: mod.id, control_system_id: control_system_id} }
-          updates + 1
-        else
-          updates
+      total = 0
+      updated_modules = Model::Module.logic_for(control_system_id).sum do |mod|
+        total += 1
+        begin
+          module_manager.refresh_module(mod)
+          Log.debug { {message: "#{mod.running_was == false ? "started" : "updated"} system logic module", module_id: mod.id, control_system_id: control_system_id} }
+          1
+        rescue e
+          Log.warn(exception: e) { {message: "failed to refresh logic module for control system", module_id: mod.id, control_system_id: control_system_id} }
+          0
         end
       end
 
-      updated_modules = updated > 0
-
-      Log.info { {message: "configured #{updated} control_system logic modules", control_system_id: control_system_id} } if updated_modules
+      Log.info { {message: "updated system logic modules", control_system_id: control_system_id, total: total, updated: updated_modules} } if updated_modules > 0
 
       updated_modules
     end
@@ -82,7 +84,7 @@ module PlaceOS::Core
     def self.set_mappings(
       control_system : Model::ControlSystem,
       mod : Model::Module?
-    )
+    ) : Hash(String, String)
       system_id = control_system.id.as(String)
       storage = Driver::RedisStorage.new(system_id, "system")
 
@@ -96,7 +98,7 @@ module PlaceOS::Core
           system_id: control_system.id,
           modules:   control_system.modules,
         } }
-        return
+        return {} of String => String
       end
 
       # Construct a hash of resolved module name to ordered module ids
@@ -122,6 +124,8 @@ module PlaceOS::Core
 
       # Notify subscribers of a system module ordering change
       Driver::RedisStorage.with_redis(&.publish(Driver::Subscriptions::SYSTEM_ORDER_UPDATE, system_id))
+
+      mappings
     end
 
     def start

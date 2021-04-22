@@ -163,8 +163,10 @@ def create_resources(fresh : Bool = false, process : Bool = true)
 end
 
 class DiscoveryMock < HoundDog::Discovery
+  DOES_NOT_MAP = "<does-not-map>"
+
   def own_node?(key : String) : Bool
-    true
+    key != DOES_NOT_MAP
   end
 
   def etcd_nodes
