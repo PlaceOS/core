@@ -104,7 +104,7 @@ module PlaceOS::Core
         Mappings::ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 2
       end
 
-      it "gracefully handles refresh failures" do
+      it "handles refresh failures" do
         driver = Model::Generator.driver(:logic).save!
         cs = Model::Generator.control_system.save!
 
