@@ -30,14 +30,23 @@ module PlaceOS
       settings : Model::Settings,
       module_manager : ModuleManager
     )
+      Log.context.set(settings_id: settings.id)
+      failure = false
+
+      # TODO: Perform asynchronously
       # Find each module affected by the Settings change
       settings.dependent_modules.each do |mod|
-        if module_manager.refresh_module(mod)
-          Log.info { {message: "#{mod.running_was == false ? "started" : "updated"} module with new settings", module_id: mod.id, settings_id: settings.id} }
+        begin
+          if module_manager.refresh_module(mod)
+            Log.info { {message: "#{mod.running_was == false ? "started" : "updated"} module with new settings", module_id: mod.id, settings_id: settings.id} }
+          end
+        rescue e : ModuleError
+          failure = true
+          Log.error(exception: e) { {message: "failed to update module's settings", module_id: mod.id} }
         end
       end
 
-      Result::Success
+      failure ? Result::Error : Result::Success
     end
   end
 end
