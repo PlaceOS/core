@@ -44,6 +44,8 @@ module PlaceOS::Core
       Model::Repository.find!(repo.id.as(String)).commit_hash.should eq commit_hash
 
       Compiler::GitCommands.current_branch(full_repository_path).should eq secondary_branch
+    ensure
+      repo.try &.destroy
     end
 
     it "clones/deletes repositories" do
@@ -80,6 +82,7 @@ module PlaceOS::Core
       Dir.exists?(full_repository_path).should be_false
     ensure
       cloner.try &.stop
+      repo.try &.destroy
     end
   end
 end
