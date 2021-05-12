@@ -7,6 +7,8 @@ module PlaceOS::Core::Api
   class Drivers < Application
     base "/api/core/v1/drivers/"
 
+    id_param :file_name
+
     # The drivers available, returns Array(String)
     def index
       repository = params["repository"]
@@ -15,16 +17,16 @@ module PlaceOS::Core::Api
 
     # Returns the list of commits for a particular driver
     def show
-      driver = URI.decode(params["id"])
+      driver_file = URI.decode(params["file_name"])
       repository = params["repository"]
       count = (params["count"]? || 50).to_i
 
-      render json: PlaceOS::Compiler::Helper.commits(driver, repository, count)
+      render json: PlaceOS::Compiler::Helper.commits(driver_file, repository, count)
     end
 
     # Boolean check whether driver is compiled
-    get "/:id/compiled", :compiled do
-      driver_file = URI.decode(params["id"])
+    get "/:file_name/compiled", :compiled do
+      driver_file = URI.decode(params["file_name"])
       commit = params["commit"]
       tag = params["tag"]
 
@@ -32,8 +34,8 @@ module PlaceOS::Core::Api
     end
 
     # Returns the details of a driver
-    get "/:id/details", :details do
-      driver = URI.decode(params["id"])
+    get "/:file_name/details", :details do
+      driver = URI.decode(params["file_name"])
       commit = params["commit"]
       repository = params["repository"]
 
