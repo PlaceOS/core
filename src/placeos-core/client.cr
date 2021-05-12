@@ -121,6 +121,16 @@ module PlaceOS::Core
       Bool.from_json(response.body)
     end
 
+    def branches?(repository : String)
+      begin
+        reponse = get("/drivers/#{repository}/branches")
+      rescue e : Core::ClientError
+        return if e.status_code == 404
+        raise e
+      end
+      Array(String).from_json(reponse.body)
+    end
+
     # Command
     ###########################################################################
 
