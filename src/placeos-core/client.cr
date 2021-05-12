@@ -80,17 +80,20 @@ module PlaceOS::Core
       Array(String).from_json(response.body)
     end
 
+    struct DriverCommit < BaseResponse
+      getter commit : String
+      getter date : String
+      getter author : String
+      getter subject : String
+    end
+
     # Returns the commits for a particular driver
     def driver(driver_id : String, repository : String, count : Int32? = nil)
       params = HTTP::Params{"repository" => repository}
       params["count"] = count.to_s if count
 
       response = get("/drivers/#{URI.encode_www_form(driver_id)}?#{params}")
-      Array(NamedTuple(
-        commit: String,
-        date: String,
-        author: String,
-        subject: String)).from_json(response.body)
+      Array(DriverCommit).from_json(response.body)
     end
 
     # Returns the metadata for a particular driver
@@ -182,14 +185,26 @@ module PlaceOS::Core
     ###########################################################################
 
     struct CoreStatus < BaseResponse
-      alias Error = NamedTuple(name: String, reason: String)
-      alias RunCount = NamedTuple(modules: Int32, drivers: Int32)
+      struct Error < BaseResponse
+        getter name : String
+        getter reason : String
+      end
+
+      struct Count < BaseResponse
+        getter modules : Int32
+        getter drivers : Int32
+      end
+
+      struct RunCount < BaseResponse
+        getter local : Count
+        getter edge : Hash(String, Count)
+      end
 
       getter available_repositories : Array(String)
       getter unavailable_repositories : Array(Error)
       getter compiled_drivers : Array(String)
       getter unavailable_drivers : Array(Error)
-      getter run_count : NamedTuple(local: RunCount, edge: Hash(String, RunCount))
+      getter run_count : RunCount
     end
 
     # Core status

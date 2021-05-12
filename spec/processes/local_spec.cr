@@ -182,7 +182,7 @@ module PlaceOS::Core::ProcessManager
         it "run_count" do
           pm = Local.new(discovery_mock)
           pm.load(module_id: "mod", driver_key: driver_key)
-          pm.run_count.should eq({drivers: 1, modules: 1})
+          pm.run_count.should eq(ProcessManager::Count.new(1, 1))
         end
 
         describe "unload" do
