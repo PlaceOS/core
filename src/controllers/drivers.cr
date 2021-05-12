@@ -99,6 +99,33 @@ module PlaceOS::Core::Api
       render text: execute_output
     end
 
+    # Returns an array of branches for a repository
+    get "/:repository/branches", :branches do
+      repository = params["repository"]
+      branches = self.class.branches?(repository)
+      head :not_found if branches.nil?
+
+      render json: branches
+    end
+
+    def self.branches?(folder_name : String) : Array(String)?
+      path = File.expand_path(File.join(Compiler.repository_dir, folder_name))
+      if Dir.exists?(path)
+        Compiler::GitCommands.repo_operation(path) do
+          ExecFrom.exec_from(path, "git", {"fetch", "--all"}, environment: {"GIT_TERMINAL_PROMPT" => "0"})
+          result = ExecFrom.exec_from(path, "git", {"branch", "-r"}, environment: {"GIT_TERMINAL_PROMPT" => "0"})
+          if result[:exit_code].zero?
+            result[:output]
+              .to_s
+              .lines
+              .compact_map { |l| l.strip.lchop("origin/") unless l =~ /HEAD/ }
+              .sort!
+              .uniq!
+          end
+        end
+      end
+    end
+
     # Caching
     ###########################################################################
 
