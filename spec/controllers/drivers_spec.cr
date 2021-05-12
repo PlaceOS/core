@@ -30,7 +30,7 @@ module PlaceOS::Core
       end
     end
 
-    describe "drivers/:id/compiled" do
+    describe "drivers/:file_name/compiled" do
       it "checks if a driver has been compiled" do
         repo, driver, _, resource_manager = create_resources
         uri = URI.encode_www_form(SPEC_DRIVER)
@@ -43,7 +43,7 @@ module PlaceOS::Core
 
         path = File.join(namespace, uri, "/compiled?#{params}")
         ctx = context("GET", path, json_headers)
-        ctx.route_params = {"id" => uri}
+        ctx.route_params = {"file_name" => uri}
         ctx.response.output = IO::Memory.new
         Api::Drivers.new(ctx, :compiled).compiled
 
@@ -54,14 +54,14 @@ module PlaceOS::Core
       end
     end
 
-    describe "drivers/:id" do
+    describe "drivers/:file_name" do
       it "lists commits for a particular driver" do
         repo, _, _, resource_manager = create_resources
         uri = URI.encode_www_form(SPEC_DRIVER)
 
         path = File.join(namespace, uri, "?repository=#{repo.folder_name}")
         ctx = context("GET", path, json_headers)
-        ctx.route_params = {"id" => uri}
+        ctx.route_params = {"file_name" => uri}
         ctx.response.output = IO::Memory.new
         Api::Drivers.new(ctx, :index).show
 
