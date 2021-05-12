@@ -54,6 +54,37 @@ module PlaceOS::Core
       end
     end
 
+    describe "drivers/:repository/branches" do
+      it "404s if the repository has not been cloned" do
+        directory = "doesnotexist"
+        path = File.join(namespace, directory, "branches")
+        ctx = context("GET", path, json_headers)
+        ctx.route_params = {"repository" => directory}
+        ctx.response.output = IO::Memory.new
+
+        Api::Drivers.new(ctx, :branches).branches
+
+        ctx.response.status_code.should eq 404
+      end
+
+      it "lists the branches on a cloned repository" do
+        repo, _, _, resource_manager = create_resources
+        directory = repo.folder_name
+        path = File.join(namespace, directory, "branches")
+        ctx = context("GET", path, json_headers)
+        ctx.route_params = {"repository" => directory}
+        ctx.response.output = IO::Memory.new
+        Api::Drivers.new(ctx, :branches).branches
+
+        ctx.response.status_code.should eq 200
+        branches = Array(String).from_json(ctx.response.output.to_s)
+        branches.should_not be_empty
+        branches.should contain("master")
+      ensure
+        resource_manager.try &.stop
+      end
+    end
+
     describe "drivers/:file_name" do
       it "lists commits for a particular driver" do
         repo, _, _, resource_manager = create_resources
