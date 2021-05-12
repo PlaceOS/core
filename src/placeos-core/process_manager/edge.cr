@@ -71,7 +71,7 @@ module PlaceOS::Core
     def execute(module_id : String, payload : String)
       response = Protocol.request(Protocol::Message::Execute.new(module_id, payload), expect: Protocol::Message::ExecuteResponse, preserve_response: true)
       if response.nil?
-        raise PlaceOS::Driver::RemoteException.new("No response received from edge received", IO::TimeoutError)
+        raise PlaceOS::Driver::RemoteException.new("No response received from edge received", IO::TimeoutError.class.to_s)
       elsif !response.success
         output = response.output
         if output
@@ -239,7 +239,7 @@ module PlaceOS::Core
       !!Protocol.request(Protocol::Message::ModuleLoaded.new(module_id), expect: Protocol::Message::Success)
     end
 
-    def run_count : NamedTuple(drivers: Int32, modules: Int32)
+    def run_count : Count
       response = Protocol.request(Protocol::Message::RunCount.new, expect: Protocol::Message::RunCountResponse)
       raise "failed to request run count" if response.nil?
 

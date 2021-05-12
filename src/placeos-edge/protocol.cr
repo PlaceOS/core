@@ -3,6 +3,8 @@ require "json"
 
 require "placeos-driver/protocol/management"
 
+require "../placeos-core/process_manager"
+
 module PlaceOS::Edge::Protocol
   # Containers
   #############################################################################
@@ -350,7 +352,7 @@ module PlaceOS::Edge::Protocol
     end
 
     struct RunCountResponse < Client::Response
-      getter count : NamedTuple(drivers: Int32, modules: Int32)
+      getter count : Core::ProcessManager::Count
 
       def initialize(@count)
       end

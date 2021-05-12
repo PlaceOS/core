@@ -38,7 +38,7 @@ module PlaceOS::Core
       return Resource::Result::Skipped unless module_manager.discovery.own_node?(module_id)
 
       # Update mappings for ControlSystems containing the Module
-      Model::ControlSystem.using_module(module_id).each do |control_system|
+      Model::ControlSystem.by_module_id(module_id).each do |control_system|
         ControlSystemModules.set_mappings(control_system, mod)
       end
 

@@ -153,12 +153,9 @@ module PlaceOS::Core
         !protocol_manager_by_driver?(driver_key).nil?
       end
 
-      def run_count : NamedTuple(drivers: Int32, modules: Int32)
+      def run_count : Count
         protocol_manager_lock.synchronize do
-          {
-            drivers: @driver_protocol_managers.size,
-            modules: @module_protocol_managers.size,
-          }
+          Count.new(@driver_protocol_managers.size, @module_protocol_managers.size)
         end
       end
 

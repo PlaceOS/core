@@ -7,6 +7,8 @@ module PlaceOS::Core
     alias Request = PlaceOS::Driver::Protocol::Request
     alias DebugCallback = PlaceOS::Driver::Protocol::Management::DebugCallback
 
+    record Count, drivers : Int32, modules : Int32 { include JSON::Serializable }
+
     macro included
       Log = ::Log.for(self)
     end
@@ -104,7 +106,7 @@ module PlaceOS::Core
     # - unique drivers running
     # - module processes
     #
-    abstract def run_count : NamedTuple(drivers: Int32, modules: Int32)
+    abstract def run_count : Count
 
     # Count of distinct modules loaded on a ProcessManager
     #

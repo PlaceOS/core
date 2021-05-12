@@ -222,7 +222,7 @@ module PlaceOS::Core::ProcessManager
     it "run_count" do
       with_edge do |ctx, _client, pm|
         pm.load(module_id: "mod", driver_key: ctx.driver_path)
-        pm.run_count.should eq({drivers: 1, modules: 1})
+        pm.run_count.should eq(ProcessManager::Count.new(1, 1))
       end
     end
 
