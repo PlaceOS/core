@@ -1,5 +1,5 @@
 name: placeos-core
-version: 3.9.0
+version: 3.9.1
 crystal: ~> 1.0
 
 targets:
@@ -47,7 +47,7 @@ dependencies:
 
   placeos-models:
     github: placeos/models
-    version: ~> 4.13
+    version: ~> 5.0
 
   placeos-resource:
     github: place-labs/resource
