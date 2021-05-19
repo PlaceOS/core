@@ -1,6 +1,10 @@
 require "placeos-log-backend"
 
-module PlaceOS::Core
+require "./constants"
+
+module PlaceOS::Core::Logging
+  ::Log.progname = APP_NAME
+
   # Configure logging
   log_backend = PlaceOS::LogBackend.log_backend
   log_level = Core.production? ? ::Log::Severity::Info : ::Log::Severity::Debug
