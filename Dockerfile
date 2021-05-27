@@ -9,10 +9,10 @@ ARG TARGET
 WORKDIR /app
 
 # Install the latest version of LibSSH2, ping
-RUN apk add --no-cache libssh2-static iputils yaml-static
+RUN apk add --no-cache ca-certificates iputils libssh2-static tzdata yaml-static
 
 # Add trusted CAs for communicating with external services
-RUN apk add --no-cache ca-certificates tzdata && update-ca-certificates
+RUN update-ca-certificates
 
 # Create a non-privileged user
 ARG IMAGE_UID="10001"

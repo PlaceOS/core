@@ -6,13 +6,12 @@ WORKDIR /app
 ARG PLACE_COMMIT="DEV"
 
 # Install the latest version of LibSSH2, ping
-RUN apk add --no-cache libssh2 libssh2-static libssh2-dev iputils yaml-static
+RUN apk add --no-cache ca-certificates iputils libssh2 libssh2-dev libssh2-static tzdata yaml-static
 
 # Add trusted CAs for communicating with external services
-RUN apk add --no-cache ca-certificates tzdata && update-ca-certificates
+RUN update-ca-certificates
 
 RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing watchexec
-
 RUN apk add --no-cache bash
 
 COPY shard.yml /app
