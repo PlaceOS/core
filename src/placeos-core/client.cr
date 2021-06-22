@@ -213,6 +213,10 @@ module PlaceOS::Core
       CoreStatus.from_json(response.body)
     end
 
+    def version : PlaceOS::Model::Version
+      PlaceOS::Model::Version.from_json(get("/version").body)
+    end
+
     struct Load < BaseResponse
       getter local : SystemLoad
       getter edge : Hash(String, SystemLoad)
