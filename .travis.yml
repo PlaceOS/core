@@ -1,8 +1,0 @@
-language: minimal
-
-services:
-  - docker
-
-script:
-  - ./test
-  - ./test --multithreaded || echo "multithreaded suite failed"
