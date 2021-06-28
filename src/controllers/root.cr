@@ -1,4 +1,5 @@
 require "./application"
+require "placeos-models/version"
 
 require "rethinkdb"
 require "rethinkdb-orm"
@@ -15,6 +16,15 @@ module PlaceOS::Core::Api
 
     def index
       head self.class.healthcheck? ? HTTP::Status::OK : HTTP::Status::INTERNAL_SERVER_ERROR
+    end
+
+    get "/version", :version do
+      render :ok, json: PlaceOS::Model::Version.new(
+        version: VERSION,
+        build_time: BUILD_TIME,
+        commit: BUILD_COMMIT,
+        service: APP_NAME
+      )
     end
 
     def self.healthcheck? : Bool
