@@ -1,7 +1,6 @@
 name: CI
-on: [push, workflow_dispatch]
+on: push
 jobs:
-
   style:
     runs-on: ubuntu-latest
     container:
@@ -14,7 +13,6 @@ jobs:
         uses: crystal-ameba/github-action@v0.2.12
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -30,4 +28,3 @@ jobs:
         run: ./test
         env:
           CRYSTAL_VERSION: ${{ matrix.crystal }}
-
