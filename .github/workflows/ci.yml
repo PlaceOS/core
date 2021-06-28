@@ -1,0 +1,33 @@
+name: CI
+on: [push, workflow_dispatch]
+jobs:
+
+  style:
+    runs-on: ubuntu-latest
+    container:
+      image: crystallang/crystal
+    steps:
+      - uses: actions/checkout@v2
+      - name: Format
+        run: crystal tool format --check
+      - name: Lint
+        uses: crystal-ameba/github-action@v0.2.12
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        crystal:
+          - latest
+          - nightly
+          - 1.0.0
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run docker-compose test environment
+        run: ./test
+        env:
+          CRYSTAL_VERSION: ${{ matrix.crystal }}
+

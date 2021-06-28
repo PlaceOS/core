@@ -8,8 +8,15 @@ ARG TARGET
 
 WORKDIR /app
 
+# Ensure up-to-date dependencies
+RUN apk upgrade --no-cache
+
 # Install the latest version of LibSSH2, ping
-RUN apk add --no-cache ca-certificates iputils libssh2-static tzdata yaml-static
+RUN apk add --no-cache \
+    ca-certificates \
+    iputils \
+    libssh2-static \
+    yaml-static
 
 # Add trusted CAs for communicating with external services
 RUN update-ca-certificates

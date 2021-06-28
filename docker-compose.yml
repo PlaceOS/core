@@ -5,7 +5,6 @@ version: "3.7"
 x-deployment-env: &deployment-env
   ENV: ${ENV:-development}
   SG_ENV: ${SG_ENV:-development}
-  TZ: $TZ
 
 x-etcd-client-env: &etcd-client-env
   ETCD_HOST: ${ETCD_HOST:-etcd}
@@ -20,12 +19,12 @@ x-rethinkdb-client-env: &rethinkdb-client-env
   RETHINKDB_DB: ${RETHINKDB_DB:-place_development}
 
 services:
-  core: # Module coordinator
+  test: # Module coordinator
     build:
       context: ./
       dockerfile: Dockerfile.test
-    hostname: core
-    container_name: test_core
+      args:
+        crystal_version: ${CRYSTAL_VERSION:-1.0.0}
     volumes:
       - ./spec:/app/spec
       - ./src:/app/src
@@ -45,15 +44,11 @@ services:
     image: eqalpha/keydb
     restart: always
     hostname: redis
-    environment:
-      TZ: $TZ
 
   rethink:
     image: rethinkdb:${RETHINKDB_VERSION:-2.4}
     restart: always
     hostname: rethink
-    environment:
-      TZ: $TZ
 
   etcd:
     image: bitnami/etcd:${ETCD_VERSION:-3}
@@ -61,4 +56,3 @@ services:
     hostname: etcd
     environment:
       ALLOW_NONE_AUTHENTICATION: "yes"
-      TZ: $TZ
