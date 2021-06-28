@@ -1,12 +1,21 @@
-FROM crystallang/crystal:1.0.0-alpine
+ARG crystal_version=1.0.0
+FROM crystallang/crystal:${crystal_version}-alpine
 
 WORKDIR /app
 
 # Set the commit through a build arg
 ARG PLACE_COMMIT="DEV"
 
+# Ensure up-to-date dependencies
+RUN apk upgrade --no-cache
+
 # Install the latest version of LibSSH2, ping
-RUN apk add --no-cache ca-certificates iputils libssh2 libssh2-dev libssh2-static tzdata yaml-static
+RUN apk add --no-cache \
+  bash \
+  ca-certificates \
+  iputils \
+  libssh2-static \
+  yaml-static
 
 # Add trusted CAs for communicating with external services
 RUN update-ca-certificates
