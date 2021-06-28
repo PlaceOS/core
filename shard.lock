@@ -111,7 +111,7 @@ shards:
 
   openssl_ext:
     git: https://github.com/spider-gazelle/openssl_ext.git
-    version: 2.1.4
+    version: 2.1.5
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
