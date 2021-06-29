@@ -12,11 +12,10 @@ WORKDIR /app
 RUN apk upgrade --no-cache
 
 # Install the latest version of LibSSH2, ping
-RUN apk add --no-cache \
+RUN apk add --update --no-cache \
     ca-certificates \
     iputils \
-    libssh2-static \
-    yaml-static
+    libssh2-static
 
 # Add trusted CAs for communicating with external services
 RUN update-ca-certificates

@@ -6,22 +6,17 @@ WORKDIR /app
 # Set the commit through a build arg
 ARG PLACE_COMMIT="DEV"
 
-# Ensure up-to-date dependencies
-RUN apk upgrade --no-cache
-
 # Install the latest version of LibSSH2, ping
-RUN apk add --no-cache \
+RUN apk add --update --no-cache \
   bash \
   ca-certificates \
   iputils \
-  libssh2-static \
-  yaml-static
+  libssh2-static
 
 # Add trusted CAs for communicating with external services
 RUN update-ca-certificates
 
 RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing watchexec
-RUN apk add --no-cache bash
 
 COPY shard.yml /app
 COPY shard.override.yml /app
