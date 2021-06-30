@@ -3,19 +3,18 @@ ARG TARGET=core
 
 FROM crystallang/crystal:1.0.0-alpine as build
 
-ARG PLACE_COMMIT=DEV
+ARG PLACE_COMMIT="DEV"
+ARG PLACE_VERSION="DEV"
 ARG TARGET
 
 WORKDIR /app
-
-# Ensure up-to-date dependencies
-RUN apk upgrade --no-cache
 
 # Install the latest version of LibSSH2, ping
 RUN apk add --update --no-cache \
     ca-certificates \
     iputils \
-    libssh2-static
+    libssh2-static \
+    yaml-static
 
 # Add trusted CAs for communicating with external services
 RUN update-ca-certificates
@@ -44,6 +43,7 @@ COPY src /app/src
 
 # Build the required target
 RUN UNAME_AT_COMPILE_TIME=true \
+    PLACE_VERSION=${PLACE_VERSION} \
     PLACE_COMMIT=${PLACE_COMMIT} \
     shards build ${TARGET} --production --release --static --error-trace
 

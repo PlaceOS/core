@@ -3,15 +3,13 @@ FROM crystallang/crystal:${crystal_version}-alpine
 
 WORKDIR /app
 
-# Set the commit through a build arg
-ARG PLACE_COMMIT="DEV"
-
 # Install the latest version of LibSSH2, ping
 RUN apk add --update --no-cache \
   bash \
   ca-certificates \
   iputils \
-  libssh2-static
+  libssh2-static \
+  yaml-static
 
 # Add trusted CAs for communicating with external services
 RUN update-ca-certificates
