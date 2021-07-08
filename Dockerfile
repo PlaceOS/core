@@ -34,7 +34,7 @@ RUN adduser \
 
 # Install deps
 COPY shard.yml /app
-COPY shard.override.yml /app
+# COPY shard.override.yml /app
 COPY shard.lock /app
 RUN shards install --production --ignore-crystal-version
 
