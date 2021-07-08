@@ -1,4 +1,3 @@
-# NOTICE: This lockfile contains some overrides from shard.override.yml
 version: 2.0
 shards:
   CrystalEmail:
@@ -55,7 +54,7 @@ shards:
 
   exec_from:
     git: https://github.com/place-labs/exec_from.git
-    version: 1.3.0
+    version: 2.0.0
 
   faker:
     git: https://github.com/askn/faker.git
@@ -115,7 +114,7 @@ shards:
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
-    version: 3.5.0
+    version: 4.3.2
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
@@ -161,7 +160,7 @@ shards:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
     version: 4.1.0
 
-  retriable: # Overridden
+  retriable:
     git: https://github.com/sija/retriable.cr.git
     version: 0.2.4
 
