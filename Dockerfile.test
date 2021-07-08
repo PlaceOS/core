@@ -17,7 +17,6 @@ RUN update-ca-certificates
 RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing watchexec
 
 COPY shard.yml /app
-COPY shard.override.yml /app
 COPY shard.lock /app
 
 RUN shards install --ignore-crystal-version
