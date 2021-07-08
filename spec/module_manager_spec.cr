@@ -34,8 +34,8 @@ module PlaceOS::Core
         resource_manager.start { }
 
         begin
-          repo_commit_hash = PlaceOS::Compiler::Helper.repository_commit_hash(repo.folder_name)
-          driver_commit_hash = PlaceOS::Compiler::Helper.file_commit_hash(driver.file_name, repo.folder_name)
+          repo_commit_hash = Compiler::Git.current_repository_commit(repo.folder_name, Compiler.repository_dir)
+          driver_commit_hash = Compiler::Git.current_file_commit(driver.file_name, repo.folder_name, Compiler.repository_dir)
           driver.update_fields(commit: driver_commit_hash)
           repo.update_fields(commit_hash: repo_commit_hash)
           sleep 0.2
@@ -47,7 +47,7 @@ module PlaceOS::Core
         mod_id = mod.id.as(String)
         driver_id = driver.id.as(String)
 
-        driver_commit_hash = PlaceOS::Compiler::Helper.file_commit_hash(driver.file_name, repo.folder_name)
+        driver_commit_hash = Compiler::Git.current_file_commit(driver.file_name, repo.folder_name, Compiler.repository_dir)
         driver_path = PlaceOS::Compiler::Helper.driver_binary_path(driver.file_name, driver_commit_hash, driver_id)
 
         module_manager.load_module(mod)

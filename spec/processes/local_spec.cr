@@ -4,9 +4,8 @@ module PlaceOS::Core::ProcessManager
   def self.with_driver
     _working_directory, repository, driver, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
     Cloning.clone_and_install(repository)
-    result = Compiler::Helper.compile_driver(driver.file_name, repository.folder_name, driver.commit, id: driver.id)
-    path = result[:executable]
-    yield mod, path, ProcessManager.path_to_key(path), driver
+    result = Compiler.build_driver(driver.file_name, repository.folder_name, driver.commit, id: driver.id)
+    yield mod, result.path, ProcessManager.path_to_key(result.path), driver
   end
 
   def self.test_starting(manager, mod, driver_key)

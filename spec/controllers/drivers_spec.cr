@@ -98,8 +98,8 @@ module PlaceOS::Core
 
         ctx.response.status_code.should eq 200
 
-        expected = PlaceOS::Compiler::Helper.commits(URI.decode(uri), repo.folder_name, 50)
-        result = Array(PlaceOS::Compiler::Git::Commit).from_json(ctx.response.output.to_s)
+        expected = Compiler::Git.commits(URI.decode(uri), repo.folder_name, Compiler.repository_dir, 50)
+        result = Array(Compiler::Git::Commit).from_json(ctx.response.output.to_s)
         result.should eq expected
       ensure
         resource_manager.try &.stop
