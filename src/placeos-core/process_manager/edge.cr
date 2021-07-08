@@ -224,7 +224,7 @@ module PlaceOS::Core
     ###############################################################################################
 
     def fetch_binary(driver_key : String) : Protocol::Message::BinaryBody
-      path = File.join(PlaceOS::Compiler.bin_dir, driver_key)
+      path = File.join(PlaceOS::Compiler.binary_dir, driver_key)
       Protocol::Message::BinaryBody.new(success: File.exists?(path), key: driver_key, path: path)
     end
 

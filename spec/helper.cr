@@ -78,12 +78,10 @@ end
 # Set up a temporary directory
 def set_temporary_working_directory(fresh : Bool = false) : String
   temp_dir = fresh ? get_temp : TEMP_DIR
-  PlaceOS::Compiler.bin_dir = "#{temp_dir}/bin"
-  PlaceOS::Compiler.drivers_dir = "#{temp_dir}/repositories/private-drivers"
+  PlaceOS::Compiler.binary_dir = "#{temp_dir}/bin"
   PlaceOS::Compiler.repository_dir = "#{temp_dir}/repositories"
 
-  Dir.mkdir_p(PlaceOS::Compiler.bin_dir)
-  Dir.mkdir_p(PlaceOS::Compiler.drivers_dir)
+  Dir.mkdir_p(PlaceOS::Compiler.binary_dir)
   Dir.mkdir_p(PlaceOS::Compiler.repository_dir)
 
   temp_dir

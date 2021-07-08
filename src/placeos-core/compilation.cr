@@ -16,15 +16,13 @@ module PlaceOS
 
     def initialize(
       @startup : Bool = true,
-      bin_dir : String = Compiler.bin_dir,
-      drivers_dir : String = Compiler.drivers_dir,
+      binary_dir : String = Compiler.binary_dir,
       repository_dir : String = Compiler.repository_dir,
       @module_manager : ModuleManager = ModuleManager.instance
     )
       buffer_size = System.cpu_count.to_i
 
-      Compiler.bin_dir = bin_dir
-      Compiler.drivers_dir = drivers_dir
+      Compiler.binary_dir = binary_dir
       Compiler.repository_dir = repository_dir
 
       super(buffer_size)
@@ -91,20 +89,24 @@ module PlaceOS
         end
       end
 
-      result = Compiler::Helper.compile_driver(driver.file_name, repository.folder_name, commit, id: driver_id)
-      success = result[:exit_status] == 0
+      result = Compiler.build_driver(
+        driver.file_name,
+        repository.folder_name,
+        commit,
+        id: driver_id
+      )
 
-      unless success
-        Log.error { {message: "failed to compile driver", output: result[:output], repository_name: repository.folder_name} }
-        return {false, "failed to compile #{driver.name} from #{repository.folder_name}: #{result[:output]}"}
+      unless result.success?
+        Log.error { {message: "failed to compile driver", output: result.output, repository_name: repository.folder_name} }
+        return {false, "failed to compile #{driver.name} from #{repository.folder_name}: #{result.output}"}
       end
 
       Log.info { {
         message:         "compiled driver",
         name:            driver.name,
-        executable:      result[:executable],
+        executable:      result.name,
         repository_name: repository.folder_name,
-        output:          result[:output],
+        output:          result.output,
       } }
 
       # (Re)load modules onto the newly compiled driver
@@ -117,10 +119,10 @@ module PlaceOS
 
       # Bump the commit on the driver post-compilation and module loading
       if (Compilation.pull?(commit) || force_recompile) && (startup || module_manager.discovery.own_node?(driver_id))
-        update_driver_commit(driver: driver, commit: result[:version], startup: startup)
+        update_driver_commit(driver: driver, commit: result.commit, startup: startup)
       end
 
-      {success, ""}
+      {result.success?, ""}
     end
 
     # Remove the stale driver binary if there was one

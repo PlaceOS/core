@@ -12,7 +12,7 @@ module PlaceOS::Core::Api
     # The drivers available, returns Array(String)
     def index
       repository = params["repository"]
-      render json: PlaceOS::Compiler::Helper.drivers(repository)
+      render json: Compiler::Helper.drivers(repository, Compiler.repository_dir)
     end
 
     # Returns the list of commits for a particular driver
@@ -21,7 +21,7 @@ module PlaceOS::Core::Api
       repository = params["repository"]
       count = (params["count"]? || 50).to_i
 
-      render json: PlaceOS::Compiler::Helper.commits(driver_file, repository, count)
+      render json: Compiler::Git.commits(driver_file, repository, Compiler.repository_dir, count)
     end
 
     # Boolean check whether driver is compiled
@@ -30,41 +30,45 @@ module PlaceOS::Core::Api
       commit = params["commit"]
       tag = params["tag"]
 
-      render json: PlaceOS::Compiler::Helper.compiled?(driver_file, commit, tag)
+      render json: Compiler::Helper.compiled?(driver_file, commit, tag)
     end
 
     # Returns the details of a driver
     get "/:file_name/details", :details do
-      driver = URI.decode(params["file_name"])
+      driver_file = URI.decode(params["file_name"])
       commit = params["commit"]
       repository = params["repository"]
 
-      Log.context.set(driver: driver, repository: repository, commit: commit)
+      Log.context.set(driver: driver_file, repository: repository, commit: commit)
 
-      cached = Api::Drivers.cached_details?(driver, repository, commit)
+      cached = Api::Drivers.cached_details?(driver_file, repository, commit)
       unless cached.nil?
-        Log.debug { "details cache hit" }
+        Log.trace { "details cache hit" }
 
         response.headers["Content-Type"] = "application/json"
         render text: cached
       end
 
-      Log.info { "compiling" }
+      Log.debug { "compiling" }
 
       uuid = UUID.random.to_s
-      compile_result = PlaceOS::Compiler::Helper.compile_driver(driver, repository, commit, id: uuid)
-      temporary_driver_path = compile_result[:executable]
+
+      compile_result = Compiler.build_driver(
+        driver_file,
+        repository,
+        commit,
+        id: uuid
+      )
 
       # check driver compiled
-      if compile_result[:exit_status] != 0
+      unless compile_result.success?
         Log.error { "failed to compile" }
         render :internal_server_error, json: compile_result
       end
 
-      executable_path = PlaceOS::Compiler::Helper.driver_binary_path(driver, commit, uuid)
       io = IO::Memory.new
       result = Process.run(
-        executable_path,
+        compile_result.path,
         {"--defaults"},
         input: Process::Redirect::Close,
         output: io,
@@ -74,14 +78,14 @@ module PlaceOS::Core::Api
       execute_output = io.to_s
 
       # Remove the driver as it was compiled for the lifetime of the query
-      File.delete(temporary_driver_path) if File.exists?(temporary_driver_path)
+      File.delete(compile_result.path) if File.exists?(compile_result.path)
 
-      if result.exit_code != 0
+      unless result.success?
         Log.error { {message: "failed to execute", output: execute_output} }
         render :internal_server_error, json: {
           exit_status: result.exit_code,
           output:      execute_output,
-          driver:      driver,
+          driver:      driver_file,
           version:     commit,
           repository:  repository,
         }
@@ -89,7 +93,7 @@ module PlaceOS::Core::Api
 
       begin
         # Set the details in redis
-        Api::Drivers.cache_details(driver, repository, commit, execute_output)
+        Api::Drivers.cache_details(driver_file, repository, commit, execute_output)
       rescue exception
         # No drama if the details aren't cached
         Log.warn(exception: exception) { "failed to cache driver details" }
@@ -111,11 +115,12 @@ module PlaceOS::Core::Api
     def self.branches?(folder_name : String) : Array(String)?
       path = File.expand_path(File.join(Compiler.repository_dir, folder_name))
       if Dir.exists?(path)
-        Compiler::GitCommands.repo_operation(path) do
+        Compiler::Git.repo_operation(path) do
           ExecFrom.exec_from(path, "git", {"fetch", "--all"}, environment: {"GIT_TERMINAL_PROMPT" => "0"})
           result = ExecFrom.exec_from(path, "git", {"branch", "-r"}, environment: {"GIT_TERMINAL_PROMPT" => "0"})
-          if result[:exit_code].zero?
-            result[:output]
+          if result.status.success?
+            result
+              .output
               .to_s
               .lines
               .compact_map { |l| l.strip.lchop("origin/") unless l =~ /HEAD/ }
@@ -129,7 +134,7 @@ module PlaceOS::Core::Api
     # Caching
     ###########################################################################
 
-    class_getter redis : Redis { Redis.new(url: PlaceOS::Core::REDIS_URL) }
+    class_getter redis : Redis { Redis.new(url: Core::REDIS_URL) }
 
     # Do a look up in redis for the details
     def self.cached_details?(file_name : String, repository : String, commit : String)
