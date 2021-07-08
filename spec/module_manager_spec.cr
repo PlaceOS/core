@@ -21,7 +21,7 @@ module PlaceOS::Core
         resource_manager.try &.stop
       end
 
-      it "load_module" do
+      it "load_module", focus: true do
         _, repo, driver, mod = setup
 
         module_manager = module_manager_mock

@@ -61,7 +61,7 @@ around_suite ->{
 Spec.before_suite do
   # Set the working directory before specs
   set_temporary_working_directory
-  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Trace)
+  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Debug)
   Log.builder.bind("http.client", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Warn)
   Log.builder.bind("clustering", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Error)
   Log.builder.bind("hound_dog.*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Error)
