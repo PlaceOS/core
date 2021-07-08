@@ -1,6 +1,6 @@
 require "file_utils"
 require "placeos-compiler/compiler"
-require "placeos-compiler/git_commands"
+require "placeos-compiler/git"
 require "placeos-compiler/helper"
 require "placeos-models"
 require "placeos-resource"
@@ -76,12 +76,12 @@ module PlaceOS
         branch: repository.branch,
         username: repository.username || username,
         password: repository.password || password,
-        working_dir: working_dir,
+        working_directory: working_dir,
         pull_if_exists: !testing,
       )
 
       # Update commit hash if repository id maps to current node, or during startup
-      current_commit = Compiler::Helper.repository_commit_hash(repository.folder_name)
+      current_commit = Compiler::Git.current_repository_commit(repository.folder_name, working_dir)
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
 
       if current_commit != repository.commit_hash && own_node

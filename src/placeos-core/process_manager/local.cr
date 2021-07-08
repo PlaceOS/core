@@ -179,7 +179,7 @@ module PlaceOS::Core
       # HACK: Retrieve the driver path from the module_id
       def path_for?(module_id) : Path?
         driver_key_for?(module_id).try do |key|
-          Path.new(Compiler.bin_dir, key)
+          Path.new(Compiler.binary_dir, key)
         end
       end
 
@@ -302,7 +302,7 @@ module PlaceOS::Core
     end
 
     private def driver_path(driver_key : String) : Path
-      Path.new(Compiler.bin_dir, ProcessManager.path_to_key(driver_key))
+      Path.new(Compiler.binary_dir, ProcessManager.path_to_key(driver_key))
     end
 
     # Callbacks
