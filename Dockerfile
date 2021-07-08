@@ -34,7 +34,6 @@ RUN adduser \
 
 # Install deps
 COPY shard.yml /app
-# COPY shard.override.yml /app
 COPY shard.lock /app
 RUN shards install --production --ignore-crystal-version
 
@@ -98,7 +97,7 @@ WORKDIR /app
 USER appuser:appuser
 
 EXPOSE 3000
-HEALTHCHECK CMD wget -qO- http://localhost:3000/api/core/v1
+HEALTHCHECK CMD /bin/core --curl http://localhost:3000/api/core/v1
 CMD ["/bin/core", "-b", "0.0.0.0", "-p", "3000"]
 
 ###############################################################################
