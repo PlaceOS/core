@@ -30,7 +30,7 @@ module PlaceOS::Core
       Dir.exists?(full_repository_path).should be_true
       Compiler::Git.current_branch(full_repository_path).should eq initial_branch
 
-      commit_hash = Compiler::Helper.repository_commit_hash(folder_name)
+      commit_hash = Compiler::Git.current_repository_commit(folder_name, Compiler.repository_dir)
       Model::Repository.find!(repo.id.as(String)).commit_hash.should eq commit_hash
 
       repo.clear_changes_information
@@ -40,7 +40,7 @@ module PlaceOS::Core
 
       cloner.process_resource(:updated, repo)
 
-      commit_hash = Compiler::Helper.repository_commit_hash(folder_name)
+      commit_hash = Compiler::Git.current_repository_commit(folder_name, Compiler.repository_dir)
       Model::Repository.find!(repo.id.as(String)).commit_hash.should eq commit_hash
 
       Compiler::Git.current_branch(full_repository_path).should eq secondary_branch
@@ -71,7 +71,7 @@ module PlaceOS::Core
       # Check the cloning took place
       Dir.exists?(full_repository_path).should be_true
 
-      commit_hash = Compiler::Helper.repository_commit_hash(folder_name)
+      commit_hash = Compiler::Git.current_repository_commit(folder_name, Compiler.repository_dir)
       Model::Repository.find!(repo.id.as(String)).commit_hash.should eq commit_hash
 
       repo.destroy

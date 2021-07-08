@@ -33,6 +33,8 @@ services:
       - redis
       - rethink
     environment:
+      # Environment
+      GITHUB_ACTION: ${GITHUB_ACTION:-}
       # Service Hosts
       << : *etcd-client-env
       << : *redis-client-env
