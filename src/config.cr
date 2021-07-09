@@ -14,7 +14,7 @@ require "./logging"
 require "./constants"
 
 require "./placeos-core"
-require "./controllers/*"
+require "./api/*"
 
 # Server required after application controllers
 require "action-controller/server"
