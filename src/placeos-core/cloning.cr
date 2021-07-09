@@ -56,12 +56,12 @@ module PlaceOS
       startup : Bool = false,
       testing : Bool = false
     )
-      Log.context.set({
-        branch:            repository.branch,
-        folder_name:       repository.folder_name,
-        uri:               repository.uri,
+      Log.context.set(
+        branch: repository.branch,
+        folder_name: repository.folder_name,
+        uri: repository.uri,
         repository_commit: repository.commit_hash,
-      })
+      )
 
       repository_id = repository.id.as(String)
 

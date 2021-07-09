@@ -303,7 +303,7 @@ module PlaceOS::Edge
     # Check for binary, request if it's not present
     # Start the module with redis hooks
     def load(module_id, driver_key)
-      Log.context.set({module_id: module_id, driver_key: driver_key})
+      Log.context.set(module_id: module_id, driver_key: driver_key)
 
       if !protocol_manager_by_module?(module_id)
         if (existing_driver_manager = protocol_manager_by_driver?(driver_key))

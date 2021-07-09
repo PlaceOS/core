@@ -62,13 +62,13 @@ module PlaceOS
       commit = force_recompile.nil? ? driver.commit : force_recompile
 
       ::Log.with_context do
-        Log.context.set({
-          driver_id:       driver_id,
-          name:            driver.name,
-          file_name:       driver.file_name,
+        Log.context.set(
+          driver_id: driver_id,
+          name: driver.name,
+          file_name: driver.file_name,
           repository_name: repository.folder_name,
-          commit:          commit,
-        })
+          commit: commit,
+        )
 
         if !force_recompile && !driver.commit_changed? && Compiler::Helper.compiled?(driver.file_name, commit, driver_id)
           Log.info { "commit unchanged and driver already compiled" }
