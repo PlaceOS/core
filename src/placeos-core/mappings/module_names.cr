@@ -10,21 +10,17 @@ module PlaceOS::Core
   class Mappings::ModuleNames < Resource(Model::Module)
     protected getter module_manager : ModuleManager
 
-    def initialize(
-      @module_manager : ModuleManager = ModuleManager.instance
-    )
+    def initialize(@module_manager : ModuleManager = ModuleManager.instance)
       super()
     end
 
-    def process_resource(action : RethinkORM::Changefeed::Event, resource : PlaceOS::Model::Module) : Resource::Result
-      if action.updated?
-        ModuleNames.update_module_mapping(resource, module_manager)
-      else
-        Resource::Result::Skipped
-      end
+    def process_resource(action : RethinkORM::Changefeed::Event, resource mod : PlaceOS::Model::Module) : Resource::Result
+      return Resource::Result::Skipped unless action.updated?
+
+      ModuleNames.update_module_mapping(mod, module_manager)
     rescue exception
-      Log.error(exception: exception) { {message: "while updating mapping for module", name: resource.name, custom_name: resource.custom_name} }
-      raise Resource::ProcessingError.new(resource.name, "#{exception} #{exception.message}", cause: exception)
+      Log.error(exception: exception) { {message: "while updating mapping for module", name: mod.name, custom_name: mod.custom_name} }
+      raise Resource::ProcessingError.new(mod.name, exception.message, cause: exception)
     end
 
     def self.update_module_mapping(
