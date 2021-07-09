@@ -51,7 +51,7 @@ dependencies:
 
   placeos-resource:
     github: place-labs/resource
-    version: ~> 1
+    version: ~> 2
 
   promise:
     github: spider-gazelle/promise
