@@ -122,9 +122,11 @@ module PlaceOS::Core
       if ModuleManager.core_uri(mod, rendezvous_hash) == uri
         driver = mod.driver!
         driver_id = driver.id.as(String)
+        repository_folder = driver.repository.not_nil!.folder_name
 
         ::Log.with_context do
           Log.context.set(
+            driver_id: driver_id,
             module_id: module_id,
             module_name: mod.name,
             custom_name: mod.custom_name,
@@ -132,8 +134,9 @@ module PlaceOS::Core
             driver_commit: driver.commit,
           )
 
+          driver_path = PlaceOS::Compiler.is_built?(driver.file_name, repository_folder, driver.commit, id: driver_id)
           # Check if the driver is built
-          unless (driver_path = PlaceOS::Compiler.is_built?(driver.file_name, driver.commit, id: driver_id))
+          if driver_path.nil?
             Log.error { "driver does not exist for module" }
             return
           end

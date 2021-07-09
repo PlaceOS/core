@@ -18,8 +18,14 @@ CORE_URL    = ENV["CORE_URL"]? || "http://core:3000"
 # - Use setup(fresh: true) if you require a clean working directory
 TEMP_DIR = get_temp
 
+PRIVATE_DRIVER_ID = "driver-#{random_id}"
+
+def random_id
+  UUID.random.to_s.split('-').first
+end
+
 def get_temp
-  "#{Dir.tempdir}/core-spec-#{UUID.random.to_s.split('-').first}"
+  "#{Dir.tempdir}/core-spec-#{random_id}"
 end
 
 def teardown(temp_dir = TEMP_DIR)
@@ -61,15 +67,16 @@ around_suite ->{
 Spec.before_suite do
   # Set the working directory before specs
   set_temporary_working_directory
-  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Debug)
-  Log.builder.bind("http.client", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Warn)
-  Log.builder.bind("clustering", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Error)
-  Log.builder.bind("hound_dog.*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Error)
+  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :warn)
+  Log.builder.bind("place_os.*", backend: PlaceOS::Core::LOG_STDOUT, level: :trace)
+  Log.builder.bind("http.client", backend: PlaceOS::Core::LOG_STDOUT, level: :warn)
+  Log.builder.bind("clustering", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
+  Log.builder.bind("hound_dog.*", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
 end
 
 Spec.after_suite do
   PlaceOS::Core::ResourceManager.instance.stop
-  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: Log::Severity::Error)
+  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
   puts "\n> Terminating stray driver processes"
   `pkill -f ".*core-spec.*"` rescue nil
   teardown
@@ -129,7 +136,8 @@ def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::
       module_name: driver_module_name,
       file_name: driver_file_name,
     )
-
+    driver._new_flag = true
+    driver.id = PRIVATE_DRIVER_ID
     driver.repository = repository
     driver.save!
 
