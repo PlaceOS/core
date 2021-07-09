@@ -1,12 +1,18 @@
 require "http"
 require "json"
 require "mutex"
+require "placeos-models/version"
+require "responsible"
+require "retriable"
 require "uri"
+require "uuid"
 
 require "./error"
 
 module PlaceOS::Core
   class Client
+    include Responsible
+
     # Core base
     BASE_PATH    = "/api/core"
     CORE_VERSION = "v1"
@@ -17,6 +23,8 @@ module PlaceOS::Core
     getter host : String = ENV["CORE_HOST"]? || "localhost"
     getter port : Int32 = (ENV["CORE_PORT"]? || 3000).to_i
 
+    private getter retries
+
     # Base struct for `Engine::Core` responses
     private abstract struct BaseResponse
       include JSON::Serializable
@@ -26,9 +34,10 @@ module PlaceOS::Core
     def self.client(
       uri : URI,
       request_id : String? = nil,
-      core_version : String = CORE_VERSION
+      core_version : String = CORE_VERSION,
+      retries : Int32 = 10
     )
-      client = new(uri, request_id, core_version)
+      client = new(uri, request_id, core_version, retries)
       begin
         response = yield client
       ensure
@@ -41,7 +50,8 @@ module PlaceOS::Core
     def initialize(
       uri : URI,
       @request_id : String? = nil,
-      @core_version : String = CORE_VERSION
+      @core_version : String = CORE_VERSION,
+      @retries : Int32 = 10
     )
       uri_host = uri.host
       @host = uri_host if uri_host
@@ -53,7 +63,8 @@ module PlaceOS::Core
       host : String? = nil,
       port : Int32? = nil,
       @request_id : String? = nil,
-      @core_version : String = CORE_VERSION
+      @core_version : String = CORE_VERSION,
+      @retries : Int32 = 10
     )
       @host = host if host
       @port = port if port
@@ -76,8 +87,9 @@ module PlaceOS::Core
     # Returns drivers available
     def drivers(repository : String) : Array(String)
       params = HTTP::Params{"repository" => repository}
-      response = get("/drivers?#{params}")
-      Array(String).from_json(response.body)
+      parse_to_return_type do
+        get("/drivers?#{params}")
+      end
     end
 
     struct DriverCommit < BaseResponse
@@ -88,12 +100,12 @@ module PlaceOS::Core
     end
 
     # Returns the commits for a particular driver
-    def driver(driver_id : String, repository : String, count : Int32? = nil)
+    def driver(driver_id : String, repository : String, count : Int32? = nil) : Array(DriverCommit)
       params = HTTP::Params{"repository" => repository}
       params["count"] = count.to_s if count
-
-      response = get("/drivers/#{URI.encode_www_form(driver_id)}?#{params}")
-      Array(DriverCommit).from_json(response.body)
+      parse_to_return_type do
+        get("/drivers/#{URI.encode_www_form(driver_id)}?#{params}")
+      end
     end
 
     # Returns the metadata for a particular driver
@@ -102,36 +114,29 @@ module PlaceOS::Core
         "commit"     => commit,
         "repository" => repository,
       }
-
-      response = get("/drivers/#{URI.encode_www_form(file_name)}/details?#{params}")
-
       # Response looks like:
       # https://github.com/placeos/driver/blob/master/docs/command_line_options.md#discovery-and-defaults
-      response.body
+      get("/drivers/#{URI.encode_www_form(file_name)}/details?#{params}").body
     end
 
-    def driver_compiled?(file_name : String, commit : String, repository : String, tag : String)
+    def driver_compiled?(file_name : String, commit : String, repository : String, tag : String) : Bool
       params = HTTP::Params{
         "commit"     => commit,
         "repository" => repository,
         "tag"        => tag,
       }
 
-      response = get("/drivers/#{URI.encode_www_form(file_name)}/compiled?#{params}")
-
-      # Response looks like:
-      # https://github.com/placeos/driver/blob/master/docs/command_line_options.md#discovery-and-defaults
-      Bool.from_json(response.body)
+      parse_to_return_type do
+        get("/drivers/#{URI.encode_www_form(file_name)}/compiled?#{params}")
+      end
     end
 
-    def branches?(repository : String)
-      begin
-        reponse = get("/drivers/#{repository}/branches")
-      rescue e : Core::ClientError
-        return if e.status_code == 404
-        raise e
+    def branches?(repository : String) : Array(String)?
+      parse_to_return_type do
+        get("/drivers/#{repository}/branches")
       end
-      Array(String).from_json(reponse.body)
+    rescue e : Core::ClientError
+      raise e unless e.status_code == 404
     end
 
     # Command
@@ -176,9 +181,10 @@ module PlaceOS::Core
     end
 
     # Returns the loaded modules on the node
-    def loaded
-      response = get("/status/loaded")
-      Loaded.from_json(response.body)
+    def loaded : Loaded
+      parse_to_return_type do
+        get("/status/loaded")
+      end
     end
 
     # Status
@@ -209,12 +215,15 @@ module PlaceOS::Core
 
     # Core status
     def core_status : CoreStatus
-      response = get("/status")
-      CoreStatus.from_json(response.body)
+      parse_to_return_type do
+        get("/status")
+      end
     end
 
     def version : PlaceOS::Model::Version
-      PlaceOS::Model::Version.from_json(get("/version").body)
+      parse_to_return_type do
+        get("/version")
+      end
     end
 
     struct Load < BaseResponse
@@ -234,8 +243,9 @@ module PlaceOS::Core
 
     # Details about machine load
     def core_load : Load
-      response = get("/status/load")
-      Load.from_json(response.body)
+      parse_to_return_type do
+        get("/status/load")
+      end
     end
 
     struct DriverStatus < BaseResponse
@@ -249,22 +259,17 @@ module PlaceOS::Core
         getter percentage_cpu : Float64? = nil
         getter memory_total : Int64? = nil
         getter memory_usage : Int64? = nil
-
-        def initialize
-        end
       end
 
       getter local : Metadata? = nil
       getter edge : Hash(String, Metadata?) = {} of String => PlaceOS::Core::Client::DriverStatus::Metadata?
-
-      def initialize
-      end
     end
 
     # Driver status
     def driver_status(path : String) : DriverStatus
-      response = get("/status/driver?path=#{path}")
-      DriverStatus.from_json(response.body)
+      parse_to_return_type do
+        get("/status/driver?path=#{path}")
+      end
     rescue e : Core::ClientError
       DriverStatus.new
     end
@@ -280,77 +285,43 @@ module PlaceOS::Core
     ###########################################################################
 
     {% for method in %w(get post) %}
-      # Executes a {{method.id.upcase}} request on core connection.
-      #
-      # The response status will be automatically checked and a Engine::Core::ClientError raised if
-      # unsuccessful.
-      # ```
-      private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType? = nil)
-        path = File.join(BASE_PATH, CORE_VERSION, path)
+    # Executes a {{method.id.upcase}} request on core connection.
+    #
+    # The response status will be automatically checked and a `PlaceOS::Core::ClientError` raised if
+    # unsuccessful and `raises` is `true`.
+    private def {{method.id}}(path : String, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType? = nil, raises : Bool = true) : HTTP::Client::Response
+      {{method.id}}(path, headers, body, raises) { |response| response }
+    end
 
-        response = connection_lock.synchronize do
-          connection.{{method.id}}(path, headers, body)
-        end
-        raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response) unless response.success?
+    # Executes a {{method.id.upcase}} request and yields a `HTTP::Client::Response`.
+    #
+    # When working with endpoint that provide stream responses these may be accessed as available
+    # by calling `#body_io` on the yielded response object.
+    #
+    # The response status will be automatically checked and a `PlaceOS::Core::ClientError` raised if
+    # unsuccessful and `raises` is `true`.
+    private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType = nil, raises : Bool = false)
+      headers ||= HTTP::Headers.new
+      headers["Content-Type"] = "application/json"
+      headers["X-Request-ID"] = request_id || UUID.random.to_s unless headers.has_key? "X-Request-ID"
 
-        response
-      end
-
-      # Executes a {{method.id.upcase}} request on the core client connection with a JSON body
-      # formed from the passed `NamedTuple`.
-      private def {{method.id}}(path, body : NamedTuple)
-        headers = HTTP::Headers{
-          "Content-Type" => "application/json"
-        }
-        headers["X-Request-ID"] = request_id unless request_id.nil?
-
-        {{method.id}}(path, headers, body.to_json)
-      end
-
-      # :ditto:
-      private def {{method.id}}(path, headers : HTTP::Headers, body : NamedTuple)
-        headers["Content-Type"] = "application/json"
-        headers["X-Request-ID"] = request_id unless request_id.nil?
-
-        {{method.id}}(path, headers, body.to_json)
-      end
-
-      # Executes a {{method.id.upcase}} request and yields a `HTTP::Client::Response`.
-      #
-      # When working with endpoint that provide stream responses these may be accessed as available
-      # by calling `#body_io` on the yielded response object.
-      #
-      # The response status will be automatically checked and a Core::ClientErrror raised if
-      # unsuccessful.
-      private def {{method.id}}(path, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType = nil)
-        connection.{{method.id}}(path, headers, body) do |response|
-          raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response) unless response.success?
-          yield response
+      path = File.join(BASE_PATH, core_version, path)
+      rewind_io = ->(e : Exception, _a : Int32, _t : Time::Span, _n : Time::Span) {
+        Log.error(exception: e) { {method: {{ method }}, path: path, message: "failed to request core"} }
+        body.rewind if body.responds_to? :rewind
+      }
+      Retriable.retry times: retries, max_interval: 1.minute, on_retry: rewind_io do
+        connection_lock.synchronize do
+          connection.{{method.id}}(path, headers, body) do |response|
+            if response.success? || !raises
+              yield response
+            else
+              raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response)
+            end
+          end
         end
       end
-
-      # Executes a {{method.id.upcase}} request on the core client connection with a JSON body
-      # formed from the passed `NamedTuple` and yields streamed response entries to the block.
-      private def {{method.id}}(path, body : NamedTuple)
-        headers = HTTP::Headers{
-          "Content-Type" => "application/json"
-        }
-        headers["X-Request-ID"] = request_id unless request_id.nil?
-
-        {{method.id}}(path, headers, body.to_json) do |response|
-          yield response
-        end
-      end
-
-      # :ditto:
-      private def {{method.id}}(path, headers : HTTP::Headers, body : NamedTuple)
-        headers["Content-Type"] = "application/json"
-        headers["X-Request-ID"] = request_id unless request_id.nil?
-
-        {{method.id}}(path, headers, body.to_json) do |response|
-          yield response
-        end
-      end
+    end
     {% end %}
   end
 end
