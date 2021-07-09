@@ -207,7 +207,7 @@ module PlaceOS::Core
       protected def protocol_manager_by_module?(module_id) : Driver::Protocol::Management?
         protocol_manager_lock.synchronize do
           @module_protocol_managers[module_id]?.tap do |manager|
-            Log.info { "missing module manager for #{module_id}" } if manager.nil?
+            Log.trace { "missing module manager for #{module_id}" } if manager.nil?
           end
         end
       end
@@ -216,7 +216,7 @@ module PlaceOS::Core
         key = ProcessManager.path_to_key(driver_key)
         protocol_manager_lock.synchronize do
           @driver_protocol_managers[key]?.tap do |manager|
-            Log.info { "missing module manager for #{key}" } if manager.nil?
+            Log.trace { "missing module manager for #{key}" } if manager.nil?
           end
         end
       end
