@@ -86,8 +86,7 @@ module PlaceOS::Core
       self
     end
 
-    def process_resource(action : Resource::Action, resource : Model::Module) : Resource::Result
-      mod = resource
+    def process_resource(action : Resource::Action, resource mod : Model::Module) : Resource::Result
       case action
       in .created?
         load_module(mod)

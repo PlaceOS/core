@@ -5,15 +5,11 @@ module PlaceOS
   class Core::SettingsUpdate < Resource(Model::Settings)
     private getter module_manager : ModuleManager
 
-    def initialize(
-      @module_manager : ModuleManager = ModuleManager.instance
-    )
+    def initialize(@module_manager : ModuleManager = ModuleManager.instance)
       super()
     end
 
-    def process_resource(action : RethinkORM::Changefeed::Event, resource : PlaceOS::Model::Settings) : Resource::Result
-      settings = resource
-
+    def process_resource(action : RethinkORM::Changefeed::Event, resource settings : PlaceOS::Model::Settings) : Resource::Result
       # Ignore versions
       if settings.is_version?
         Log.debug { {message: "skipping settings version", settings_id: settings.id, parent_id: settings.settings_id} }
@@ -22,8 +18,8 @@ module PlaceOS
 
       SettingsUpdate.update_modules(settings: settings, module_manager: module_manager)
     rescue exception
-      name = "Setting<#{resource.id}> for #{resource.parent_type}<#{resource.parent_id}>"
-      raise Resource::ProcessingError.new(name, "#{exception} #{exception.message}", cause: exception)
+      name = "Setting<#{settings.id}> for #{settings.parent_type}<#{settings.parent_id}>"
+      raise Resource::ProcessingError.new(name, exception.message, cause: exception)
     end
 
     def self.update_modules(

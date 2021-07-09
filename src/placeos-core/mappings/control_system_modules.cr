@@ -17,11 +17,11 @@ module PlaceOS::Core
       super()
     end
 
-    def process_resource(action : RethinkORM::Changefeed::Event, resource : PlaceOS::Model::ControlSystem) : Resource::Result
-      ControlSystemModules.update_mapping(resource, startup?, module_manager)
+    def process_resource(action : RethinkORM::Changefeed::Event, resource control_system : PlaceOS::Model::ControlSystem) : Resource::Result
+      ControlSystemModules.update_mapping(control_system, startup?, module_manager)
     rescue exception
       Log.error(exception: exception) { {message: "while updating mapping for system"} }
-      raise Resource::ProcessingError.new(resource.name, "#{exception} #{exception.message}", cause: exception)
+      raise Resource::ProcessingError.new(control_system.name, exception.message, cause: exception)
     end
 
     # Update the mapping for a ControlSystem

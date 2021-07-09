@@ -22,9 +22,7 @@ module PlaceOS
       super()
     end
 
-    def process_resource(action : RethinkORM::Changefeed::Event, resource : PlaceOS::Model::Repository) : Resource::Result
-      repository = resource
-
+    def process_resource(action : RethinkORM::Changefeed::Event, resource repository : PlaceOS::Model::Repository) : Resource::Result
       # Ignore interface repositories
       return Result::Skipped if repository.repo_type.interface?
 
@@ -47,7 +45,7 @@ module PlaceOS
         )
       end
     rescue exception
-      raise Resource::ProcessingError.new(resource.name, "#{exception} #{exception.message}", cause: exception)
+      raise Resource::ProcessingError.new(repository.name, exception.message, cause: exception)
     end
 
     def self.clone_and_install(
