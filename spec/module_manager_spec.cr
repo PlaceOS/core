@@ -21,7 +21,7 @@ module PlaceOS::Core
         resource_manager.try &.stop
       end
 
-      it "load_module", focus: true do
+      it "load_module" do
         _, repo, driver, mod = setup
 
         module_manager = module_manager_mock
@@ -33,22 +33,14 @@ module PlaceOS::Core
         resource_manager = ResourceManager.new(cloning: cloning, compilation: compilation)
         resource_manager.start { }
 
-        begin
-          repo_commit_hash = Compiler::Git.current_repository_commit(repo.folder_name, Compiler.repository_dir)
-          driver_commit_hash = Compiler::Git.current_file_commit(driver.file_name, repo.folder_name, Compiler.repository_dir)
-          driver.update_fields(commit: driver_commit_hash)
-          repo.update_fields(commit_hash: repo_commit_hash)
-          sleep 0.2
-        rescue e
-          pp! e
-          raise e
-        end
-
         mod_id = mod.id.as(String)
         driver_id = driver.id.as(String)
 
         driver_commit_hash = Compiler::Git.current_file_commit(driver.file_name, repo.folder_name, Compiler.repository_dir)
         driver_path = PlaceOS::Compiler::Helper.driver_binary_path(driver.file_name, driver_commit_hash, driver_id)
+
+        mod.reload!
+        mod.driver = mod.driver.not_nil!.reload!
 
         module_manager.load_module(mod)
 
