@@ -66,7 +66,7 @@ module PlaceOS::Core
 
       # Check repository has been processed
       cloner.processed.size.should eq 1
-      cloner.processed.first[:resource].id.should eq repo.id
+      cloner.processed.first.resource.id.should eq repo.id
 
       # Check the cloning took place
       Dir.exists?(full_repository_path).should be_true
