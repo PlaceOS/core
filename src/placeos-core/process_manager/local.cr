@@ -36,10 +36,7 @@ module PlaceOS::Core
       def unload(module_id : String)
         driver_key = driver_key_for?(module_id)
         ::Log.with_context do
-          Log.context.set({
-            driver_key: driver_key,
-            module_id:  module_id,
-          })
+          Log.context.set(driver_key: driver_key, module_id: module_id)
 
           stop(module_id)
 
@@ -258,10 +255,7 @@ module PlaceOS::Core
     def load(module_id : String, driver_key : String)
       driver_key = ProcessManager.path_to_key(driver_key)
       ::Log.with_context do
-        Log.context.set({
-          module_id:  module_id,
-          driver_key: driver_key,
-        })
+        Log.context.set(module_id: module_id, driver_key: driver_key)
 
         if protocol_manager_by_module?(module_id)
           Log.info { "module already loaded" }

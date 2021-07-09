@@ -27,7 +27,7 @@ module PlaceOS
       module_manager : ModuleManager
     )
       Log.context.set(settings_id: settings.id)
-      failure = false
+      result = Result::Success
 
       # TODO: Perform asynchronously
       # Find each module affected by the Settings change
@@ -37,12 +37,12 @@ module PlaceOS
             Log.info { {message: "#{mod.running_was == false ? "started" : "updated"} module with new settings", module_id: mod.id, settings_id: settings.id} }
           end
         rescue e : ModuleError
-          failure = true
+          result = Result::Error
           Log.error(exception: e) { {message: "failed to update module's settings", module_id: mod.id} }
         end
       end
 
-      failure ? Result::Error : Result::Success
+      result
     end
   end
 end

@@ -124,13 +124,13 @@ module PlaceOS::Core
         driver_id = driver.id.as(String)
 
         ::Log.with_context do
-          Log.context.set({
-            module_id:     module_id,
-            module_name:   mod.name,
-            custom_name:   mod.custom_name,
-            driver_name:   driver.name,
+          Log.context.set(
+            module_id: module_id,
+            module_name: mod.name,
+            custom_name: mod.custom_name,
+            driver_name: driver.name,
             driver_commit: driver.commit,
-          })
+          )
 
           # Check if the driver is built
           unless (driver_path = PlaceOS::Compiler.is_built?(driver.file_name, driver.commit, id: driver_id))
