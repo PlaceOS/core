@@ -19,46 +19,38 @@ x-rethinkdb-client-env: &rethinkdb-client-env
   RETHINKDB_DB: ${RETHINKDB_DB:-place_development}
 
 services:
-  # test: # Module coordinator
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile.test
-  #     args:
-  #       crystal_version: ${CRYSTAL_VERSION:-1.0.0}
-  #   volumes:
-  #     - ./spec:/app/spec
-  #     - ./src:/app/src
-  #   depends_on:
-  #     - etcd
-  #     - redis
-  #     - rethink
-  #   environment:
-  #     # Environment
-  #     GITHUB_ACTION: ${GITHUB_ACTION:-}
-  #     # Service Hosts
-  #     << : *etcd-client-env
-  #     << : *redis-client-env
-  #     << : *rethinkdb-client-env
-  #     # Environment
-  #     << : *deployment-env
+  test: # Module coordinator
+    build:
+      context: ./
+      dockerfile: Dockerfile.test
+      args:
+        crystal_version: ${CRYSTAL_VERSION:-1.0.0}
+    volumes:
+      - ./spec:/app/spec
+      - ./src:/app/src
+    depends_on:
+      - etcd
+      - redis
+      - rethink
+    environment:
+      # Environment
+      GITHUB_ACTION: ${GITHUB_ACTION:-}
+      # Service Hosts
+      << : *etcd-client-env
+      << : *redis-client-env
+      << : *rethinkdb-client-env
+      # Environment
+      << : *deployment-env
 
   redis:
     image: eqalpha/keydb
     restart: always
     hostname: redis
-    ports:
-      - 127.0.0.1:6379:6379
 
   rethink:
     image: rethinkdb:${RETHINKDB_VERSION:-2.4}
     restart: always
     hostname: rethink
-    ports:
-      - 127.0.0.1:8093:8080
-      - 127.0.0.1:28015:28015
-    # networks:
-    #   placeos:
-    #     ipv4_address: 172.31.231.14
 
   etcd:
     image: bitnami/etcd:${ETCD_VERSION:-3}
@@ -66,5 +58,4 @@ services:
     hostname: etcd
     environment:
       ALLOW_NONE_AUTHENTICATION: "yes"
-    ports:
-      - 127.0.0.1:2379:2379
+      
