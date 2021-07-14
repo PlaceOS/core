@@ -177,7 +177,7 @@ module PlaceOS::Core
       alias Processes = Hash(String, Array(String))
 
       getter edge : Hash(String, Processes) = {} of String => PlaceOS::Core::Client::Loaded::Processes
-      getter local : Processes = PlaceOS::Core::Client::Loaded::Processes.new { |h, k| h[k] = [] of String }
+      getter local : Processes = PlaceOS::Core::Client::Loaded::Processes.new { [] of String }
     end
 
     # Returns the loaded modules on the node

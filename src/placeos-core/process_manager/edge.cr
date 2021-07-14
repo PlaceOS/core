@@ -136,7 +136,7 @@ module PlaceOS::Core
     ###############################################################################################
 
     private getter debug_lock : Mutex { Mutex.new }
-    private getter debug_callbacks = Hash(String, Array(DebugCallback)).new { |h, k| h[k] = [] of DebugCallback }
+    private getter debug_callbacks = Hash(String, Array(DebugCallback)).new { [] of DebugCallback }
 
     def forward_debug_message(module_id : String, message : String)
       debug_lock.synchronize do
