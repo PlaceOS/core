@@ -1,7 +1,4 @@
-
-
 module PlaceOS::Core::Pulse
-    # class Pulse
-
-    # end
+  # class Pulse
+  # end
 end
