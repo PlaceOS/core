@@ -11,6 +11,7 @@ require "uri"
 class PlaceOS::Core::Pulse
   private getter instance_id : String
   private getter secret_key : Sodium::Sign::SecretKey
+
   # private getter task : Tasker::Repeat(HTTP::Client::Response)
 
   def initialize(
@@ -79,10 +80,10 @@ end
 
 class Register
   include JSON::Serializable
-  
+
   getter instance_id : String # ulid!
-  getter message : JSON::Any # make it a string...?
-  getter signature : String # use sodium datatype here
+  getter message : JSON::Any  # make it a string...?
+  getter signature : String   # use sodium datatype here
 
   def initialize(
     @instance_id : String,
@@ -90,7 +91,6 @@ class Register
     @signature : String
   )
   end
-
 end
 
 require "./heartbeat.cr"
