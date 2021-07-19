@@ -114,7 +114,7 @@ shards:
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
-    version: 4.3.4
+    version: 4.3.5
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
