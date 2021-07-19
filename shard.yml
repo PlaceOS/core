@@ -1,5 +1,5 @@
 name: placeos-core
-version: 3.10.1
+version: 3.10.2
 crystal: ~> 1.0
 
 targets:
@@ -67,7 +67,7 @@ dependencies:
 
   rethinkdb-orm:
     github: spider-gazelle/rethinkdb-orm
-    version: ~> 4
+    version: ~> 5
 
   rwlock:
     github: spider-gazelle/readers-writer
