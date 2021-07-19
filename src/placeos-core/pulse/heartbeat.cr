@@ -19,7 +19,7 @@ class Pulse::Heartbeat
     @users_qty = PlaceOS::Model::User.count,
     # @desks_qty = 
     @staff_api = true, # figure out how to find this
-    @instance_type = "PROD"
+    @production = PlaceOS::Core::PROD
   ) # and this # maybe an envar...
 
     # get desks

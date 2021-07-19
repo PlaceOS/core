@@ -94,3 +94,6 @@ class Register
 end
 
 require "./heartbeat.cr"
+
+jwt_public = ENV["JWT_PUBLIC"]
+jwt_private = ENV["JWT_PRIVATE"]
