@@ -1,7 +1,4 @@
-require "../helper"
-
-# require "./"
-# require "./local_spec"
+require "./helper"
 
 describe PlaceOS::Core::Pulse, focus: true do
   it "should run tests" do
