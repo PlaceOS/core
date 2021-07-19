@@ -261,6 +261,10 @@ module PlaceOS::Core
         getter memory_usage : Int64? = nil
       end
 
+      # :nodoc:
+      def initialize
+      end
+
       getter local : Metadata? = nil
       getter edge : Hash(String, Metadata?) = {} of String => PlaceOS::Core::Client::DriverStatus::Metadata?
     end
