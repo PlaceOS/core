@@ -1,7 +1,5 @@
 require "json"
 
-# require "rest-api"
-
 class Pulse::Heartbeat
   include JSON::Serializable
 

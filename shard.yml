@@ -88,7 +88,7 @@ dependencies:
   
   tasker:
     github: spider-gazelle/tasker
-    version: ~> 2.0.3
+    version: ~> 2.0
 
   ulid:
     github: place-labs/ulid
@@ -99,7 +99,3 @@ development_dependencies:
 
   faker:
     github: askn/faker
-
-  webmock:
-    github: manastech/webmock.cr
-    branch: master

@@ -1,7 +1,6 @@
 require "placeos-models"
 require "ulid"
 require "hashcash"
-# require "placeos"
 require "rethinkdb-orm"
 require "http/client"
 require "tasker"
@@ -9,8 +8,8 @@ require "sodium"
 require "uri"
 
 class PlaceOS::Core::Pulse
-  private getter instance_id : String
-  private getter secret_key : Sodium::Sign::SecretKey
+  getter instance_id : String
+  getter secret_key : Sodium::Sign::SecretKey
 
   private getter task : Tasker::Repeat(HTTP::Client::Response)
 
