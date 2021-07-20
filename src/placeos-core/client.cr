@@ -316,13 +316,11 @@ module PlaceOS::Core
       }
       Retriable.retry times: retries, max_interval: 1.minute, on_retry: rewind_io do
         connection_lock.synchronize do
-          connection.{{method.id}}(path, headers, body) do |response|
-            response.consume_body_io
-            if response.success? || !raises
-              yield response
-            else
-              raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response)
-            end
+          response = connection.{{method.id}}(path, headers, body)
+          if response.success? || !raises
+            yield response
+          else
+            raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response)
           end
         end
       end
