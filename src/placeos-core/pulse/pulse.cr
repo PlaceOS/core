@@ -4,7 +4,7 @@ require "hashcash"
 # require "placeos"
 require "rethinkdb-orm"
 require "http/client"
-# require "tasker"
+require "tasker"
 require "sodium"
 require "uri"
 
@@ -12,15 +12,15 @@ class PlaceOS::Core::Pulse
   private getter instance_id : String
   private getter secret_key : Sodium::Sign::SecretKey
 
-  # private getter task : Tasker::Repeat(HTTP::Client::Response)
+  private getter task : Tasker::Repeat(HTTP::Client::Response)
 
   def initialize(
     @instance_id : String,
-    # secret_key : String,
+    secret_key : String?,
     heartbeat_interval : Time::Span = 1.day
   )
     @secret_key = Sodium::Sign::SecretKey.new(secret_key.hexbytes)
-    # @task = Tasker.every(heartbeat_interval) { heartbeat }
+    @task = Tasker.every(heartbeat_interval) { heartbeat }
   end
 
   def heartbeat
@@ -94,6 +94,3 @@ class Register
 end
 
 require "./heartbeat.cr"
-
-jwt_public = ENV["JWT_PUBLIC"]
-jwt_private = ENV["JWT_PRIVATE"]

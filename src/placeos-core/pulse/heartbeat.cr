@@ -8,8 +8,7 @@ class Pulse::Heartbeat
   getter drivers_qty : Int32
   getter zones_qty : Int32
   getter users_qty : Int32
-  getter staff_api : Bool
-  getter instance_type : String
+  getter production : Bool
   getter desks : Array(PlaceOS::Model::Zone)
 
   # add any other telemetry to collect here in future
@@ -19,7 +18,6 @@ class Pulse::Heartbeat
     @zones_qty = PlaceOS::Model::Zone.count,
     @users_qty = PlaceOS::Model::User.count,
     # @desks_qty =
-    @staff_api = true, # figure out how to find this
     @production = PlaceOS::Core::PROD
   ) # and this # maybe an envar...
 
@@ -35,5 +33,14 @@ class Pulse::Heartbeat
     # pp! health
     # driversreq
     # add any other telemetry to collect here in future
+  end
+
+  def get_jwts
+    jwt_public = ENV["JWT_PUBLIC"]
+    jwt_private = ENV["JWT_PRIVATE"]
+    {"jwts" => {
+        "public" => jwt_public,
+        "private" => jwt_private
+    }}.to_json
   end
 end

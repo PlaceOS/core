@@ -51,6 +51,12 @@ services:
     image: rethinkdb:${RETHINKDB_VERSION:-2.4}
     restart: always
     hostname: rethink
+    ports:
+      - 127.0.0.1:8093:8080
+      - 127.0.0.1:28015:28015
+    # networks:
+    #   placeos:
+    #     ipv4_address: 172.31.231.14
 
   etcd:
     image: bitnami/etcd:${ETCD_VERSION:-3}
