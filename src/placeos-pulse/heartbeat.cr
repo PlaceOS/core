@@ -1,6 +1,6 @@
 require "json"
 
-class Pulse::Heartbeat
+class Heartbeat
   include JSON::Serializable
 
   getter drivers_qty : Int32
@@ -37,8 +37,8 @@ class Pulse::Heartbeat
     jwt_public = ENV["JWT_PUBLIC"]
     jwt_private = ENV["JWT_PRIVATE"]
     {"jwts" => {
-        "public" => jwt_public,
-        "private" => jwt_private
+      "public"  => jwt_public,
+      "private" => jwt_private,
     }}.to_json
   end
 end
