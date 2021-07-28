@@ -148,7 +148,20 @@ module PlaceOS::Core
         :__exec__ => method,
         method    => arguments,
       }.to_json
-      post("/command/#{module_id}/execute", body: payload).body
+      response = post("/command/#{module_id}/execute", body: payload)
+
+      case response.status_code
+      when 200
+        # exec was successful, json string returned
+        response.body
+      when 203
+        # exec sent to module and it raised an error
+        info = NamedTuple(message: String, backtrace: Array(String)?).from_json(response.body)
+        raise Error.new(Error::ErrorCode::RequestFailed, response.status_code, "module raised: #{info[:message]}", info[:backtrace])
+      else
+        # some other failure
+        raise Error.new(Error::ErrorCode::UnexpectedFailure, response.status_code, "unexpected response code #{response.status_code}")
+      end
     end
 
     # Grab the STDOUT of a module process
@@ -176,8 +189,8 @@ module PlaceOS::Core
     struct Loaded < BaseResponse
       alias Processes = Hash(String, Array(String))
 
-      getter edge : Hash(String, Processes) = {} of String => PlaceOS::Core::Client::Loaded::Processes
-      getter local : Processes = PlaceOS::Core::Client::Loaded::Processes.new { |h, k| h[k] = [] of String }
+      getter edge : Hash(String, Processes) = {} of String => Processes
+      getter local : Processes = Hash(String, Array(String)).new { |h, k| h[k] = [] of String }
     end
 
     # Returns the loaded modules on the node
