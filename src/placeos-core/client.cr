@@ -274,6 +274,10 @@ module PlaceOS::Core
         getter memory_usage : Int64? = nil
       end
 
+      # :nodoc:
+      def initialize
+      end
+
       getter local : Metadata? = nil
       getter edge : Hash(String, Metadata?) = {} of String => PlaceOS::Core::Client::DriverStatus::Metadata?
     end
@@ -325,12 +329,11 @@ module PlaceOS::Core
       }
       Retriable.retry times: retries, max_interval: 1.minute, on_retry: rewind_io do
         connection_lock.synchronize do
-          connection.{{method.id}}(path, headers, body) do |response|
-            if response.success? || !raises
-              yield response
-            else
-              raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response)
-            end
+          response = connection.{{method.id}}(path, headers, body)
+          if response.success? || !raises
+            yield response
+          else
+            raise Core::ClientError.from_response("#{@host}:#{@port}#{path}", response)
           end
         end
       end
