@@ -12,6 +12,7 @@ module PlaceOS::Core
 
   class ClientError < Error
     getter status_code
+    getter remote_backtrace
 
     enum ErrorCode
       # The request was sent and error occured in core / the module
