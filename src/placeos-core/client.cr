@@ -182,7 +182,7 @@ module PlaceOS::Core
       socket.run
     end
 
-    def debug_websocket(module_id : String, &block : String ->)
+    def debug_websocket(module_id : String)
       headers = HTTP::Headers.new
       headers["X-Request-ID"] = request_id.as(String) if request_id
 
