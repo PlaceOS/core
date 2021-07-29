@@ -167,19 +167,22 @@ module PlaceOS::Core
     # Grab the STDOUT of a module process
     #
     # Sets up a websocket connection with core, and forwards messages to captured block
-    def debug(module_id : String, &block : String ->)
+    def debug(module_id : String, &block : String ->) : Nil
+      socket = debug(module_id)
+      socket.on_message(&block)
+      socket.run
+    end
+
+    def debug(module_id : String) : HTTP::WebSocket
       headers = HTTP::Headers.new
       headers["X-Request-ID"] = request_id.as(String) if request_id
 
-      socket = HTTP::WebSocket.new(
+      HTTP::WebSocket.new(
         host: host,
         path: "#{BASE_PATH}/#{CORE_VERSION}/command/#{module_id}/debugger",
         port: port,
         headers: headers,
       )
-
-      socket.on_message(&block)
-      socket.run
     end
 
     def load(module_id : String)
