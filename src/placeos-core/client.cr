@@ -182,6 +182,18 @@ module PlaceOS::Core
       socket.run
     end
 
+    def debug_websocket(module_id : String, &block : String ->)
+      headers = HTTP::Headers.new
+      headers["X-Request-ID"] = request_id.as(String) if request_id
+
+      HTTP::WebSocket.new(
+        host: host,
+        path: "#{BASE_PATH}/#{CORE_VERSION}/command/#{module_id}/debugger",
+        port: port,
+        headers: headers,
+      )
+    end
+
     def load(module_id : String)
       post("/command/#{module_id}/load").success?
     end
