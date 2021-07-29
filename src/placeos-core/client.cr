@@ -167,7 +167,7 @@ module PlaceOS::Core
     # Grab the STDOUT of a module process
     #
     # Sets up a websocket connection with core, and forwards messages to captured block
-    def debug(module_id : String, &block : String ->)
+    def debug(module_id : String, &block : String ->) : Nil
       socket = debug(module_id)
       socket.on_message(&block)
       socket.run
