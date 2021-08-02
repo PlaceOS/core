@@ -73,7 +73,7 @@ module PlaceOS
         repository_uri: repository.uri,
         branch: repository.branch,
         username: repository.username || username,
-        password: repository.password || password,
+        password: repository.decrypt_password || password,
         working_directory: working_dir,
         pull_if_exists: !testing,
       )

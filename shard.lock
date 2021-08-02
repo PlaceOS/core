@@ -18,7 +18,7 @@ shards:
 
   bindata:
     git: https://github.com/spider-gazelle/bindata.git
-    version: 1.9.0
+    version: 1.9.1
 
   clustering:
     git: https://github.com/place-labs/clustering.git
@@ -126,11 +126,11 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 5.7.4
+    version: 5.8.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 2.0.4
+    version: 2.0.5
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
