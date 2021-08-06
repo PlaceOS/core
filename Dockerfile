@@ -1,11 +1,12 @@
 # One of `core` | `edge`
 ARG TARGET=core
+ARG CRYSTAL_VERSION=1.1.1
 
-FROM crystallang/crystal:1.0.0-alpine as build
+FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine as build
 
+ARG TARGET
 ARG PLACE_COMMIT="DEV"
 ARG PLACE_VERSION="DEV"
-ARG TARGET
 
 WORKDIR /app
 
