@@ -131,17 +131,17 @@ module PlaceOS::Core
       post("/command/#{module_id}/load").success?
     end
 
-    struct Loaded < BaseResponse
+    struct LoadedModules < BaseResponse
       alias Processes = Hash(String, Array(String))
 
-      getter edge : Hash(String, Processes) = {} of String => Processes
-      getter local : Processes = Hash(String, Array(String)).new { |h, k| h[k] = [] of String }
+      getter edge : Hash(String, Processes) = Hash(String, PlaceOS::Core::Client::LoadedModules::Processes)
+      getter local : Processes = PlaceOS::Core::Client::LoadedModules::Processes.new { |h, k| h[k] = [] of String }
     end
 
     # Returns the loaded modules on the node
-    def loaded : Loaded
+    def modules : LoadedModules
       parse_to_return_type do
-        get("/status/loaded")
+        get("/status/modules")
       end
     end
 
@@ -164,8 +164,6 @@ module PlaceOS::Core
         getter edge : Hash(String, Count)
       end
 
-      getter available_repositories : Array(String)
-      getter unavailable_repositories : Array(Error)
       getter compiled_drivers : Array(String)
       getter unavailable_drivers : Array(Error)
       getter run_count : RunCount
@@ -230,7 +228,8 @@ module PlaceOS::Core
     # Driver status
     def driver_status(path : String) : DriverStatus
       parse_to_return_type do
-        get("/status/driver?path=#{path}")
+        # TODO: URL encode path
+        get("/status/driver/#{path}")
       end
     rescue e : Core::ClientError
       DriverStatus.new
