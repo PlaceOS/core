@@ -6,6 +6,10 @@ x-deployment-env: &deployment-env
   ENV: ${ENV:-development}
   SG_ENV: ${SG_ENV:-development}
 
+x-build-client-env: &build-client-env
+  PLACEOS_BUILD_HOST: ${PLACEOS_BUILD_HOST:-build}
+  PLACEOS_BUILD_PORT: ${PLACEOS_BUILD_PORT:-3000}
+
 x-etcd-client-env: &etcd-client-env
   ETCD_HOST: ${ETCD_HOST:-etcd}
   ETCD_PORT: ${ETCD_PORT:-2379}
@@ -42,6 +46,14 @@ services:
       << : *rethinkdb-client-env
       # Environment
       << : *deployment-env
+
+  # TODO: Remove after interface has stabilised
+  build:
+    image: placeos/build:${PLACE_BUILD_TAG:-nightly}
+    restart: always
+    hostname: build
+    environment:
+      TZ: $TZ
 
   redis:
     image: eqalpha/keydb
