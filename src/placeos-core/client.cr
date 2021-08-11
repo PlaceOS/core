@@ -81,64 +81,6 @@ module PlaceOS::Core
       end
     end
 
-    # Drivers
-    ###########################################################################
-
-    # Returns drivers available
-    def drivers(repository : String) : Array(String)
-      params = HTTP::Params{"repository" => repository}
-      parse_to_return_type do
-        get("/drivers?#{params}")
-      end
-    end
-
-    struct DriverCommit < BaseResponse
-      getter commit : String
-      getter date : String
-      getter author : String
-      getter subject : String
-    end
-
-    # Returns the commits for a particular driver
-    def driver(driver_id : String, repository : String, count : Int32? = nil) : Array(DriverCommit)
-      params = HTTP::Params{"repository" => repository}
-      params["count"] = count.to_s if count
-      parse_to_return_type do
-        get("/drivers/#{URI.encode_www_form(driver_id)}?#{params}")
-      end
-    end
-
-    # Returns the metadata for a particular driver
-    def driver_details(file_name : String, commit : String, repository : String) : String
-      params = HTTP::Params{
-        "commit"     => commit,
-        "repository" => repository,
-      }
-      # Response looks like:
-      # https://github.com/placeos/driver/blob/master/docs/command_line_options.md#discovery-and-defaults
-      get("/drivers/#{URI.encode_www_form(file_name)}/details?#{params}").body
-    end
-
-    def driver_compiled?(file_name : String, commit : String, repository : String, tag : String) : Bool
-      params = HTTP::Params{
-        "commit"     => commit,
-        "repository" => repository,
-        "tag"        => tag,
-      }
-
-      parse_to_return_type do
-        get("/drivers/#{URI.encode_www_form(file_name)}/compiled?#{params}")
-      end
-    end
-
-    def branches?(repository : String) : Array(String)?
-      parse_to_return_type do
-        get("/drivers/#{repository}/branches")
-      end
-    rescue e : Core::ClientError
-      raise e unless e.status_code == 404
-    end
-
     # Command
     ###########################################################################
 
@@ -306,7 +248,7 @@ module PlaceOS::Core
 
     {% for method in %w(get post) %}
     # Executes a {{method.id.upcase}} request on core connection.
-    #
+
     # The response status will be automatically checked and a `PlaceOS::Core::ClientError` raised if
     # unsuccessful and `raises` is `true`.
     private def {{method.id}}(path : String, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType? = nil, raises : Bool = true) : HTTP::Client::Response
