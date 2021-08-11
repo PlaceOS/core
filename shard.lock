@@ -1,3 +1,4 @@
+# NOTICE: This lockfile contains some overrides from shard.override.yml
 version: 2.0
 shards:
   CrystalEmail:
@@ -16,9 +17,29 @@ shards:
     git: https://github.com/crystal-ameba/ameba.git
     version: 0.14.3
 
+  any_hash:
+    git: https://github.com/sija/any_hash.cr.git
+    version: 0.2.5
+
+  awscr-s3:
+    git: https://github.com/taylorfinnell/awscr-s3.git
+    version: 0.8.3
+
+  awscr-signer:
+    git: https://github.com/taylorfinnell/awscr-signer.git
+    version: 0.8.2
+
+  backtracer:
+    git: https://github.com/sija/backtracer.cr.git
+    version: 1.2.1
+
   bindata:
     git: https://github.com/spider-gazelle/bindata.git
     version: 1.9.1
+
+  clip:
+    git: https://github.com/erdnaxeli/clip.git
+    version: 0.2.4
 
   clustering:
     git: https://github.com/place-labs/clustering.git
@@ -104,6 +125,10 @@ shards:
     git: https://github.com/luckyframework/lucky_router.git
     version: 0.5.1
 
+  molinillo:
+    git: https://github.com/crystal-lang/crystal-molinillo.git
+    version: 0.2.0
+
   murmur3:
     git: https://github.com/aca-labs/murmur3.git
     version: 0.1.1+git.commit.7cbe25c0ca8d052c9d98c377c824dcb0e038c790
@@ -112,6 +137,14 @@ shards:
     git: https://github.com/spider-gazelle/neuroplastic.git
     version: 1.8.0
 
+  open_api:
+    git: https://github.com/elbywan/open_api.cr.git
+    version: 1.3.0
+
+  openapi-generator:
+    git: https://github.com/place-labs/openapi-generator.git
+    version: 2.1.0+git.commit.d925772ae1f36c51c0665d743bba4ac6ca9466a8
+
   openssl_ext:
     git: https://github.com/spider-gazelle/openssl_ext.git
     version: 2.1.5
@@ -119,6 +152,10 @@ shards:
   pars:
     git: https://github.com/place-labs/pars.git
     version: 1.1.0
+
+  placeos-build:
+    git: https://github.com/placeos/build.git
+    version: 0.10.0
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
@@ -152,6 +189,10 @@ shards:
     git: https://github.com/spider-gazelle/promise.git
     version: 3.0.0
 
+  raven:
+    git: https://github.com/sija/raven.cr.git
+    version: 1.9.1+git.commit.d53319dc4ce26fc44f13b9c1c6ffb8699e22899b
+
   redis:
     git: https://github.com/stefanwille/crystal-redis.git
     version: 2.8.3
@@ -184,9 +225,13 @@ shards:
     git: https://github.com/spider-gazelle/readers-writer.git
     version: 1.0.7
 
-  secrets-env:
+  secrets-env: # Overridden
     git: https://github.com/spider-gazelle/secrets-env.git
     version: 1.3.1
+
+  shards:
+    git: https://github.com/crystal-lang/shards.git
+    version: 0.16.0
 
   simple_retry:
     git: https://github.com/spider-gazelle/simple_retry.git
