@@ -247,7 +247,7 @@ module PlaceOS::Core
 
     {% for method in %w(get post) %}
     # Executes a {{method.id.upcase}} request on core connection.
-
+    #
     # The response status will be automatically checked and a `PlaceOS::Core::ClientError` raised if
     # unsuccessful and `raises` is `true`.
     private def {{method.id}}(path : String, headers : HTTP::Headers? = nil, body : HTTP::Client::BodyType? = nil, raises : Bool = true) : HTTP::Client::Response

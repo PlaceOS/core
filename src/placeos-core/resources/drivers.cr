@@ -29,9 +29,7 @@ module PlaceOS
   # - stop modules
   # - remove current driver
   class Core::Drivers < Resource(Model::Driver)
-    private getter? startup : Bool = true
     private getter module_manager : Resources::Modules
-    private getter compiler_lock = Mutex.new
 
     getter binary_dir : String
 
@@ -39,20 +37,19 @@ module PlaceOS
       Build::Filesystem.new(binary_dir)
     end
 
-    def self.remove(driver : Model::Driver, module_manager : Resources::Modules)
+    def self.remove(driver : Model::Driver, module_manager : Resources::Modules, binary_store : Build::Filesystem)
     end
 
-    def self.update(driver : Model::Driver, module_manger : Resources::Modules)
+    def self.update(driver : Model::Driver, module_manger : Resources::Modules, binary_store : Build::Filesystem)
     end
 
-    def self.load(driver : Model::Driver, module_manger : Resources::Modules)
+    def self.load(driver : Model::Driver, module_manger : Resources::Modules, binary_store : Build::Filesystem)
     end
 
     # Concurrent processes
     private BUFFER_SIZE = 10
 
     def initialize(
-      @startup : Bool = true,
       @binary_dir : String = Path["./bin/drivers"].expand.to_s,
       @module_manager : Resources::Modules = Resources::Modules.instance
     )
@@ -81,6 +78,7 @@ module PlaceOS
 
     def self.fetch_driver(
       driver : Model::Driver,
+      binary_store : Build::Filesystem,
       username : String? = nil,
       password : String? = nil,
       request_id : String? = nil
@@ -94,17 +92,24 @@ module PlaceOS
           password: password,
           request_id: request_id
         ) do |key, driver_io|
-          File.open(File.join(binary_dir, key), mode: "w+", perm: File::Permissions.new(0o744)) do |file_io|
-            IO.copy driver_io, file_io
-          end
+          # Write the compiled driver to the binary store
+          binary_store.write(key, driver_io)
         end
       end
 
       case result
-      in Build::Compilation::NotFound then nil
-      in Build::Compilation::Success  then result.path
+      in Build::Compilation::NotFound
+        output = "Driver #{driver.file_name} not found in #{driver.repository_uri} at #{driver.commit}"
+        driver.update_fields(compilation_output: output) unless driver.compilation_output == output
+        driver.compilation_output = output
+        nil
+      in Build::Compilation::Success
+        driver.update_fields(compilation_output: nil) unless driver.compilation_output.nil?
+        driver.compilation_output = nil
+        driver.path
       in Build::Compilation::Failure
-        driver.update_fields(compilation_output: result.error)
+        driver.update_fields(compilation_output: result.error) unless driver.compilation_output == result.error
+        driver.compilation_output = result.error
         nil
       end
     end
@@ -112,16 +117,8 @@ module PlaceOS
     def process_resource(action : Resource::Action, resource driver : Model::Driver) : Resource::Result
       case action
       in .created?, .updated?
-        success, output = compiler_lock.synchronize { Drivers.compile_driver(driver, startup?, module_manager) }
-
-        unless success
-          if driver.compilation_output.nil? || driver.recompile_commit? || driver.commit_changed?
-            driver.update_fields(compilation_output: output)
-          end
-          raise Resource::ProcessingError.new(driver.name, output)
-        end
-
-        driver.update_fields(compilation_output: nil) unless driver.compilation_output.nil?
+        success, _output = Drivers.compile_driver(driver, module_manager)
+        raise Resource::ProcessingError.new(driver.name, driver.compilation_output) unless success
         Resource::Result::Success
       in .deleted?
         Result::Skipped
@@ -132,7 +129,6 @@ module PlaceOS
 
     def self.compile_driver(
       driver : Model::Driver,
-      startup : Bool = false,
       module_manager : Resources::Modules = Resources::Modules.instance
     ) : Tuple(Bool, String)
       # driver_id = driver.id.as(String)
@@ -197,8 +193,8 @@ module PlaceOS
       # )
       #
       # # Bump the commit on the driver post-compilation and module loading
-      # if (Drivers.pull?(commit) || force_recompile) && (startup || module_manager.discovery.own_node?(driver_id))
-      #   update_driver_commit(driver: driver, commit: result.commit, startup: startup)
+      # if (Drivers.pull?(commit) || force_recompile) && (module_manager.discovery.own_node?(driver_id))
+      #   update_driver_commit(driver: driver, commit: result.commit)
       # end
       #
       # {result.success?, ""}
@@ -215,12 +211,7 @@ module PlaceOS
       Log.error { {message: "failed to remove stale binary", driver_id: driver_id, path: path.to_s} }
     end
 
-    def self.update_driver_commit(driver : Model::Driver, commit : String, startup : Bool)
-      if startup
-        # There's a potential for multiple writers on startup, However this is an eventually consistent operation.
-        Log.warn { {message: "updating commit on driver during startup", id: driver.id, name: driver.name, commit: commit} }
-      end
-
+    def self.update_driver_commit(driver : Model::Driver, commit : String)
       driver.update_fields(commit: commit)
       Log.info { {message: "updated commit on driver", id: driver.id, name: driver.name, commit: commit} }
     end
@@ -231,7 +222,6 @@ module PlaceOS
 
     def start
       super
-      @startup = false
       self
     end
   end

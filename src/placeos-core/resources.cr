@@ -34,7 +34,7 @@ module PlaceOS::Core::Resources
       start_lock.synchronize {
         return if started?
 
-        Log.info { "compiling Drivers" }
+        Log.info { "fetching Drivers" }
         drivers.start
 
         # Run the on-load processes
