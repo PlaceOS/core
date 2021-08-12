@@ -1,7 +1,7 @@
 # PlaceOS Core
 
 [![Build Dev Image](https://github.com/PlaceOS/core/actions/workflows/build-dev-image.yml/badge.svg)](https://github.com/PlaceOS/core/actions/workflows/build-dev-image.yml)
-[![Travis CI](https://travis-ci.com/placeos/core.svg?branch=master)](https://travis-ci.com/placeos/core)
+[![CI](https://github.com/PlaceOS/core/actions/workflows/ci.yml/badge.svg)](https://github.com/PlaceOS/core/actions/workflows/ci.yml)
 
 The coordination service for running drivers on [PlaceOS](https://place.technology).
 
