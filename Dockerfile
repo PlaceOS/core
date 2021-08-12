@@ -10,7 +10,9 @@ ARG PLACE_VERSION="DEV"
 
 WORKDIR /app
 
-# Install the latest version of LibSSH2, ping
+# Install the latest version of 
+# - libSSH2
+# - ping
 RUN apk add --update --no-cache \
     'apk-tools>=2.10.8-r0' \
     'libcurl>=7.79.1-r0' \
@@ -35,7 +37,7 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
-# Install deps
+# Install dependencies
 COPY shard.yml /app
 COPY shard.override.yml /app
 COPY shard.lock /app
@@ -48,11 +50,20 @@ COPY src /app/src
 RUN UNAME_AT_COMPILE_TIME=true \
     PLACE_VERSION=${PLACE_VERSION} \
     PLACE_COMMIT=${PLACE_COMMIT} \
-    shards build ${TARGET} --production --release --static --error-trace
+    shards build ${TARGET} --production --release --error-trace
 
-# Create binary directories
-RUN mkdir -p repositories bin/drivers
+RUN mkdir -p /app/bin/drivers
 RUN chown appuser -R /app
+
+# Extract target's dependencies (produces a smaller image than static compilation)
+RUN ldd /app/bin/${TARGET} | tr -s '[:blank:]' '\n' | grep '^/' | \
+    xargs -I % sh -c 'mkdir -p $(dirname dependencies%); cp % dependencies%;'
+
+RUN ldd /bin/ping | tr -s '[:blank:]' '\n' | grep '^/' | \
+    xargs -I % sh -c 'mkdir -p $(dirname ping-dependencies%); cp % ping-dependencies%;'
+
+RUN ldd /bin/ping6 | tr -s '[:blank:]' '\n' | grep '^/' | \
+    xargs -I % sh -c 'mkdir -p $(dirname ping-dependencies%); cp % ping-dependencies%;'
 
 ###############################################################################
 
@@ -76,8 +87,11 @@ COPY --from=build /etc/group /etc/group
 # These provide certificate chain validation where communicating with external services over TLS
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
+# Service dependencies
+COPY --from=build /app/dependencies /
 # Service binary
-COPY --from=build /app/bin /bin
+COPY --from=build /app/bin /bin/drivers
+COPY --from=build /app/bin /bin/${TARGET}
 
 USER appuser:appuser
 
@@ -89,16 +103,13 @@ CMD ["/bin/edge"]
 
 ###############################################################################
 
-# FIXME: core currently has a number of dependandancies on the runtime for
-# retreiving repositories and compiling drivers. When the migrates into an
-# external service, this can base from `minimal` instead for cleaner images.
-FROM build as core
+FROM minimal as core
+ENV PATH=$PATH:/
 
-COPY --from=build /app/bin /bin
-
-WORKDIR /app
-
-USER appuser:appuser
+# Include `ping`
+COPY --from=build /app/ping-dependencies /
+COPY --from=build /bin/ping /ping
+COPY --from=build /bin/ping6 /ping6
 
 EXPOSE 3000
 VOLUME ["/app/repositories/", "/app/bin/drivers/"]
