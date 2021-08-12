@@ -39,14 +39,24 @@ module PlaceOS
       Build::Filesystem.new(binary_dir)
     end
 
+    def self.remove(driver : Model::Driver, module_manager : Resources::Modules)
+    end
+
+    def self.update(driver : Model::Driver, module_manger : Resources::Modules)
+    end
+
+    def self.load(driver : Model::Driver, module_manger : Resources::Modules)
+    end
+
+    # Concurrent processes
+    private BUFFER_SIZE = 10
+
     def initialize(
       @startup : Bool = true,
       @binary_dir : String = Path["./bin/drivers"].expand.to_s,
       @module_manager : Resources::Modules = Resources::Modules.instance
     )
-      Dir.mkdir_p binary_dir
-      buffer_size = System.cpu_count.to_i
-      super(buffer_size)
+      super(BUFFER_SIZE)
     end
 
     def build_driver(driver, commit, force_recompile) : PlaceOS::Build::Drivers::Result
@@ -89,7 +99,14 @@ module PlaceOS
           end
         end
       end
-      result.path if result.is_a? Build::Drivers::Success
+
+      case result
+      in Build::Compilation::NotFound then nil
+      in Build::Compilation::Success  then result.path
+      in Build::Compilation::Failure
+        driver.update_fields(compilation_output: result.error)
+        nil
+      end
     end
 
     def process_resource(action : Resource::Action, resource driver : Model::Driver) : Resource::Result
@@ -113,79 +130,79 @@ module PlaceOS
       raise Resource::ProcessingError.new(driver.name, "#{exception} #{exception.message}", cause: exception)
     end
 
-    # ameba:disable Metrics/CyclomaticComplexity
     def self.compile_driver(
       driver : Model::Driver,
       startup : Bool = false,
       module_manager : Resources::Modules = Resources::Modules.instance
     ) : Tuple(Bool, String)
-      driver_id = driver.id.as(String)
-      repository = driver.repository!
-
-      force_recompile = driver.recompile_commit?
-      commit = force_recompile.nil? ? driver.commit : force_recompile
-
-      ::Log.with_context do
-        Log.context.set(
-          driver_id: driver_id,
-          name: driver.name,
-          file_name: driver.file_name,
-          repository_name: repository.folder_name,
-          commit: commit,
-        )
-
-        if !force_recompile && !driver.commit_changed? && Compiler::Helper.compiled?(driver.file_name, commit, driver_id)
-          Log.info { "commit unchanged and driver already compiled" }
-          module_manager.reload_modules(driver)
-          return {true, ""}
-        end
-
-        Log.info { "force recompiling driver" } if force_recompile
-      end
-
-      # If the commit is `head` then the driver must be recompiled at the latest version
-      if Drivers.pull?(commit)
-        begin
-          Cloning.clone_and_install(repository)
-        rescue e
-          return {false, "failed to pull and install #{repository.folder_name}: #{e.try &.message}"}
-        end
-      end
-
-      result = Compiler.build_driver(
-        driver.file_name,
-        repository.folder_name,
-        commit,
-        id: driver_id
-      )
-
-      unless result.success?
-        Log.error { {message: "failed to compile driver", output: result.output, repository_name: repository.folder_name} }
-        return {false, "failed to compile #{driver.name} from #{repository.folder_name}: #{result.output}"}
-      end
-
-      Log.info { {
-        message:         "compiled driver",
-        name:            driver.name,
-        executable:      result.name,
-        repository_name: repository.folder_name,
-        output:          result.output,
-      } }
-
-      # (Re)load modules onto the newly compiled driver
-      stale_path = module_manager.reload_modules(driver)
-
-      # Remove the stale driver if there was one
-      remove_stale_driver(driver_id: driver_id,
-        path: stale_path,
-      )
-
-      # Bump the commit on the driver post-compilation and module loading
-      if (Drivers.pull?(commit) || force_recompile) && (startup || module_manager.discovery.own_node?(driver_id))
-        update_driver_commit(driver: driver, commit: result.commit, startup: startup)
-      end
-
-      {result.success?, ""}
+      # driver_id = driver.id.as(String)
+      # repository = driver.repository!
+      #
+      # force_recompile = driver.recompile_commit?
+      # commit = force_recompile.nil? ? driver.commit : force_recompile
+      #
+      # ::Log.with_context do
+      #   Log.context.set(
+      #     driver_id: driver_id,
+      #     name: driver.name,
+      #     file_name: driver.file_name,
+      #     repository_name: repository.folder_name,
+      #     commit: commit,
+      #   )
+      #
+      #   if !force_recompile && !driver.commit_changed? && Compiler::Helper.compiled?(driver.file_name, commit, driver_id)
+      #     Log.info { "commit unchanged and driver already compiled" }
+      #     module_manager.reload_modules(driver)
+      #     return {true, ""}
+      #   end
+      #
+      #   Log.info { "force recompiling driver" } if force_recompile
+      # end
+      #
+      # # If the commit is `head` then the driver must be recompiled at the latest version
+      # if Drivers.pull?(commit)
+      #   begin
+      #     Cloning.clone_and_install(repository)
+      #   rescue e
+      #     return {false, "failed to pull and install #{repository.folder_name}: #{e.try &.message}"}
+      #   end
+      # end
+      #
+      # result = Compiler.build_driver(
+      #   driver.file_name,
+      #   repository.folder_name,
+      #   commit,
+      #   id: driver_id
+      # )
+      #
+      # unless result.success?
+      #   Log.error { {message: "failed to compile driver", output: result.output, repository_name: repository.folder_name} }
+      #   return {false, "failed to compile #{driver.name} from #{repository.folder_name}: #{result.output}"}
+      # end
+      #
+      # Log.info { {
+      #   message:         "compiled driver",
+      #   name:            driver.name,
+      #   executable:      result.name,
+      #   repository_name: repository.folder_name,
+      #   output:          result.output,
+      # } }
+      #
+      # # (Re)load modules onto the newly compiled driver
+      # stale_path = module_manager.reload_modules(driver)
+      #
+      # # Remove the stale driver if there was one
+      # remove_stale_driver(driver_id: driver_id,
+      #   path: stale_path,
+      # )
+      #
+      # # Bump the commit on the driver post-compilation and module loading
+      # if (Drivers.pull?(commit) || force_recompile) && (startup || module_manager.discovery.own_node?(driver_id))
+      #   update_driver_commit(driver: driver, commit: result.commit, startup: startup)
+      # end
+      #
+      # {result.success?, ""}
+      {true, ""}
     end
 
     # Remove the stale driver binary if there was one

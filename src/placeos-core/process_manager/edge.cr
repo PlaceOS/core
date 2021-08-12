@@ -108,6 +108,8 @@ module PlaceOS::Core
 
     alias Module = Protocol::Message::RegisterResponse::Module
 
+    # Have to look
+
     # Calculates the modules/drivers that the edge needs to add/remove
     #
     protected def register(drivers : Set(String), modules : Set(String))
@@ -115,13 +117,17 @@ module PlaceOS::Core
       allocated_modules = Set(Module).new
       PlaceOS::Model::Module.on_edge(edge_id).each do |mod|
         driver = mod.driver.not_nil!
-        driver_key = Compiler::Helper.driver_binary_name(driver_file: driver.file_name, commit: driver.commit, id: driver.id)
-        allocated_modules << {key: driver_key, module_id: mod.id.as(String)}
+        # ameba:disable Lint/UselessAssign
+        repository = driver.repository.not_nil!
+
+        driver_key = "TODO" # TODO: Fetch the executable here
+
+        allocated_modules << Protocol::Message::RegisterResponse::Module.new(driver_key, mod.id.as(String))
         allocated_drivers << driver_key
       end
 
-      add_modules = allocated_modules.reject { |mod| modules.includes?(mod[:module_id]) }
-      remove_modules = (modules - allocated_modules.map(&.[:module_id])).to_a
+      add_modules = allocated_modules.reject { |mod| modules.includes?(mod.module_id) }
+      remove_modules = (modules - allocated_modules.map(&.module_id)).to_a
 
       Protocol::Message::RegisterResponse.new(
         success: true,

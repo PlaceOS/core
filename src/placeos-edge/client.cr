@@ -207,7 +207,7 @@ module PlaceOS::Edge
           load_binaries(response.add_drivers)
 
           response.add_modules.each do |mod|
-            load(mod[:module_id], mod[:key])
+            load(mod.module_id, mod.key)
           end
         rescue error
           Log.error(exception: error) { "during handshake" }

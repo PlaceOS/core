@@ -387,7 +387,9 @@ module PlaceOS::Edge::Protocol
       getter add_modules : Array(Module)
       getter remove_modules : Array(String)
 
-      alias Module = NamedTuple(key: String, module_id: String)
+      record Module, key : String, module_id : String do
+        include JSON::Serializable
+      end
 
       def initialize(
         @success,

@@ -57,6 +57,19 @@ module PlaceOS::Core::Api
 
       Log.trace { {message: "binding debug session to module", module_id: module_id} }
 
+      # Add a check for the module id
+
+      # If it exists
+
+      # setup a callback holder with driver id
+
+      # start websocket session
+
+      # before module start, check for debug session
+
+      # Need to hook into process manager
+      # must add the callbacks on/before start
+
       # Forward debug messages to the websocket
       module_manager.process_manager(module_id) do |manager|
         debug_lock = Mutex.new

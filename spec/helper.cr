@@ -86,13 +86,7 @@ end
 # Set up a temporary directory
 def set_temporary_working_directory(fresh : Bool = false, path : String? = nil) : String
   temp_dir = fresh ? get_temp : TEMP_DIR
-  temp_dir = Path[path].expand.to_s if path
-  PlaceOS::Compiler.binary_dir = "#{temp_dir}/bin"
-  PlaceOS::Compiler.repository_dir = "#{temp_dir}/repositories"
-
-  Dir.mkdir_p(File.join(PlaceOS::Compiler.binary_dir, "drivers"))
-  Dir.mkdir_p(PlaceOS::Compiler.repository_dir)
-
+  # TODO: set binary store
   temp_dir
 end
 

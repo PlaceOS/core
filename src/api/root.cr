@@ -7,7 +7,7 @@ module PlaceOS::Core::Api
   class Root < Application
     base "/api/core/v1/"
 
-    class_getter resource_manager : Resources::Manager { ResourceManager.instance }
+    class_getter resource_manager : Resources::Manager { Resources::Manager.instance }
     class_getter module_manager : Resources::Modules { Resources::Modules.instance }
 
     # Health Check

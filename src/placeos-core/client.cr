@@ -134,7 +134,7 @@ module PlaceOS::Core
     struct LoadedModules < BaseResponse
       alias Processes = Hash(String, Array(String))
 
-      getter edge : Hash(String, Processes) = Hash(String, PlaceOS::Core::Client::LoadedModules::Processes)
+      getter edge : Hash(String, Processes) = Hash(String, Hash(String, Array(String))).new
       getter local : Processes = PlaceOS::Core::Client::LoadedModules::Processes.new { |h, k| h[k] = [] of String }
     end
 

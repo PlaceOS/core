@@ -35,8 +35,8 @@ module PlaceOS::Core
   end
 
   def self.start_managers
-    resource_manager = ResourceManager.instance
-    module_manager = ModuleManager.instance
+    resource_manager = Resources::Manager.instance
+    module_manager = Resources::Modules.instance
 
     # Acquire resources on startup
     resource_manager.start do

@@ -29,6 +29,10 @@ module PlaceOS::Core::Api
       # TODO: Parse the executable name
       # path = params["id"]
 
+      # TODO: query for compiled drivers
+      #       then `driver_status(executable)`
+      driver_path = nil
+
       head :unprocessable_entity unless driver_path
 
       render json: {
@@ -63,8 +67,8 @@ module PlaceOS::Core::Api
     def initialize(
       context : HTTP::Server::Context,
       action_name = :index,
-      @module_manager : ModuleManager = ModuleManager.instance,
-      @resource_manager : ResourceManager = ResourceManager.instance
+      @module_manager : Resources::Modules = Resources::Modules.instance,
+      @resource_manager : Resources::Manager = Resources::Manager.instance
     )
       super(context, action_name)
     end
