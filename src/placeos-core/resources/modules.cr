@@ -3,24 +3,20 @@ require "hound-dog"
 require "mutex"
 require "redis"
 
-require "placeos-compiler/compiler"
-require "placeos-compiler/helper"
 require "placeos-models/control_system"
 require "placeos-models/driver"
 require "placeos-models/module"
 require "placeos-models/settings"
 require "placeos-resource"
 
-require "../placeos-edge/server"
+require "../../placeos-edge/server"
 
-require "../constants"
-require "./process_manager/edge"
-require "./process_manager/local"
+require "../../constants"
+require "../process_manager/edge"
+require "../process_manager/local"
 
 module PlaceOS::Core
-  class ModuleManager < Resource(Model::Module)
-    include Compiler::Helper
-
+  class Resources::Modules < Resource(Model::Module)
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
 
     getter clustering : Clustering
@@ -43,7 +39,7 @@ module PlaceOS::Core
     getter redis : Redis { Redis.new(url: REDIS_URL) }
 
     # Singleton configured from environment
-    class_getter instance : ModuleManager { ModuleManager.new(uri: self.uri) }
+    class_getter instance : Resources::Modules { Resources::Modules.new(uri: self.uri) }
 
     # Manager for remote edge module processes
     getter edge_processes : Edge::Server = Edge::Server.new
@@ -64,7 +60,7 @@ module PlaceOS::Core
       @redis : Redis? = nil
     )
       @uri = uri.is_a?(URI) ? uri : URI.parse(uri)
-      ModuleManager.uri = @uri
+      Resources::Modules.uri = @uri
 
       @discovery = discovery || HoundDog::Discovery.new(service: "core", uri: @uri)
       @clustering = clustering || Clustering.new(
@@ -97,7 +93,7 @@ module PlaceOS::Core
       in .updated?
         return Resource::Result::Skipped unless own_node?(mod.id.as(String))
 
-        if ModuleManager.needs_restart?(mod)
+        if Resources::Modules.needs_restart?(mod)
           # Changes to Module state which requires a restart
           mod.running ? restart_module(mod) : stop_module(mod)
           Resource::Result::Success
@@ -114,12 +110,15 @@ module PlaceOS::Core
     # Module lifecycle
     ###############################################################################################
 
+    # Note: Create a set of callbacks are set on loaded modules
+    # on start, register the callbacks that were waiting
+
     # Load the module if current node is responsible
     #
     def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
       module_id = mod.id.as(String)
 
-      if ModuleManager.core_uri(mod, rendezvous_hash) == uri
+      if Resources::Modules.core_uri(mod, rendezvous_hash) == uri
         driver = mod.driver!
         driver_id = driver.id.as(String)
         repository_folder = driver.repository.not_nil!.folder_name
@@ -162,10 +161,12 @@ module PlaceOS::Core
       Log.info { {message: "unloaded module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
     end
 
+    # NOTE: make sure the pre-start debug sessions are attached
+
     def start_module(mod : Model::Module)
       module_id = mod.id.as(String)
 
-      process_manager(mod) { |manager| manager.start(module_id, ModuleManager.start_payload(mod)) }
+      process_manager(mod) { |manager| manager.start(module_id, Resources::Modules.start_payload(mod)) }
 
       Log.info { {message: "started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
     end
@@ -356,7 +357,7 @@ module PlaceOS::Core
       end
     end
 
-    protected getter uri : URI = ModuleManager.uri
+    protected getter uri : URI = Resources::Modules.uri
 
     # Helpers
     ###########################################################################

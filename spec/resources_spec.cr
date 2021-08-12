@@ -22,7 +22,7 @@ module PlaceOS::Core
       # 1 if test model already present in db, 2 if not
       # Commit hash is updated, so model might be received again during startup
       {1, 2}.any?(resource_manager.cloning.processed.size).should be_true
-      {1, 2}.any?(resource_manager.compilation.processed.size).should be_true
+      {1, 2}.any?(resource_manager.drivers.processed.size).should be_true
 
       resource_manager.control_system_modules.processed.size.should eq 0
     ensure

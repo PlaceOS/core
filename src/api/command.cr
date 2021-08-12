@@ -1,11 +1,12 @@
 require "./application"
-require "../placeos-core/module_manager"
+
+require "../placeos-core/resources/modules"
 
 module PlaceOS::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
-    getter module_manager : ModuleManager { ModuleManager.instance }
+    getter module_manager : Resources::Modules { Resources::Modules.instance }
 
     # Loads if not already loaded
     # If the module is already running, it will be updated to latest settings.
@@ -74,7 +75,7 @@ module PlaceOS::Core::Api
     end
 
     # In the long term we should move to a single websocket between API instances
-    # and core instances, then we multiplex the debugging signals accross.
+    # and core instances, then we multiplex the debugging signals across.
     ws "/debugger", :debugger do |_socket|
       raise "not implemented"
     end
@@ -89,7 +90,7 @@ module PlaceOS::Core::Api
     def initialize(
       context : HTTP::Server::Context,
       action_name = :index,
-      @module_manager : ModuleManager = ModuleManager.instance
+      @module_manager : Resources::Modules = Resources::Modules.instance
     )
       super(context, action_name)
     end

@@ -1,37 +1,101 @@
-require "placeos-compiler/compiler"
-require "placeos-compiler/helper"
+require "placeos-models"
 require "placeos-models/driver"
 require "placeos-models/repository"
 require "placeos-resource"
 
-require "./cloning"
-require "./module_manager"
+require "placeos-build/client"
+require "placeos-build/driver_store/filesystem"
+
+require "./modules"
 
 module PlaceOS
-  # TODO: Remove after this is resolved https://github.com/place-technology/roadmap/issues/24
-  class Core::Compilation < Resource(Model::Driver)
+  # # Drivers
+  #
+  # ## Start
+  # - new driver
+  # - load any waiting modules
+  #
+  # ## Create
+  # - new driver
+  # - load any waiting modules
+  #
+  # ## Update
+  # - remove current driver
+  # - stop modules
+  # - new driver
+  # - "reload" modules
+  #
+  # ## Delete
+  # - stop modules
+  # - remove current driver
+  class Core::Drivers < Resource(Model::Driver)
     private getter? startup : Bool = true
-    private getter module_manager : ModuleManager
+    private getter module_manager : Resources::Modules
     private getter compiler_lock = Mutex.new
+
+    getter binary_dir : String
+
+    getter binary_store : Build::Filesystem do
+      Build::Filesystem.new(binary_dir)
+    end
 
     def initialize(
       @startup : Bool = true,
-      binary_dir : String = Compiler.binary_dir,
-      repository_dir : String = Compiler.repository_dir,
-      @module_manager : ModuleManager = ModuleManager.instance
+      @binary_dir : String = Path["./bin/drivers"].expand.to_s,
+      @module_manager : Resources::Modules = Resources::Modules.instance
     )
+      Dir.mkdir_p binary_dir
       buffer_size = System.cpu_count.to_i
-
-      Compiler.binary_dir = binary_dir
-      Compiler.repository_dir = repository_dir
-
       super(buffer_size)
+    end
+
+    def build_driver(driver, commit, force_recompile) : PlaceOS::Build::Drivers::Result
+      commit = commit.presence
+      force_recompile = force_recompile.presence.try &.downcase.in?("1", "true")
+
+      unless force_recompile || (existing = binary_store.query(entrypoint: driver, commit: commit).first?).nil?
+        path = binary_store.path(existing)
+        return PlaceOS::Build::Drivers::Success.new(path, File.info(binary_store.path(existing)).modification_time)
+      end
+
+      # TODO: deprecate?
+      commit = "HEAD" if commit.nil?
+
+      PlaceOS::Build::Client.client do |client|
+        client.repository_path = repository_path
+        client.compile(file: driver, url: "local", commit: commit) do |key, io|
+          binary_store.write(key, io)
+        end
+      end
+    end
+
+    def self.fetch_driver(
+      driver : Model::Driver,
+      username : String? = nil,
+      password : String? = nil,
+      request_id : String? = nil
+    ) : String?
+      result = Build::Client.client(BUILD_URI) do |client|
+        client.compile(
+          file: driver.file_name,
+          url: driver.repository.uri,
+          commit: driver.commit,
+          username: username,
+          password: password,
+          request_id: request_id
+        ) do |key, driver_io|
+          File.open(File.join(binary_dir, key), mode: "w+", perm: File::Permissions.new(0o744)) do |file_io|
+            IO.copy driver_io, file_io
+          end
+        end
+      end
+      result.path if result.is_a? Build::Drivers::Success
     end
 
     def process_resource(action : Resource::Action, resource driver : Model::Driver) : Resource::Result
       case action
       in .created?, .updated?
-        success, output = compiler_lock.synchronize { Compilation.compile_driver(driver, startup?, module_manager) }
+        success, output = compiler_lock.synchronize { Drivers.compile_driver(driver, startup?, module_manager) }
 
         unless success
           if driver.compilation_output.nil? || driver.recompile_commit? || driver.commit_changed?
@@ -53,7 +117,7 @@ module PlaceOS
     def self.compile_driver(
       driver : Model::Driver,
       startup : Bool = false,
-      module_manager : ModuleManager = ModuleManager.instance
+      module_manager : Resources::Modules = Resources::Modules.instance
     ) : Tuple(Bool, String)
       driver_id = driver.id.as(String)
       repository = driver.repository!
@@ -80,7 +144,7 @@ module PlaceOS
       end
 
       # If the commit is `head` then the driver must be recompiled at the latest version
-      if Compilation.pull?(commit)
+      if Drivers.pull?(commit)
         begin
           Cloning.clone_and_install(repository)
         rescue e
@@ -117,7 +181,7 @@ module PlaceOS
       )
 
       # Bump the commit on the driver post-compilation and module loading
-      if (Compilation.pull?(commit) || force_recompile) && (startup || module_manager.discovery.own_node?(driver_id))
+      if (Drivers.pull?(commit) || force_recompile) && (startup || module_manager.discovery.own_node?(driver_id))
         update_driver_commit(driver: driver, commit: result.commit, startup: startup)
       end
 

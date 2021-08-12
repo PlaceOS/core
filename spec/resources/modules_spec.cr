@@ -27,10 +27,10 @@ module PlaceOS::Core
         module_manager = module_manager_mock
 
         cloning = Cloning.new(testing: true)
-        compilation = Compilation.new(startup: true, module_manager: module_manager)
+        drivers = Drivers.new(startup: true, module_manager: module_manager)
 
         # Clone, compile, etcd
-        resource_manager = ResourceManager.new(cloning: cloning, compilation: compilation)
+        resource_manager = ResourceManager.new(cloning: cloning, drivers: drivers)
         resource_manager.start { }
 
         mod_id = mod.id.as(String)

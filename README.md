@@ -5,16 +5,15 @@
 
 The coordination service for running drivers on [PlaceOS](https://place.technology).
 
+## ENV
+
+TODO: write up the environment variables
+
+## HTTP API
+
+TODO: write up the interface
+
 ## Implementation
-
-### Cloning
-
-Core handles the cloning of driver repositories.
-If a repository is already present on the file system, its git state is adjusted to match the model's commit.
-
-### Compilation
-
-Compilation of drivers is performed on all core nodes.
 
 ### Module Management
 

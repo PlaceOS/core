@@ -1,11 +1,11 @@
 require "placeos-models/settings"
 require "placeos-resource"
 
-module PlaceOS
-  class Core::SettingsUpdate < Resource(Model::Settings)
-    private getter module_manager : ModuleManager
+module PlaceOS::Core::Resources
+  class SettingsUpdate < Resource(Model::Settings)
+    private getter module_manager : Resources::Modules
 
-    def initialize(@module_manager : ModuleManager = ModuleManager.instance)
+    def initialize(@module_manager : Resources::Modules = Resources::Modules.instance)
       super()
     end
 
@@ -24,7 +24,7 @@ module PlaceOS
 
     def self.update_modules(
       settings : Model::Settings,
-      module_manager : ModuleManager
+      module_manager : Resources::Modules
     )
       Log.context.set(settings_id: settings.id)
       result = Result::Success

@@ -1,47 +1,41 @@
-require "./cloning"
-require "./compilation"
+require "./resources/drivers"
+require "./resources/settings_updates"
 require "./mappings/control_system_modules"
 require "./mappings/module_names"
 
-# Sequences the acquisition and production of resources
-#
-module PlaceOS::Core
-  class ResourceManager
-    getter cloning : Cloning
-    getter compilation : Compilation
+module PlaceOS::Core::Resources
+  # Sequences the acquisition and production of resources
+  #
+  class Manager
+    getter drivers : Drivers
     getter control_system_modules : Mappings::ControlSystemModules
     getter module_names : Mappings::ModuleNames
-    getter settings_updates : SettingsUpdate
+    getter settings_updates : Resources::SettingsUpdate
     getter? started = false
 
     private getter start_lock = Mutex.new
 
-    @@instance : ResourceManager?
+    @@instance : self?
 
-    def self.instance(testing = false) : ResourceManager
-      (@@instance ||= ResourceManager.new(testing: testing)).as(ResourceManager)
+    def self.instance(testing = false) : Resources::Manager
+      (@@instance ||= Resources::Manager.new(testing: testing)).as(Resources::Manager)
     end
 
     def initialize(
-      cloning : Cloning? = nil,
-      @compilation : Compilation = Compilation.new,
+      @drivers : Drivers = Drivers.new,
       @control_system_modules : Mappings::ControlSystemModules = Mappings::ControlSystemModules.new,
       @module_names : Mappings::ModuleNames = Mappings::ModuleNames.new,
       @settings_updates : SettingsUpdate = SettingsUpdate.new,
       testing : Bool = false
     )
-      @cloning = cloning || Cloning.new(testing: testing)
     end
 
     def start
       start_lock.synchronize {
         return if started?
 
-        Log.info { "cloning Repositories" }
-        cloning.start
-
         Log.info { "compiling Drivers" }
-        compilation.start
+        drivers.start
 
         # Run the on-load processes
         yield
@@ -63,8 +57,7 @@ module PlaceOS::Core
       return unless started?
 
       @started = false
-      cloning.stop
-      compilation.stop
+      drivers.stop
       control_system_modules.stop
       module_names.stop
       settings_updates.stop

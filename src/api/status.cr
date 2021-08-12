@@ -1,16 +1,15 @@
 require "hardware"
-require "placeos-compiler/helper"
 
-require "../placeos-core/module_manager"
-require "../placeos-core/resource_manager"
+require "../placeos-core/resources"
+require "../placeos-core/resources/modules"
 require "./application"
 
 module PlaceOS::Core::Api
   class Status < Application
     base "/api/core/v1/status/"
 
-    getter module_manager : ModuleManager { ModuleManager.instance }
-    getter resource_manager : ResourceManager { ResourceManager.instance }
+    getter module_manager : Resources::Modules { Resources::Modules.instance }
+    getter resource_manager : Resources::Manager { Resources::Manager.instance }
 
     # General statistics related to the process
     #
