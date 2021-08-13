@@ -90,10 +90,11 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 # Service dependencies
 COPY --from=build /app/dependencies /
 # Service binary
-COPY --from=build /app/bin /bin/drivers
 COPY --from=build /app/bin /bin/${TARGET}
 
 USER appuser:appuser
+
+COPY --from=build /app/bin /bin/drivers
 
 ###############################################################################
 
@@ -104,7 +105,7 @@ CMD ["/bin/edge"]
 ###############################################################################
 
 FROM minimal as core
-ENV PATH=$PATH:/
+ENV PATH=$PATH:/bin
 
 # Include `ping`
 COPY --from=build /app/ping-dependencies /
