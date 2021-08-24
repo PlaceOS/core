@@ -33,6 +33,10 @@ dependencies:
     github: spider-gazelle/log_helper
     version: ~> 1
 
+  placeos-core-client:
+    github: placeos/core-client
+    version: ~> 0.1
+
   placeos-compiler:
     github: placeos/compiler
     version: ~> 4.0
@@ -71,10 +75,6 @@ dependencies:
 
   rwlock:
     github: spider-gazelle/readers-writer
-
-  simple_retry:
-    github: spider-gazelle/simple_retry
-    version: ~> 1
 
   secrets-env:
     github: spider-gazelle/secrets-env
