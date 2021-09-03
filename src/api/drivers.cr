@@ -18,10 +18,11 @@ module PlaceOS::Core::Api
     # Returns the list of commits for a particular driver
     def show
       driver_file = URI.decode(params["file_name"])
+      branch = params["branch"]?.presence || "master"
       repository = params["repository"]
       count = (params["count"]? || 50).to_i
 
-      render json: Compiler::Git.commits(driver_file, repository, Compiler.repository_dir, count)
+      render json: Compiler::Git.commits(driver_file, repository, Compiler.repository_dir, count, branch)
     end
 
     # Boolean check whether driver is compiled

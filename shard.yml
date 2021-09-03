@@ -35,11 +35,11 @@ dependencies:
 
   placeos-core-client:
     github: placeos/core-client
-    version: ~> 0.1
+    version: ~> 0.3
 
   placeos-compiler:
     github: placeos/compiler
-    version: ~> 4.0
+    version: ~> 4.7
 
   placeos-driver:
     github: placeos/driver
