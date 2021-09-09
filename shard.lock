@@ -1,4 +1,3 @@
-# NOTICE: This lockfile contains some overrides from shard.override.yml
 version: 2.0
 shards:
   CrystalEmail:
@@ -165,9 +164,9 @@ shards:
     git: https://github.com/place-labs/crystal-rethinkdb.git
     version: 0.3.1+git.commit.bd193b6fed95619da3d963267bf61ed35b1fd7f5
 
-  rethinkdb-orm: # Overridden
+  rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 5.0.1+git.commit.b0e180174c6af1239aee7dbd5c2f3f095ac49aa3
+    version: 5.0.2
 
   retriable:
     git: https://github.com/sija/retriable.cr.git

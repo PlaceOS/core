@@ -1,4 +1,0 @@
-dependencies:
-  rethinkdb-orm:
-    github: spider-gazelle/rethinkdb-orm
-    branch: fix/connection
