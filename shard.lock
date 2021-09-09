@@ -167,7 +167,7 @@ shards:
 
   rethinkdb-orm: # Overridden
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 5.0.1+git.commit.59b0993bbf987464753d8d48a7aec58922657be5
+    version: 5.0.1+git.commit.b0e180174c6af1239aee7dbd5c2f3f095ac49aa3
 
   retriable:
     git: https://github.com/sija/retriable.cr.git
