@@ -1,5 +1,5 @@
-ARG crystal_version=1.1.1
-FROM crystallang/crystal:${crystal_version}-alpine
+ARG CRYSTAL_VERSION=1.1.1
+FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine
 
 WORKDIR /app
 
