@@ -13,15 +13,21 @@ jobs:
         uses: crystal-ameba/github-action@v0.2.12
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   test:
     runs-on: ubuntu-latest
+    name: "crystal: ${{ matrix.crystal }}, stable: ${{ matrix.stable }}"
     strategy:
       fail-fast: false
       matrix:
+        stable: [true]
         crystal:
           - 1.0.0
           - 1.1.1
-          - nightly
+        include:
+          - crystal: nightly
+            stable: false
+    continue-on-error: ${{ !matrix.stable }}
     steps:
       - uses: actions/checkout@v2
       - name: Run docker-compose test environment
