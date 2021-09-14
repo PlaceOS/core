@@ -9,11 +9,15 @@ require "placeos-models/module"
 require "placeos-models/settings"
 require "placeos-resource"
 
+require "placeos-build/driver_store/filesystem"
+
 require "../../placeos-edge/server"
 
 require "../../constants"
 require "../process_manager/edge"
 require "../process_manager/local"
+
+require "./drivers"
 
 module PlaceOS::Core
   class Resources::Modules < Resource(Model::Module)
@@ -39,13 +43,19 @@ module PlaceOS::Core
     getter redis : Redis { Redis.new(url: REDIS_URL) }
 
     # Singleton configured from environment
-    class_getter instance : Resources::Modules { Resources::Modules.new(uri: self.uri) }
+    class_getter instance : Resources::Modules do
+      Resources::Modules.new(
+        uri: self.uri,
+      )
+    end
 
     # Manager for remote edge module processes
     getter edge_processes : Edge::Server = Edge::Server.new
 
     # Manager for local module processes
     getter local_processes : ProcessManager::Local { ProcessManager::Local.new(discovery) }
+
+    getter binary_store : Build::Filesystem
 
     # Start up process is as follows..
     # - registered
@@ -55,6 +65,7 @@ module PlaceOS::Core
     # - once load complete, mark in etcd that load is complete
     def initialize(
       uri : String | URI,
+      @binary_store : Build::Filesystem = Build::Filesystem.new(Path["./bin/drivers"].expand.to_s),
       discovery : HoundDog::Discovery? = nil,
       clustering : Clustering? = nil,
       @redis : Redis? = nil
@@ -133,10 +144,17 @@ module PlaceOS::Core
             driver_commit: driver.commit,
           )
 
-          driver_path = PlaceOS::Compiler.is_built?(driver.file_name, repository_folder, driver.commit, id: driver_id)
+          # TODO: load _latest_ build for this commit
+          executable = binary_store.query(
+            entrypoint: driver.file_name,
+            commit: driver.commit,
+          ).first?
+
+          driver_path = executable.try { |e| binary_store.path(e) }
+
           # Check if the driver is built
           if driver_path.nil?
-            Log.error { "driver does not exist for module" }
+            Log.error { "driver is not loaded for module" }
             return
           end
 
@@ -203,11 +221,11 @@ module PlaceOS::Core
 
     # Stops modules on stale driver and starts them on the new driver
     #
-    # Returns the stale driver path
     def reload_modules(driver : Model::Driver) : Path?
       driver_id = driver.id.as(String)
+
       # Set when a module_manager found for stale driver
-      stale_path = driver.modules.reduce(nil) do |path, mod|
+      driver.modules.reduce(nil) do |path, mod|
         module_id = mod.id.as(String)
 
         # Grab the stale driver path, if there is one
@@ -242,13 +260,9 @@ module PlaceOS::Core
             end
           end
         end
+
         path
       end
-
-      stale_path || driver.commit_was.try { |commit|
-        # Try to create a driver path from what the commit used to be
-        Path[Compiler::Helper.driver_binary_path(driver.file_name, commit, driver_id)]
-      }
     end
 
     ###############################################################################################
