@@ -16,6 +16,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     name: "crystal: ${{ matrix.crystal }}, stable: ${{ matrix.stable }}"
     strategy:
       fail-fast: false
