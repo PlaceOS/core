@@ -208,6 +208,11 @@ module PlaceOS::Core
           # - Driver sends `key` in `hash_id` position
           # - Driver sends `value` in `key_name` position
           redis.set(hash_id, key_name)
+        in .publish?
+          # Note:
+          # - Driver sends `channel` in `hash_id` position
+          # - Driver sends `value` in `key_name` position
+          redis.publish(hash_id, key_name)
         in .clear?
           keys = redis.hkeys(hash_id)
           redis.pipelined(key: hash_id, reconnect: true) do |pipeline|
