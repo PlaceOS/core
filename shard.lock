@@ -38,7 +38,7 @@ shards:
 
   crunits:
     git: https://github.com/spider-gazelle/crunits.git
-    version: 1.0.0
+    version: 1.1.0
 
   db:
     git: https://github.com/crystal-lang/crystal-db.git
@@ -130,15 +130,15 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 5.7.0
+    version: 5.7.2
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.5.1
+    version: 0.6.0
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 5.10.1
+    version: 5.11.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
