@@ -1,0 +1,4 @@
+ignored:
+  - DL3018 # Allow unpinned packages
+  - SC2016 # Ignore single-quotes (expansion not desired)
+  - SC1072 # This one seems spurious (related to `for` syntax)
