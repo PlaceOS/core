@@ -53,7 +53,7 @@ services:
     hostname: rethink
 
   etcd:
-    image: bitnami/etcd:${ETCD_VERSION:-3}
+    image: bitnami/etcd:${ETCD_VERSION:-3.3.12}
     restart: always
     hostname: etcd
     environment:
