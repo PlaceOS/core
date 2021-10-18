@@ -5,14 +5,14 @@ require "../helper"
 # - Create the call instance
 # - Check the outcome of the request
 
-module PlaceOS::Core
+module PlaceOS::Core::Api
   EXEC_PAYLOAD = {
     __exec__:               "used_for_place_testing",
     used_for_place_testing: [] of String,
   }.to_json
 
-  describe Api::Command, tags: "api" do
-    namespace = Api::Command::NAMESPACE[0]
+  describe Command, tags: "api" do
+    namespace = Command::NAMESPACE[0]
     json_headers = HTTP::Headers{
       "Content-Type" => "application/json",
     }
@@ -30,7 +30,7 @@ module PlaceOS::Core
         ctx = context("POST", route, json_headers, EXEC_PAYLOAD)
         ctx.route_params = {"module_id" => mod_id}
         ctx.response.output = io
-        command_controller = Api::Command.new(ctx, :execute, module_manager)
+        command_controller = Command.new(ctx, :execute, module_manager)
 
         command_controller.execute
 
@@ -59,7 +59,7 @@ module PlaceOS::Core
         route = File.join(namespace, mod_id, "debugger")
         ctx = context("GET", route)
         ctx.route_params = {"module_id" => mod_id}
-        command_controller = Api::Command.new(ctx, :execute, module_manager)
+        command_controller = Command.new(ctx, :execute, module_manager)
 
         # Set up websockets on a blocking bidirectional IO
         io_server, io_client = IO::Stapled.pipe
@@ -91,7 +91,7 @@ module PlaceOS::Core
         route = File.join(namespace, mod_id, "execute")
         ctx = context("POST", route, json_headers, EXEC_PAYLOAD)
         ctx.route_params = {"module_id" => mod_id}
-        Api::Command.new(ctx, :execute, module_manager).execute
+        Command.new(ctx, :execute, module_manager).execute
 
         ctx.response.status_code.should eq 200
 

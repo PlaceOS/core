@@ -1,7 +1,7 @@
 require "./helper"
 
 module PlaceOS::Edge
-  describe Client do
+  describe Client, tags: ["api", "edge"] do
     it "handshakes on register" do
       coordination = Channel(Bool).new
 

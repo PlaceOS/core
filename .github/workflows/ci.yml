@@ -10,6 +10,7 @@ jobs:
         subset:
           - api
           - mappings
+          - processes
           - resource
         crystal:
           - 1.1.1
@@ -28,12 +29,15 @@ jobs:
           - crystal: nightly
             stable: false
             MT: false
+            subset: processes
+          - crystal: nightly
+            stable: false
+            MT: false
             subset: resource
     continue-on-error: ${{ !matrix.stable }}
     steps:
       - uses: actions/checkout@v2
       - name: Test ${{ matrix.subset }}
-        timout-minutes: 25
         run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tags ${{ matrix.subset }}
         env:
           CRYSTAL_VERSION: ${{ matrix.crystal }}
