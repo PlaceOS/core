@@ -10,19 +10,17 @@ ARG PLACE_VERSION="DEV"
 
 WORKDIR /app
 
-# Install the latest version of 
-# - libSSH2
+# Install the latest version of...
 # - ping
-RUN apk add --update --no-cache \
-    'apk-tools>=2.10.8-r0' \
-    'libcurl>=7.79.1-r0' \
-    ca-certificates \
-    iputils \
-    libssh2-static \
-    yaml-static
-
-# Add trusted CAs for communicating with external services
-RUN update-ca-certificates
+# - trusted certificate authorities
+RUN apk update && \
+    apk add --no-cache \
+        'apk-tools>=2.10.8-r0' \
+        'libcurl>=7.79.1-r0' \
+        ca-certificates \
+        iputils \
+    && \
+    update-ca-certificates
 
 # Create a non-privileged user
 ARG IMAGE_UID="10001"
@@ -50,20 +48,26 @@ COPY src /app/src
 RUN UNAME_AT_COMPILE_TIME=true \
     PLACE_VERSION=${PLACE_VERSION} \
     PLACE_COMMIT=${PLACE_COMMIT} \
-    shards build ${TARGET} --production --release --error-trace
+    shards build ${TARGET} \
+      --error-trace \
+      --production \
+      --release
 
 RUN mkdir -p /app/bin/drivers
 RUN chown appuser -R /app
 
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
 # Extract target's dependencies (produces a smaller image than static compilation)
-RUN ldd /app/bin/${TARGET} | tr -s '[:blank:]' '\n' | grep '^/' | \
-    xargs -I % sh -c 'mkdir -p $(dirname dependencies%); cp % dependencies%;'
-
-RUN ldd /bin/ping | tr -s '[:blank:]' '\n' | grep '^/' | \
-    xargs -I % sh -c 'mkdir -p $(dirname ping-dependencies%); cp % ping-dependencies%;'
-
-RUN ldd /bin/ping6 | tr -s '[:blank:]' '\n' | grep '^/' | \
-    xargs -I % sh -c 'mkdir -p $(dirname ping-dependencies%); cp % ping-dependencies%;'
+# hadolint ignore=SC2016
+RUN for binary in "/app/bin/${TARGET}" "/bin/ping" "/bin/ping6"; do \
+        name="$(basename ${binary})"; \
+        ldd "$binary" | \
+        tr -s '[:blank:]' '\n' | \
+        grep '^/' | \
+        sed -e "s/^/\/\$name/" | \
+        xargs -I % sh -c 'mkdir -p $(dirname dependencies%); cp % dependencies%;'; \
+    done
 
 ###############################################################################
 
@@ -88,7 +92,7 @@ COPY --from=build /etc/group /etc/group
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 # Service dependencies
-COPY --from=build /app/dependencies /
+COPY --from=build /app/dependencies/${TARGET} /
 # Service binary
 COPY --from=build /app/bin /bin/${TARGET}
 
@@ -108,9 +112,8 @@ FROM minimal as core
 ENV PATH=$PATH:/bin
 
 # Include `ping`
-COPY --from=build /app/ping-dependencies /
-COPY --from=build /bin/ping /ping
-COPY --from=build /bin/ping6 /ping6
+COPY --from=build /app/dependencies/ping* /
+COPY --from=build /bin/ping* /
 
 EXPOSE 3000
 VOLUME ["/app/repositories/", "/app/bin/drivers/"]

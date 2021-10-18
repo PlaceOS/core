@@ -35,6 +35,8 @@ module PlaceOS::Core::Resources
         driver_id = driver.id.as(String)
 
         driver_commit_hash = Compiler::Git.current_file_commit(driver.file_name, repo.folder_name, Compiler.repository_dir)
+
+        # TODO: Update to use new executable format
         driver_path = PlaceOS::Compiler::Helper.driver_binary_path(driver.file_name, driver_commit_hash, driver_id)
 
         mod.reload!

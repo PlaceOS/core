@@ -21,6 +21,7 @@ module PlaceOS::Core::Resources
 
       driver.reload!
 
+      # TODO: Update to use new executable format
       PlaceOS::Compiler::Helper.compiled?(driver.file_name, driver.commit, driver.id.not_nil!).should be_true
     end
   end
