@@ -9,7 +9,7 @@ module PlaceOS::Core::Mappings
     end
 
     def refresh_module(mod)
-      raise "failed to refresh!" if mod.id.as(String).ends_with? FAILS_TO_REFRESH
+      raise "mocked refresh error" if mod.id.as(String).ends_with? FAILS_TO_REFRESH
       true
     end
   end
