@@ -2,7 +2,7 @@ name: CI
 on: push
 jobs:
   test:
-    name: "${{ !matrix.stable && '🚧 ' || ''}}crystal: ${{ matrix.crystal }}, MT: ${{ matrix.MT }}"
+    name: "${{ !matrix.stable && '🚧 ' || ''}}crystal: ${{ matrix.crystal }}, subset: ${{ matrix.subset }}, MT: ${{ matrix.MT }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Test ${{ matrix.subset }}
-        run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tags ${{ matrix.subset }}
+        run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tag ${{ matrix.subset }}
         env:
           CRYSTAL_VERSION: ${{ matrix.crystal }}
 
