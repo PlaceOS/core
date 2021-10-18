@@ -62,7 +62,7 @@ module PlaceOS::Core::Api
       end
     end
 
-    # we don't want to capture potentially old reference to manager
+    # Stop debugging against the current module manager for `module_id`
     protected def stop_debugging(module_id, callback)
       module_manager.process_manager(module_id) do |manager|
         manager.ignore(module_id, &callback)
