@@ -58,7 +58,14 @@ module PlaceOS::Core::Api
         callback = ->(message : String) { socket.send(message); nil }
         manager.debug(module_id, &callback)
         # Stop debugging when the socket closes
-        socket.on_close { manager.ignore(module_id, &callback) }
+        socket.on_close { stop_debugging(module_id, callback) }
+      end
+    end
+
+    # we don't want to capture potentially old reference to manager
+    protected def stop_debugging(module_id, callback)
+      module_manager.process_manager(module_id) do |manager|
+        manager.ignore(module_id, &callback)
       end
     end
 
