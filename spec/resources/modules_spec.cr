@@ -1,7 +1,7 @@
-require "./helper"
+require "../helper"
 
-module PlaceOS::Core
-  describe ModuleManager, tags: "processes" do
+module PlaceOS::Core::Resources
+  describe Modules, tags: "processes" do
     describe "edge" do
     end
 
@@ -26,11 +26,9 @@ module PlaceOS::Core
 
         module_manager = module_manager_mock
 
-        cloning = Cloning.new(testing: true)
-        drivers = Drivers.new(startup: true, module_manager: module_manager)
+        drivers = Drivers.new(module_manager: module_manager)
 
-        # Clone, compile, etcd
-        resource_manager = ResourceManager.new(cloning: cloning, drivers: drivers)
+        resource_manager = Manager.new(drivers: drivers)
         resource_manager.start { }
 
         mod_id = mod.id.as(String)
@@ -68,7 +66,7 @@ module PlaceOS::Core
         Model::Repository.clear
 
         # Start module manager
-        module_manager = ModuleManager.new(uri: CORE_URL)
+        module_manager = Resources::Modules.new(uri: CORE_URL)
         module_manager.start
 
         # Check that the node is registered in etcd

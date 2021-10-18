@@ -5,6 +5,7 @@ require "../lib/action-controller/spec/curl_context"
 require "../src/config"
 require "../src/placeos-core"
 require "../src/placeos-core/*"
+require "../src/placeos-core/resources/*"
 
 require "placeos-models/spec/generator"
 
@@ -47,7 +48,7 @@ end
 def module_manager_mock
   discovery = discovery_mock
   clustering = MockClustering.new(uri: CORE_URL, discovery: discovery)
-  PlaceOS::Core::ModuleManager.new(CORE_URL, discovery: discovery, clustering: clustering)
+  PlaceOS::Core::Resources::Modules.new(CORE_URL, discovery: discovery, clustering: clustering)
 end
 
 macro around_suite(block)
@@ -76,7 +77,7 @@ Spec.before_suite do
 end
 
 Spec.after_suite do
-  PlaceOS::Core::ResourceManager.instance.stop
+  PlaceOS::Core::Resources::Manager.instance.stop
   Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
   puts "\n> Terminating stray driver processes"
   `pkill -f ".*core-spec.*"` rescue nil
@@ -160,7 +161,7 @@ def create_resources(fresh : Bool = false, process : Bool = true)
   _, repository, driver, mod = setup(fresh)
 
   # Clone, compile
-  resource_manager = PlaceOS::Core::ResourceManager.new(testing: true)
+  resource_manager = PlaceOS::Core::Resources::Manager.new(testing: true)
   resource_manager.start { } if process
 
   {repository, driver, mod, resource_manager}

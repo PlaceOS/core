@@ -8,7 +8,7 @@ require "placeos-build/driver_store/filesystem"
 
 require "./modules"
 
-module PlaceOS::Core
+module PlaceOS::Core::Resources
   # # Drivers
   #
   # ## Start
@@ -28,7 +28,7 @@ module PlaceOS::Core
   # ## Delete
   # - stop modules
   # - remove current driver
-  class Resources::Drivers < Resource(Model::Driver)
+  class Drivers < Resource(Model::Driver)
     private getter module_manager : Resources::Modules
 
     getter binary_store : Build::Filesystem
@@ -51,6 +51,7 @@ module PlaceOS::Core
         end
         Resource::Result::Success
       in .deleted?
+        # Unload
         Result::Skipped
       end
     rescue exception

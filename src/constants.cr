@@ -7,8 +7,7 @@ module PlaceOS::Core
   BUILD_TIME   = {{ system("date -u").chomp.stringify }}
   BUILD_COMMIT = {{ env("PLACE_COMMIT") || "DEV" }}
 
-  REPOS   = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
-  DRIVERS = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Compiler.repository_dir, "drivers")
+  REPOSITORY_DIRECTORY = ENV["PLACE_REPOSITORY_DIRECTORY"]? || Path["./repositories"].expand.to_s
 
   ETCD_HOST = ENV["ETCD_HOST"]? || "localhost"
   ETCD_PORT = (ENV["ETCD_PORT"]? || 2379).to_i

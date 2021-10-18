@@ -39,6 +39,7 @@ services:
       - rethink
     environment:
       # Environment
+      CRYSTAL_VERSION: ${CRYSTAL_VERSION:-1.2.0}
       GITHUB_ACTION: ${GITHUB_ACTION:-}
       # Service Hosts
       << : *etcd-client-env

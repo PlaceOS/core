@@ -13,7 +13,7 @@ module PlaceOS::Core::Api
       driver_key = params["path"]
       edge_id = params["edge_id"]?.presence
 
-      # TODO: move this to ModuleManager
+      # TODO: move this to Resources::Modules
       manager = if edge_id.nil? || !module_manager.own_node?(edge_id)
                   module_manager.local_processes
                 else

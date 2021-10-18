@@ -1,9 +1,10 @@
+require "file_utils"
 require "placeos-compiler/compiler"
 require "placeos-compiler/helper"
 
-require "./helper"
+require "../helper"
 
-module PlaceOS::Core
+module PlaceOS::Core::Resources
   describe Drivers, tags: "resource" do
     it "compiles drivers" do
       # Set up a temporary directory

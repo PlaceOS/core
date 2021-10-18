@@ -2,12 +2,8 @@
 require "action-controller"
 
 # Required to convince Crystal this class is not a module
-
 # :nodoc:
 abstract class PlaceOS::Driver; end
-
-# :nodoc:
-class PlaceOS::Driver::Protocol; end
 
 # Application code
 require "./logging"
@@ -20,7 +16,7 @@ require "./api/*"
 require "action-controller/server"
 
 # Path to driver repositories
-PlaceOS::Compiler.repository_dir = PlaceOS::Core::REPOS
+PlaceOS::Compiler.repository_dir = PlaceOS::Core::REPOSITORY_DIRECTORY
 
 # Configure Service discovery
 HoundDog.configure do |settings|

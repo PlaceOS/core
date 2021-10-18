@@ -3,7 +3,6 @@ require "../helper"
 module PlaceOS::Core::ProcessManager
   def self.with_driver
     _working_directory, repository, driver, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
-    Cloning.clone_and_install(repository)
     result = Compiler.build_driver(driver.file_name, repository.folder_name, driver.commit, id: driver.id)
     yield mod, result.path, ProcessManager.path_to_key(result.path), driver
   end
@@ -11,7 +10,7 @@ module PlaceOS::Core::ProcessManager
   def self.test_starting(manager, mod, driver_key)
     module_id = mod.id.as(String)
     manager.load(module_id: module_id, driver_key: driver_key)
-    manager.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
+    manager.start(module_id: module_id, payload: Resources::Modules.start_payload(mod))
     manager.loaded_modules.should eq({driver_key => [module_id]})
   end
 
@@ -48,8 +47,8 @@ module PlaceOS::Core::ProcessManager
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
           pm.load(module_id: module_id, driver_key: driver_key)
-          pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
-          result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:used_for_place_testing), user_id: nil)
+          pm.start(module_id: module_id, payload: Resources::Modules.start_payload(mod))
+          result = pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:used_for_place_testing), user_id: nil)
           result.should eq %("you can delete this file")
         end
 
@@ -57,14 +56,14 @@ module PlaceOS::Core::ProcessManager
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
           pm.load(module_id: module_id, driver_key: driver_key)
-          pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
+          pm.start(module_id: module_id, payload: Resources::Modules.start_payload(mod))
           message_channel = Channel(String).new
 
           pm.debug(module_id) do |message|
             message_channel.send(message)
           end
 
-          result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
+          result = pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:echo, ["hello"]), user_id: nil)
           result.should eq %("hello")
 
           select
@@ -80,7 +79,7 @@ module PlaceOS::Core::ProcessManager
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
           pm.load(module_id: module_id, driver_key: driver_key)
-          pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
+          pm.start(module_id: module_id, payload: Resources::Modules.start_payload(mod))
           message_channel = Channel(String).new
 
           callback = ->(message : String) do
@@ -89,7 +88,7 @@ module PlaceOS::Core::ProcessManager
 
           pm.debug(module_id, &callback)
 
-          result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
+          result = pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:echo, ["hello"]), user_id: nil)
           result.should eq %("hello")
 
           select
@@ -100,7 +99,7 @@ module PlaceOS::Core::ProcessManager
           end
 
           pm.ignore(module_id, &callback)
-          result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
+          result = pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:echo, ["hello"]), user_id: nil)
           result.should eq %("hello")
 
           expect_raises(Exception) do
@@ -116,7 +115,7 @@ module PlaceOS::Core::ProcessManager
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
           pm.load(module_id: module_id, driver_key: driver_key)
-          pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
+          pm.start(module_id: module_id, payload: Resources::Modules.start_payload(mod))
           pm.loaded_modules.should eq({driver_key => [module_id]})
           pm.kill(driver_key)
         end

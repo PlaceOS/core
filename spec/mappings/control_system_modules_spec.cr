@@ -1,7 +1,7 @@
 require "../helper"
 
 module PlaceOS::Core::Mappings
-  class Mock < ModuleManager
+  class Mock < Resources::Modules
     FAILS_TO_REFRESH = "fails-to-refresh"
 
     def self.failing_id

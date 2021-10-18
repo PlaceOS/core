@@ -7,6 +7,7 @@ require "placeos-models/control_system"
 require "placeos-models/driver"
 require "placeos-models/module"
 require "placeos-models/settings"
+
 require "placeos-resource"
 
 require "placeos-build/driver_store/filesystem"
@@ -132,7 +133,6 @@ module PlaceOS::Core
       if Resources::Modules.core_uri(mod, rendezvous_hash) == uri
         driver = mod.driver!
         driver_id = driver.id.as(String)
-        repository_folder = driver.repository.not_nil!.folder_name
 
         ::Log.with_context do
           Log.context.set(
