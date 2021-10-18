@@ -130,7 +130,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 5.7.3
+    version: 5.8.1
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -138,11 +138,11 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 5.12.1
+    version: 5.12.2
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 2.0.6
+    version: 2.2.0
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
@@ -150,7 +150,7 @@ shards:
 
   promise:
     git: https://github.com/spider-gazelle/promise.git
-    version: 2.2.3
+    version: 3.0.0
 
   redis:
     git: https://github.com/stefanwille/crystal-redis.git

@@ -43,7 +43,7 @@ dependencies:
 
   placeos-driver:
     github: placeos/driver
-    version: ~> 5
+    version: ~> 5.8
 
   placeos-log-backend:
     github: place-labs/log-backend
@@ -55,11 +55,11 @@ dependencies:
 
   placeos-resource:
     github: place-labs/resource
-    version: ~> 2
+    version: ~> 2.2
 
   promise:
     github: spider-gazelle/promise
-    version: ~> 2
+    version: ~> 3.0
 
   redis-cluster:
     github: caspiano/redis-cluster.cr

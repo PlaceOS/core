@@ -1,37 +1,28 @@
 name: CI
 on: push
 jobs:
-  style:
-    runs-on: ubuntu-latest
-    container:
-      image: crystallang/crystal
-    steps:
-      - uses: actions/checkout@v2
-      - name: Format
-        run: crystal tool format --check
-      - name: Lint
-        uses: crystal-ameba/github-action@v0.2.12
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   test:
+    uses: PlaceOS/.github/.github/workflows/containerised-test.yml@main
+
+  crystal-style:
+    uses: PlaceOS/.github/.github/workflows/crystal-style.yml@main
+
+  dockerfile-style:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    name: "crystal: ${{ matrix.crystal }}, stable: ${{ matrix.stable }}"
     strategy:
       fail-fast: false
       matrix:
-        stable: [true]
-        crystal:
-          - 1.0.0
-          - 1.1.1
-        include:
-          - crystal: nightly
-            stable: false
-    continue-on-error: ${{ !matrix.stable }}
+        dockerfile:
+          - Dockerfile
+          - Dockerfile.test
     steps:
       - uses: actions/checkout@v2
-      - name: Run docker-compose test environment
-        run: ./test
-        env:
-          CRYSTAL_VERSION: ${{ matrix.crystal }}
+      - name: Lint ${{ matrix.dockerfile }}
+        uses: hadolint/hadolint-action@v1.6.0
+        with:
+          # DL3018 Allow unpinned packages
+          # SC2016 Ignore single-quotes (expansion not desired)
+          # SC1072 This one seems spurious (related to `for` syntax)
+          # DL3059 It's fine to have multiple consecutive runs
+          ignore: DL3018 SC2016 SC1072 DL3059
+          dockerfile: ${{ matrix.dockerfile }}
