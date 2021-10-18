@@ -100,12 +100,14 @@ module PlaceOS::Core::Resources
       binary_store : Build::Filesystem,
       own_node : Bool,
       request_id : String? = nil
-    ) : Bool
+    ) : Build::Executable?
       # Check binary store first
       # TODO: Add crystal version to driver model
-      unless binary_store.query(driver.file_name, commit: driver.commit).empty?
-        yield
-        return true
+      query = binary_store.query(driver.file_name, commit: driver.commit)
+
+      unless executable = query.first?
+        yield executable
+        return executable
       end
 
       result = Build::Client.client(BUILD_URI) do |client|
@@ -123,7 +125,10 @@ module PlaceOS::Core::Resources
       end
 
       # Perform updates to modules before updating data
-      yield if result.success?
+      if result.is_a? Build::Compilation::Success
+        executable = result.executable
+        yield executable
+      end
 
       if own_node
         case result
@@ -141,7 +146,7 @@ module PlaceOS::Core::Resources
         end
       end
 
-      result.success?
+      executable
     end
 
     def start

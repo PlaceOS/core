@@ -1,10 +1,19 @@
 require "../helper"
 
 module PlaceOS::Core::ProcessManager
+  class_getter binary_store : Build::Filesystem do
+    Build::Filesystem.new(Dir.tempdir)
+  end
+
   def self.with_driver
-    _working_directory, repository, driver, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
-    result = Compiler.build_driver(driver.file_name, repository.folder_name, driver.commit, id: driver.id)
-    yield mod, result.path, ProcessManager.path_to_key(result.path), driver
+    _working_directory, _repository, driver, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
+    executable = Resources::Drivers.fetch_driver(driver, binary_store, true) { }
+
+    if executable.nil?
+      abort("Failed to fetch an executable for #{driver.file_name} from #{_repository.uri}@#{driver.commit}")
+    end
+
+    yield mod, binary_store.path(executable), executable.filename, driver
   end
 
   def self.test_starting(manager, mod, driver_key)
