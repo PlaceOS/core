@@ -1,7 +1,7 @@
 require "../helper"
 
 module PlaceOS::Core::Mappings
-  describe ModuleNames, tags: "resource" do
+  describe ModuleNames, tags: "mappings" do
     it "ignores creates" do
       mod = Model::Module.new
       ModuleNames.new(ModuleManager.new("https://test.online"))

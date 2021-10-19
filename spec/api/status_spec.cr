@@ -1,8 +1,8 @@
 require "../helper"
 
-module PlaceOS::Core
-  describe Api::Status do
-    namespace = Api::Drivers::NAMESPACE[0]
+module PlaceOS::Core::Api
+  describe Status, tags: "api" do
+    namespace = Status::NAMESPACE[0]
     json_headers = HTTP::Headers{
       "Content-Type" => "application/json",
     }
@@ -17,7 +17,7 @@ module PlaceOS::Core
         io = IO::Memory.new
         ctx = context("GET", namespace, json_headers)
         ctx.response.output = io
-        Api::Status.new(ctx).index
+        Status.new(ctx).index
 
         ctx.response.status_code.should eq 200
 

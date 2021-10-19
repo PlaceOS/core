@@ -1,7 +1,7 @@
 require "./helper"
 
 module PlaceOS::Core
-  describe ModuleManager do
+  describe ModuleManager, tags: "processes" do
     describe "edge" do
     end
 

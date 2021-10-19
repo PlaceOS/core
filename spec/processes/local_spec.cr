@@ -15,7 +15,7 @@ module PlaceOS::Core::ProcessManager
     manager.loaded_modules.should eq({driver_key => [module_id]})
   end
 
-  describe Local do
+  describe Local, tags: "processes" do
     with_driver do |mod, driver_path, driver_key, _driver|
       describe Local::Common do
         describe "driver_loaded?" do

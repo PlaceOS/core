@@ -1,6 +1,6 @@
 require "../helper"
 
-module PlaceOS::Core
+module PlaceOS::Core::Mappings
   class Mock < ModuleManager
     FAILS_TO_REFRESH = "fails-to-refresh"
 
@@ -14,12 +14,12 @@ module PlaceOS::Core
     end
   end
 
-  describe Mappings::ControlSystemModules, tags: "resource" do
+  describe ControlSystemModules, tags: "mappings" do
     describe ".update_mapping" do
       it "ignores systems not mapped to node" do
         control_system = Model::Generator.control_system
         control_system.id = DiscoveryMock::DOES_NOT_MAP
-        control_system_modules = Mappings::ControlSystemModules.new(module_manager: module_manager_mock, startup: false)
+        control_system_modules = ControlSystemModules.new(module_manager: module_manager_mock, startup: false)
         control_system_modules.process_resource(:updated, control_system).skipped?.should be_true
       end
 
@@ -50,7 +50,7 @@ module PlaceOS::Core
         storage["device/2"] = device_modules[0].id
         storage["device/3"] = "doesn't exist"
 
-        Mappings::ControlSystemModules.update_mapping(
+        ControlSystemModules.update_mapping(
           cs,
           startup: true,
           module_manager: Mock.new(CORE_URL),
@@ -73,7 +73,7 @@ module PlaceOS::Core
         storage[mock_key] = "foo"
         storage[mock_key].should eq "foo"
 
-        Mappings::ControlSystemModules.set_mappings(cs, nil).should eq({} of String => String)
+        ControlSystemModules.set_mappings(cs, nil).should eq({} of String => String)
         storage[mock_key]?.should be_nil
       end
     end
@@ -82,7 +82,7 @@ module PlaceOS::Core
       it "does not update if system is destroyed" do
         cs = Model::ControlSystem.new
         cs.destroyed = true
-        Mappings::ControlSystemModules.update_logic_modules(cs, module_manager_mock).should eq 0
+        ControlSystemModules.update_logic_modules(cs, module_manager_mock).should eq 0
       end
 
       it "returns the number of refreshed modules" do
@@ -95,13 +95,13 @@ module PlaceOS::Core
           Model::Generator.module(driver, cs)
         end
 
-        Mappings::ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 0
+        ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 0
 
         mods[0].save!
-        Mappings::ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 1
+        ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 1
 
         mods[1].save!
-        Mappings::ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 2
+        ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 2
       end
 
       it "handles refresh failures" do
@@ -111,7 +111,7 @@ module PlaceOS::Core
         mock_manager = Mock.new(CORE_URL)
         okay = Model::Generator.module(driver, cs)
         okay.save!
-        Mappings::ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 1
+        ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 1
 
         fails = Model::Generator.module(driver, cs)
         fails._new_flag = true
@@ -119,12 +119,12 @@ module PlaceOS::Core
         fails.save!
 
         # Updated the sole good module
-        Mappings::ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 1
+        ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 1
 
         okay.destroy
 
         # No modules to update
-        Mappings::ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 0
+        ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 0
       end
     end
   end

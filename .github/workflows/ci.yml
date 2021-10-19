@@ -2,7 +2,45 @@ name: CI
 on: push
 jobs:
   test:
-    uses: PlaceOS/.github/.github/workflows/containerised-test.yml@main
+    name: "${{ !matrix.stable && '🚧 ' || ''}}crystal: ${{ matrix.crystal }}, subset: ${{ matrix.subset }}, MT: ${{ matrix.MT }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        subset:
+          - api
+          - mappings
+          - processes
+          - resource
+        crystal:
+          - 1.1.1
+          - 1.2.0
+        MT: [false]
+        stable: [true]
+        include:
+          - crystal: nightly
+            stable: false
+            MT: false
+            subset: api
+          - crystal: nightly
+            stable: false
+            MT: false
+            subset: mappings
+          - crystal: nightly
+            stable: false
+            MT: false
+            subset: processes
+          - crystal: nightly
+            stable: false
+            MT: false
+            subset: resource
+    continue-on-error: ${{ !matrix.stable }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Test ${{ matrix.subset }}
+        run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tag ${{ matrix.subset }} --order random
+        env:
+          CRYSTAL_VERSION: ${{ matrix.crystal }}
 
   crystal-style:
     uses: PlaceOS/.github/.github/workflows/crystal-style.yml@main

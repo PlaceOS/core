@@ -1,8 +1,8 @@
 require "../helper"
 
-module PlaceOS::Core
-  describe Api::Drivers, tags: "api" do
-    namespace = Api::Drivers::NAMESPACE[0]
+module PlaceOS::Core::Api
+  describe Drivers, tags: "api" do
+    namespace = Drivers::NAMESPACE[0]
     json_headers = HTTP::Headers{
       "Content-Type" => "application/json",
     }
@@ -14,7 +14,7 @@ module PlaceOS::Core
         path = "#{namespace}?repository=#{repo.folder_name}"
         ctx = context("GET", path, json_headers)
         ctx.response.output = IO::Memory.new
-        Api::Drivers.new(ctx, :index).index
+        Drivers.new(ctx, :index).index
 
         result = begin
           Array(String).from_json(ctx.response.output.to_s)
@@ -45,7 +45,7 @@ module PlaceOS::Core
         ctx = context("GET", path, json_headers)
         ctx.route_params = {"file_name" => uri}
         ctx.response.output = IO::Memory.new
-        Api::Drivers.new(ctx, :compiled).compiled
+        Drivers.new(ctx, :compiled).compiled
 
         ctx.response.status_code.should eq 200
         Bool.from_json(ctx.response.output.to_s).should be_true
@@ -62,7 +62,7 @@ module PlaceOS::Core
         ctx.route_params = {"repository" => directory}
         ctx.response.output = IO::Memory.new
 
-        Api::Drivers.new(ctx, :branches).branches
+        Drivers.new(ctx, :branches).branches
 
         ctx.response.status_code.should eq 404
       end
@@ -74,7 +74,7 @@ module PlaceOS::Core
         ctx = context("GET", path, json_headers)
         ctx.route_params = {"repository" => directory}
         ctx.response.output = IO::Memory.new
-        Api::Drivers.new(ctx, :branches).branches
+        Drivers.new(ctx, :branches).branches
 
         ctx.response.status_code.should eq 200
         branches = Array(String).from_json(ctx.response.output.to_s)
@@ -94,7 +94,7 @@ module PlaceOS::Core
         ctx = context("GET", path, json_headers)
         ctx.route_params = {"file_name" => uri}
         ctx.response.output = IO::Memory.new
-        Api::Drivers.new(ctx, :index).show
+        Drivers.new(ctx, :index).show
 
         ctx.response.status_code.should eq 200
 
