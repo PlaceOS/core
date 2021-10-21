@@ -55,7 +55,8 @@ module PlaceOS::Core::Api
 
       # Forward debug messages to the websocket
       module_manager.process_manager(module_id) do |manager|
-        callback = ->(message : String) { socket.send(message); nil }
+        debug_lock = Mutex.new
+        callback = ->(message : String) { debug_lock.synchronize { socket.send(message) }; nil }
         manager.debug(module_id, &callback)
         # Stop debugging when the socket closes
         socket.on_close { stop_debugging(module_id, callback) }
