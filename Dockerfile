@@ -12,8 +12,8 @@ WORKDIR /app
 
 # Install the latest version of LibSSH2, ping
 RUN apk add --update --no-cache \
-    apk-tools>=2.10.8-r0 \
-    libcurl>=7.79.1-r0 \
+    'apk-tools>=2.10.8-r0' \
+    'libcurl>=7.79.1-r0' \
     ca-certificates \
     iputils \
     libssh2-static \
