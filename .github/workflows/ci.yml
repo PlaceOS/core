@@ -37,3 +37,14 @@ jobs:
         run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --order random
         env:
           CRYSTAL_VERSION: ${{ matrix.crystal }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Lint ${{ matrix.dockerfile }}
+        uses: hadolint/hadolint-action@v1.6.0
+        with:
+          # DL3018 Allow unpinned packages
+          # SC2016 Ignore single-quotes (expansion not desired)
+          # SC1072 This one seems spurious (related to `for` syntax)
+          # DL3059 It's fine to have multiple consecutive runs
+          ignore: DL3018 SC2016 SC1072 DL3059
+          dockerfile: ${{ matrix.dockerfile }}
