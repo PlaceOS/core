@@ -34,6 +34,7 @@ services:
       - ${PWD}/spec:/app/spec
       - ${PWD}/src:/app/src
     depends_on:
+      - build
       - etcd
       - redis
       - rethink
