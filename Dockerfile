@@ -100,6 +100,7 @@ WORKDIR /app
 USER appuser:appuser
 
 EXPOSE 3000
+VOLUME ["/app/repositories/", "/app/bin/drivers/"]
 HEALTHCHECK CMD /bin/core --curl http://localhost:3000/api/core/v1
 CMD ["/bin/core", "-b", "0.0.0.0", "-p", "3000"]
 
