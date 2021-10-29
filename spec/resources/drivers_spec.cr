@@ -5,16 +5,10 @@ require "placeos-compiler/helper"
 require "../helper"
 
 module PlaceOS::Core::Resources
-  describe Drivers, tags: "resource" do
+  describe Drivers, tags: "resource", focus: true do
     it "compiles drivers" do
       # Set up a temporary directory
-      _, repository, driver, _ = setup
-
-      # Clone driver repository
-      PlaceOS::Compiler.clone_and_install(
-        repository: repository.folder_name,
-        repository_uri: repository.uri,
-      )
+      _, _, driver, _ = setup
 
       # Commence compilation
       Drivers.new.process_resource(:created, driver).success?.should be_true
