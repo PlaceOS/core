@@ -49,11 +49,12 @@ services:
       # Environment
       << : *deployment-env
 
-  # TODO: Remove after interface has stabilised
   build:
     image: placeos/build:${PLACE_BUILD_TAG:-nightly}
     restart: always
     hostname: build
+    volumes:
+      - ${PWD}/bin/drivers:/app/bin/drivers
     environment:
       TZ: $TZ
 
