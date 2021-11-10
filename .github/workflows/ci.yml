@@ -1,6 +1,12 @@
 name: CI
 on: push
 jobs:
+  crystal-style:
+    uses: PlaceOS/.github/.github/workflows/crystal-style.yml@main
+
+  dockerfile-style:
+    uses: PlaceOS/.github/.github/workflows/dockerfile-style.yml@main
+
   test:
     name: "${{ !matrix.stable && '🚧 ' || ''}}crystal: ${{ matrix.crystal }}, subset: ${{ matrix.subset }}, MT: ${{ matrix.MT }}"
     runs-on: ubuntu-latest
@@ -14,7 +20,7 @@ jobs:
           - resource
         crystal:
           - 1.1.1
-          - 1.2.0
+          - 1.2.1
         MT: [false]
         stable: [true]
         include:
@@ -41,26 +47,3 @@ jobs:
         run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tag ${{ matrix.subset }} --order random
         env:
           CRYSTAL_VERSION: ${{ matrix.crystal }}
-
-  crystal-style:
-    uses: PlaceOS/.github/.github/workflows/crystal-style.yml@main
-
-  dockerfile-style:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        dockerfile:
-          - Dockerfile
-          - Dockerfile.test
-    steps:
-      - uses: actions/checkout@v2
-      - name: Lint ${{ matrix.dockerfile }}
-        uses: hadolint/hadolint-action@v1.6.0
-        with:
-          # DL3018 Allow unpinned packages
-          # SC2016 Ignore single-quotes (expansion not desired)
-          # SC1072 This one seems spurious (related to `for` syntax)
-          # DL3059 It's fine to have multiple consecutive runs
-          ignore: DL3018 SC2016 SC1072 DL3059
-          dockerfile: ${{ matrix.dockerfile }}
