@@ -66,6 +66,7 @@ around_suite ->{
 
 Spec.before_suite do
   # Set the working directory before specs
+  set_temporary_working_directory(path: ".")
   set_temporary_working_directory
   Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :warn)
   Log.builder.bind("place_os.*", backend: PlaceOS::Core::LOG_STDOUT, level: :trace)
@@ -83,12 +84,13 @@ Spec.after_suite do
 end
 
 # Set up a temporary directory
-def set_temporary_working_directory(fresh : Bool = false) : String
+def set_temporary_working_directory(fresh : Bool = false, path : String? = nil) : String
   temp_dir = fresh ? get_temp : TEMP_DIR
+  temp_dir = Path[path].expand.to_s if path
   PlaceOS::Compiler.binary_dir = "#{temp_dir}/bin"
   PlaceOS::Compiler.repository_dir = "#{temp_dir}/repositories"
 
-  Dir.mkdir_p(PlaceOS::Compiler.binary_dir)
+  Dir.mkdir_p(File.join(PlaceOS::Compiler.binary_dir, "drivers"))
   Dir.mkdir_p(PlaceOS::Compiler.repository_dir)
 
   temp_dir
