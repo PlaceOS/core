@@ -19,7 +19,8 @@ jobs:
           - processes
           - resource
         crystal:
-          - 1.2.1
+          - 1.1.1
+          - 1.2.2
         MT: [false]
         stable: [true]
         include:
