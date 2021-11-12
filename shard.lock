@@ -138,7 +138,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 5.12.2
+    version: 5.14.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -154,7 +154,7 @@ shards:
 
   redis:
     git: https://github.com/stefanwille/crystal-redis.git
-    version: 2.8.2
+    version: 2.8.3
 
   redis-cluster:
     git: https://github.com/caspiano/redis-cluster.cr.git
