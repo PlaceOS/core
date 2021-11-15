@@ -72,6 +72,9 @@ Signal::INT.trap &terminate
 # Docker containers use the term signal
 Signal::TERM.trap &terminate
 
+# Wait for etcd, redis, and rethinkdb to be ready
+PlaceOS::Core.wait_for_resources
+
 spawn(same_thread: true) do
   begin
     PlaceOS::Core.start_managers
