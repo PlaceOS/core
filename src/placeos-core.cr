@@ -45,4 +45,22 @@ module PlaceOS::Core
       Fiber.yield
     end
   end
+
+  # Wait for the upstream services to be ready
+  # - etcd
+  # - redis
+  # - rethinkdb
+  def self.wait_for_resources
+    Retriable.retry(
+      max_elapsed_time: 1.minutes,
+      on_retry: ->(_e : Exception, n : Int32, _t : Time::Span, _i : Time::Span) {
+        Log.warn { "attempt #{n} connecting to services" }
+      }
+    ) do
+      # Ensure services are reachable and healthy
+      raise "retry" unless Healthcheck.healthcheck?
+    end
+  rescue
+    abort("Upstream services are unavailable")
+  end
 end

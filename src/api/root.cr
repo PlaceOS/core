@@ -1,8 +1,7 @@
 require "./application"
-require "placeos-models/version"
+require "../placeos-core/healthcheck"
 
-require "rethinkdb"
-require "rethinkdb-orm"
+require "placeos-models/version"
 
 module PlaceOS::Core::Api
   class Root < Application
@@ -15,7 +14,7 @@ module PlaceOS::Core::Api
     ###############################################################################################
 
     def index
-      head self.class.healthcheck? ? HTTP::Status::OK : HTTP::Status::INTERNAL_SERVER_ERROR
+      head Healthcheck.healthcheck? ? HTTP::Status::OK : HTTP::Status::INTERNAL_SERVER_ERROR
     end
 
     get "/version", :version do
@@ -25,47 +24,6 @@ module PlaceOS::Core::Api
         commit: BUILD_COMMIT,
         service: APP_NAME
       )
-    end
-
-    def self.healthcheck? : Bool
-      Promise.all(
-        Promise.defer {
-          check_resource?("redis") { ::PlaceOS::Driver::RedisStorage.with_redis &.ping }
-        },
-        Promise.defer {
-          check_resource?("etcd") { module_manager.discovery.etcd &.maintenance.status }
-        },
-        Promise.defer {
-          check_resource?("rethinkdb") { rethinkdb_healthcheck }
-        },
-      ).then(&.all?).get
-    end
-
-    private def self.check_resource?(resource)
-      Log.trace { "healthchecking #{resource}" }
-      !!yield
-    rescue exception
-      Log.error(exception: exception) { {"connection check to #{resource} failed"} }
-      false
-    end
-
-    private class_getter rethinkdb_admin_connection : RethinkDB::Connection do
-      RethinkDB.connect(
-        host: RethinkORM.settings.host,
-        port: RethinkORM.settings.port,
-        db: "rethinkdb",
-        user: RethinkORM.settings.user,
-        password: RethinkORM.settings.password,
-        max_retry_attempts: 1,
-      )
-    end
-
-    private def self.rethinkdb_healthcheck
-      RethinkDB
-        .table("server_status")
-        .pluck("id", "name")
-        .run(rethinkdb_admin_connection)
-        .first?
     end
 
     # Readiness Check
