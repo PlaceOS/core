@@ -54,7 +54,7 @@ shards:
 
   etcd:
     git: https://github.com/place-labs/crystal-etcd.git
-    version: 1.2.4
+    version: 1.2.5
 
   exec_from:
     git: https://github.com/place-labs/exec_from.git
