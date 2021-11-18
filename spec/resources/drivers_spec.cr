@@ -5,7 +5,7 @@ require "placeos-compiler/helper"
 require "../helper"
 
 module PlaceOS::Core::Resources
-  describe Drivers, tags: "resource", focus: true do
+  describe Drivers, tags: "resource" do
     it "compiles drivers" do
       # Set up a temporary directory
       _, _, driver, _ = setup
