@@ -31,6 +31,7 @@ services:
       - ${PWD}/lib:/app/lib
       - ${PWD}/shard.lock:/app/shard.lock
       - ${PWD}/shard.yml:/app/shard.yml
+      - ${PWD}/shard.override.yml:/app/shard.override.yml
       - ${PWD}/spec:/app/spec
       - ${PWD}/src:/app/src
     depends_on:
