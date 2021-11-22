@@ -10,13 +10,17 @@ module PlaceOS::Core
   class ProcessManager::Local
     # Methods for interacting with module processes common across a local and edge node
     module Common
-      def execute(module_id : String, payload : String | IO)
+      def execute(module_id : String, payload : String | IO, user_id : String?)
         manager = protocol_manager_by_module?(module_id)
 
         raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
 
         request_body = payload.is_a?(IO) ? payload.gets_to_end : payload
-        manager.execute(module_id, request_body)
+        manager.execute(
+          module_id,
+          request_body,
+          user_id: user_id,
+        )
       end
 
       def start(module_id : String, payload : String)
