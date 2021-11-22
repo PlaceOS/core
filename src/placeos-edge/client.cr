@@ -130,7 +130,13 @@ module PlaceOS::Edge
         send_response(sequence_id, Protocol::Message::DriverStatusResponse.new(status))
       in Protocol::Message::Execute
         success, output = begin
-          ({true, execute(request.module_id, request.payload)})
+          result = execute(
+            request.module_id,
+            request.payload,
+            user_id: request.user_id,
+          )
+
+          ({true, result})
         rescue error : PlaceOS::Driver::RemoteException
           Log.error(exception: error) { {
             module_id: request.module_id,

@@ -7,10 +7,13 @@ module PlaceOS::Core::Api
 
     before_action :set_request_id
 
+    getter request_id : String do
+      request.headers["X-Request-ID"]? || UUID.random.to_s
+    end
+
     # This makes it simple to match client requests with server side logs.
     # When building microservices this ID should be propagated to upstream services.
     def set_request_id
-      request_id = request.headers["X-Request-ID"]? || UUID.random.to_s
       Log.context.set(
         client_ip: client_ip,
         request_id: request_id

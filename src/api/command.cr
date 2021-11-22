@@ -21,6 +21,7 @@ module PlaceOS::Core::Api
     # Executes a command against a module
     post "/:module_id/execute", :execute do
       module_id = params["module_id"]
+      user_id = params["user_id"]?.presence
 
       unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
         Log.info { {module_id: module_id, message: "module not loaded"} }
@@ -34,7 +35,9 @@ module PlaceOS::Core::Api
       end
 
       begin
-        execute_output = module_manager.process_manager(module_id, &.execute(module_id, body))
+        execute_output = module_manager.process_manager(module_id) do |manager|
+          manager.execute(module_id, body, user_id: user_id)
+        end
         response.content_type = "application/json"
         render text: execute_output
       rescue error : PlaceOS::Driver::RemoteException

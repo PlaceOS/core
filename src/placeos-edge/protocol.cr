@@ -158,6 +158,7 @@ module PlaceOS::Edge::Protocol
     end
 
     abstract struct ::PlaceOS::Edge::Protocol::Server::Request < ::PlaceOS::Edge::Protocol::Message::Body
+      getter user_id : String? = nil
     end
 
     abstract struct ::PlaceOS::Edge::Protocol::Client::Request < ::PlaceOS::Edge::Protocol::Message::Body
@@ -172,21 +173,21 @@ module PlaceOS::Edge::Protocol
     struct DriverLoaded < Server::Request
       getter driver_key : String
 
-      def initialize(@driver_key)
+      def initialize(@driver_key, @user_id = nil)
       end
     end
 
     struct DriverStatus < Server::Request
       getter driver_key : String
 
-      def initialize(@driver_key)
+      def initialize(@driver_key, @user_id = nil)
       end
     end
 
     struct Debug < Server::Request
       getter module_id : String
 
-      def initialize(@module_id)
+      def initialize(@module_id, @user_id = nil)
       end
     end
 
@@ -194,21 +195,21 @@ module PlaceOS::Edge::Protocol
       getter module_id : String
       getter payload : String
 
-      def initialize(@module_id, @payload)
+      def initialize(@module_id, @payload, @user_id = nil)
       end
     end
 
     struct Ignore < Server::Request
       getter module_id : String
 
-      def initialize(@module_id)
+      def initialize(@module_id, @user_id = nil)
       end
     end
 
     struct Kill < Server::Request
       getter driver_key : String
 
-      def initialize(@driver_key)
+      def initialize(@driver_key, @user_id = nil)
       end
     end
 
@@ -216,7 +217,7 @@ module PlaceOS::Edge::Protocol
       getter module_id : String
       getter driver_key : String
 
-      def initialize(@module_id, @driver_key)
+      def initialize(@module_id, @driver_key, @user_id = nil)
       end
     end
 
@@ -233,7 +234,7 @@ module PlaceOS::Edge::Protocol
     struct ModuleLoaded < Server::Request
       getter module_id : String
 
-      def initialize(@module_id)
+      def initialize(@module_id, @user_id = nil)
       end
     end
 
@@ -241,26 +242,26 @@ module PlaceOS::Edge::Protocol
       getter module_id : String
       getter payload : String
 
-      def initialize(@module_id, @payload)
+      def initialize(@module_id, @payload, @user_id = nil)
       end
     end
 
     struct Stop < Server::Request
       getter module_id : String
 
-      def initialize(@module_id)
+      def initialize(@module_id, @user_id = nil)
       end
     end
 
     struct SystemStatus < Server::Request
-      def initialize
+      def initialize(@user_id = nil)
       end
     end
 
     struct Unload < Server::Request
       getter module_id : String
 
-      def initialize(@module_id)
+      def initialize(@module_id, @user_id = nil)
       end
     end
 

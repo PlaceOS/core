@@ -31,7 +31,7 @@ module PlaceOS::Core
 
     # Execute a driver method on a module
     #
-    abstract def execute(module_id : String, payload : String)
+    abstract def execute(module_id : String, payload : String, user_id : String?)
 
     # Handler for execute requests from a module
     #
