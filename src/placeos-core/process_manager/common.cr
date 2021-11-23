@@ -11,6 +11,8 @@ module PlaceOS::Core::ProcessManager::Common
       request_body,
       user_id: user_id,
     )
+  rescue exception
+    raise module_error(module_id, exception)
   end
 
   def start(module_id : String, payload : String)
@@ -19,10 +21,14 @@ module PlaceOS::Core::ProcessManager::Common
     raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
 
     manager.start(module_id, payload)
+  rescue exception
+    raise module_error(module_id, exception)
   end
 
   def stop(module_id : String)
     !!protocol_manager_by_module?(module_id).try(&.stop(module_id))
+  rescue exception
+    raise module_error(module_id, exception)
   end
 
   # Stop and unload the module from node
@@ -50,6 +56,8 @@ module PlaceOS::Core::ProcessManager::Common
         Log.info { "no modules for driver after unloading module" }
       end
     end
+  rescue exception
+    raise module_error(module_id, exception)
   end
 
   def kill(driver_key : String) : Bool
@@ -67,16 +75,22 @@ module PlaceOS::Core::ProcessManager::Common
     raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
 
     manager.debug(module_id, &on_message)
+  rescue exception
+    raise module_error(module_id, exception)
   end
 
   def ignore(module_id : String, &on_message : DebugCallback)
     return if (manager = protocol_manager_by_module?(module_id)).nil?
     manager.ignore(module_id, &on_message)
+  rescue exception
+    raise module_error(module_id, exception)
   end
 
   def ignore(module_id : String) : Array(DebugCallback)
     return [] of DebugCallback if (manager = protocol_manager_by_module?(module_id)).nil?
     manager.ignore_all(module_id)
+  rescue exception
+    raise module_error(module_id, exception)
   end
 
   # Metadata
@@ -233,6 +247,22 @@ module PlaceOS::Core::ProcessManager::Common
         @driver_protocol_managers[driver_key] = manager
         manager
       end
+    end
+  end
+
+  # Error handling
+  #################################################################################################
+
+  macro module_error(module_id, exception)
+    if {{ exception }}.is_a?(ModuleError)
+      {{ exception }}
+    else
+      %driver_path = path_for?({{ module_id }})
+      %context = [] of String
+      %context << "module manager not present" unless protocol_manager_by_module?({{ module_id }})
+      %context << "driver expected at #{%driver_path} not present" if %driver_path && !File.exists?(%driver_path)
+      %message = "When invoking {{@def.name}} on #{{{module_id}}} #{%context.join(", ")}"
+      ModuleError.new(%message, cause: {{ exception }})
     end
   end
 end

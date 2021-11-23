@@ -46,6 +46,8 @@ module PlaceOS::Core
         true
       end
     rescue error
+      # Wrap exception with additional context
+      error = module_error(module_id, error)
       Log.error(exception: error) { {
         message:    "failed to load module",
         module_id:  module_id,
@@ -56,8 +58,13 @@ module PlaceOS::Core
 
     private def driver_manager(driver_key : String)
       path = driver_path(driver_key).to_s
-      Log.debug { {driver_path: path, message: "creating new driver protocol manager"} }
-      Driver::Protocol::Management.new(path)
+      Log.info { {driver_path: path, message: "creating new driver protocol manager"} }
+
+      Driver::Protocol::Management.new(path).tap do
+        unless File.exists?(path)
+          Log.error { {driver_path: path, message: "driver manager created for a driver that is not compiled"} }
+        end
+      end
     end
 
     private def driver_path(driver_key : String) : Path
