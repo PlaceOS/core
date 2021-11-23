@@ -62,7 +62,7 @@ module PlaceOS::Core
 
       Driver::Protocol::Management.new(path).tap do
         unless File.exists?(path)
-          Log.error { {driver_path: path, message: "driver manager created for a driver that is not compiled"} }
+          Log.warn { {driver_path: path, message: "driver manager created for a driver that is not compiled"} }
         end
       end
     end
