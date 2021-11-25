@@ -1,39 +1,11 @@
 name: CI
 on: push
 jobs:
+  test:
+    uses: PlaceOS/.github/.github/workflows/containerised-test.yml@main
+
   crystal-style:
     uses: PlaceOS/.github/.github/workflows/crystal-style.yml@main
 
   dockerfile-style:
     uses: PlaceOS/.github/.github/workflows/dockerfile-style.yml@main
-
-  test:
-    name: "${{ !matrix.stable && '🚧 ' || ''}}crystal: ${{ matrix.crystal }}, MT: ${{ matrix.MT }}"
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        crystal:
-          - 1.2.2
-        MT: [false]
-        stable: [true]
-        include:
-          - crystal: nightly
-            stable: false
-            MT: false
-          - crystal: nightly
-            stable: false
-            MT: false
-          - crystal: nightly
-            stable: false
-            MT: false
-          - crystal: nightly
-            stable: false
-            MT: false
-    continue-on-error: ${{ !matrix.stable }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Test
-        run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --order random
-        env:
-          CRYSTAL_VERSION: ${{ matrix.crystal }}
