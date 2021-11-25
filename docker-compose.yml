@@ -27,7 +27,6 @@ services:
     image: placeos/service-spec-runner:${CRYSTAL_VERSION:-1.2.1}
     volumes:
       - ${PWD}/bin:/app/bin
-      - ${PWD}/coverage:/app/coverage
       - ${PWD}/lib:/app/lib
       - ${PWD}/shard.lock:/app/shard.lock
       - ${PWD}/shard.yml:/app/shard.yml
@@ -41,9 +40,11 @@ services:
       - rethink
     environment:
       # Environment
-      CRYSTAL_VERSION: ${CRYSTAL_VERSION:-1.2.0}
+      CRYSTAL_VERSION: ${CRYSTAL_VERSION:-1.2.2}
       GITHUB_ACTION: ${GITHUB_ACTION:-}
       # Service Hosts
+      << : *build-client-env
+      # Upstream Hosts
       << : *etcd-client-env
       << : *redis-client-env
       << : *rethinkdb-client-env

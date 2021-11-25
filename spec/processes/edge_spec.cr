@@ -63,7 +63,7 @@ module PlaceOS::Core::ProcessManager
           nil
         end
 
-        pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil).should eq %("hello")
+        pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:echo, ["hello"]), user_id: nil).should eq %("hello")
 
         select
         when message = message_channel.receive
