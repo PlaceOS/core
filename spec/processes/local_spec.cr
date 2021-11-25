@@ -10,7 +10,7 @@ module PlaceOS::Core::ProcessManager
     executable = Resources::Drivers.fetch_driver(driver, binary_store, true) { }
 
     if executable.nil?
-      abort("Failed to fetch an executable for #{driver.file_name} from #{_repository.uri}@#{driver.commit}")
+      raise "Failed to fetch an executable for #{driver.file_name} from #{_repository.uri}@#{driver.commit}"
     end
 
     yield mod, binary_store.path(executable), executable.filename, driver
