@@ -1,5 +1,7 @@
 require "../helper"
 
+require "../processes/local_spec.cr"
+
 module PlaceOS::Core::Resources
   describe Modules, tags: "processes" do
     describe "edge" do
@@ -22,37 +24,31 @@ module PlaceOS::Core::Resources
       end
 
       it "load_module" do
-        _, repo, driver, mod = setup
+        ProcessManager.with_driver do |mod, driver_path, _driver_filename, _driver|
+          module_manager = module_manager_mock
 
-        module_manager = module_manager_mock
+          drivers = Drivers.new(module_manager: module_manager)
 
-        drivers = Drivers.new(module_manager: module_manager)
+          resource_manager = Manager.new(drivers: drivers)
+          resource_manager.start { }
 
-        resource_manager = Manager.new(drivers: drivers)
-        resource_manager.start { }
+          mod_id = mod.id.as(String)
 
-        mod_id = mod.id.as(String)
-        driver_id = driver.id.as(String)
+          mod.reload!
+          mod.driver = mod.driver.not_nil!.reload!
 
-        driver_commit_hash = Compiler::Git.current_file_commit(driver.file_name, repo.folder_name, Compiler.repository_dir)
+          module_manager.load_module(mod)
 
-        # TODO: Update to use new executable format
-        driver_path = PlaceOS::Compiler::Helper.driver_binary_path(driver.file_name, driver_commit_hash, driver_id)
+          module_manager.local_processes.run_count.should eq(ProcessManager::Count.new(1, 1))
 
-        mod.reload!
-        mod.driver = mod.driver.not_nil!.reload!
+          module_manager.local_processes.protocol_manager_by_module?(mod_id).should_not be_nil
+          module_manager.local_processes.protocol_manager_by_driver?(driver_path).should_not be_nil
 
-        module_manager.load_module(mod)
-
-        module_manager.local_processes.run_count.should eq(ProcessManager::Count.new(1, 1))
-
-        module_manager.local_processes.protocol_manager_by_module?(mod_id).should_not be_nil
-        module_manager.local_processes.protocol_manager_by_driver?(driver_path).should_not be_nil
-
-        module_manager.local_processes.protocol_manager_by_module?(mod_id).should eq(module_manager.local_processes.protocol_manager_by_driver?(driver_path))
-      ensure
-        module_manager.try &.stop
-        resource_manager.try &.stop
+          module_manager.local_processes.protocol_manager_by_module?(mod_id).should eq(module_manager.local_processes.protocol_manager_by_driver?(driver_path))
+        ensure
+          module_manager.try &.stop
+          resource_manager.try &.stop
+        end
       end
     end
 
