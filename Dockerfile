@@ -1,6 +1,6 @@
 # One of `core` | `edge`
 ARG TARGET=core
-ARG CRYSTAL_VERSION=1.1.1
+ARG CRYSTAL_VERSION=1.3.2
 
 FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine as build
 
@@ -10,12 +10,19 @@ ARG PLACE_VERSION="DEV"
 
 WORKDIR /app
 
+RUN apk add \
+  --update \
+  --no-cache \
+  --repository=http://dl-cdn.alpinelinux.org/alpine/v3.15/main \
+    'git' \
+    'expat'
+
 # Install the latest version of LibSSH2, ping
 RUN apk add --update --no-cache \
     'apk-tools>=2.10.8-r0' \
-    'libcurl>=7.79.1-r0' \
     ca-certificates \
     iputils \
+    'libcurl>=7.79.1-r0' \
     libssh2-static \
     yaml-static
 
