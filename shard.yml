@@ -39,11 +39,11 @@ dependencies:
 
   placeos-compiler:
     github: placeos/compiler
-    version: ~> 4.7
+    version: ~> 4.9
 
   placeos-driver:
     github: placeos/driver
-    version: ~> 5.8
+    version: ~> 6.1
 
   placeos-log-backend:
     github: place-labs/log-backend

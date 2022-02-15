@@ -39,7 +39,12 @@ module PlaceOS::Core::Api
           manager.execute(module_id, body, user_id: user_id)
         end
         response.content_type = "application/json"
-        render text: execute_output
+        if execute_output
+          response.headers[RESPONSE_CODE_HEADER] = execute_output[1].to_s
+          render text: execute_output[0]
+        else
+          render text: ""
+        end
       rescue error : PlaceOS::Driver::RemoteException
         Log.error(exception: error) { "execute errored" }
         render :non_authoritative_information, json: {

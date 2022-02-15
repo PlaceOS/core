@@ -153,11 +153,13 @@ module PlaceOS::Core
       case response.status_code
       when 200
         # exec was successful, json string returned
-        response.body
+        execute_code = response.headers[RESPONSE_CODE_HEADER]?.try(&.to_i) || 200
+        {response.body, execute_code}
       when 203
         # exec sent to module and it raised an error
-        info = NamedTuple(message: String, backtrace: Array(String)?).from_json(response.body)
-        raise Error.new(Error::ErrorCode::RequestFailed, response.status_code, "module raised: #{info[:message]}", info[:backtrace])
+        info = NamedTuple(message: String, backtrace: Array(String)?, code: Int32?).from_json(response.body)
+        execute_code = info[:code] || 500
+        raise Error.new(Error::ErrorCode::RequestFailed, response.status_code, "module raised: #{info[:message]}", info[:backtrace], execute_code)
       else
         # some other failure
         raise Error.new(Error::ErrorCode::UnexpectedFailure, response.status_code, "unexpected response code #{response.status_code}")

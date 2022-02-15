@@ -129,23 +129,23 @@ module PlaceOS::Edge
         status = driver_status(request.driver_key)
         send_response(sequence_id, Protocol::Message::DriverStatusResponse.new(status))
       in Protocol::Message::Execute
-        success, output = begin
+        success, output, response_code = begin
           result = execute(
             request.module_id,
             request.payload,
             user_id: request.user_id,
           )
 
-          ({true, result})
+          ({true, result[0], result[1]})
         rescue error : PlaceOS::Driver::RemoteException
           Log.error(exception: error) { {
             module_id: request.module_id,
             message:   "execute errored",
           } }
-          ({false, {message: error.message, backtrace: error.backtrace?}.to_json})
+          ({false, {message: error.message, backtrace: error.backtrace?, code: error.code}.to_json, error.code})
         end
 
-        send_response(sequence_id, Protocol::Message::ExecuteResponse.new(success, output))
+        send_response(sequence_id, Protocol::Message::ExecuteResponse.new(success, output, response_code))
       in Protocol::Message::Ignore
         boolean_command(sequence_id, request) do
           ignore(request.module_id)
