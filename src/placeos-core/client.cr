@@ -158,7 +158,7 @@ module PlaceOS::Core
       when 203
         # exec sent to module and it raised an error
         info = NamedTuple(message: String, backtrace: Array(String)?, code: Int32?).from_json(response.body)
-        execute_code = info[:code] || 500
+        execute_code = response.headers[RESPONSE_CODE_HEADER]?.try(&.to_i) || info[:code] || 500
         raise Error.new(Error::ErrorCode::RequestFailed, response.status_code, "module raised: #{info[:message]}", info[:backtrace], execute_code)
       else
         # some other failure
