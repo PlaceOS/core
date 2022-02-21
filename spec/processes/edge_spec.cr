@@ -12,7 +12,6 @@ module PlaceOS::Core::ProcessManager
   def self.client_server(edge_id)
     client_ws, server_ws = mock_sockets
     client = ::PlaceOS::Edge::Client.new(
-      edge_id: edge_id,
       secret: "s3cr3t",
       skip_handshake: true,
       ping: false
