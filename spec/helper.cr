@@ -9,6 +9,7 @@ require "../src/placeos-core"
 require "../src/placeos-core/*"
 
 require "placeos-models/spec/generator"
+require "placeos-core-client"
 
 require "spec"
 
