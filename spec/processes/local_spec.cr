@@ -50,7 +50,7 @@ module PlaceOS::Core::ProcessManager
           pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
           result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:used_for_place_testing), user_id: nil)
-          result.should eq %("you can delete this file")
+          result.should eq %({"you can delete this file", 200})
         end
 
         it "debug" do
@@ -65,7 +65,7 @@ module PlaceOS::Core::ProcessManager
           end
 
           result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
-          result.should eq %("hello")
+          result.should eq %({"hello", 200})
 
           select
           when message = message_channel.receive
@@ -90,7 +90,7 @@ module PlaceOS::Core::ProcessManager
           pm.debug(module_id, &callback)
 
           result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
-          result.should eq %("hello")
+          result.should eq %({"hello", 200})
 
           select
           when message = message_channel.receive
@@ -101,7 +101,7 @@ module PlaceOS::Core::ProcessManager
 
           pm.ignore(module_id, &callback)
           result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
-          result.should eq %("hello")
+          result.should eq %({"hello", 200})
 
           expect_raises(Exception) do
             select
