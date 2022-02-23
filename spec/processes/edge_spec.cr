@@ -62,7 +62,9 @@ module PlaceOS::Core::ProcessManager
           nil
         end
 
-        pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil).should eq %({"hello", 200})
+        result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
+        result.should eq %("hello")
+        code.should eq 200
 
         select
         when message = message_channel.receive
@@ -114,8 +116,9 @@ module PlaceOS::Core::ProcessManager
         module_id = ctx.module.id.as(String)
         pm.load(module_id: module_id, driver_key: ctx.driver_path)
         pm.start(module_id: module_id, payload: ModuleManager.start_payload(ctx.module))
-        result = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:used_for_place_testing), user_id: nil)
-        result.should eq %({"you can delete this file", 200})
+        result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:used_for_place_testing), user_id: nil)
+        result.should eq %("you can delete this file")
+        code.should eq 200
       end
     end
 
@@ -132,7 +135,9 @@ module PlaceOS::Core::ProcessManager
         end
 
         pm.debug(module_id, &callback)
-        pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil).should eq %({"hello", 200})
+        result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
+        result.should eq %("hello")
+        code.should eq 200
 
         select
         when message = message_channel.receive
@@ -142,7 +147,9 @@ module PlaceOS::Core::ProcessManager
         end
 
         pm.ignore(module_id, &callback)
-        pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil).should eq %({"hello", 200})
+        result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
+        result.should eq %("hello")
+        code.should eq 200
 
         expect_raises(Exception) do
           select
