@@ -50,7 +50,7 @@ module PlaceOS::Core::ProcessManager
           pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
           result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:used_for_place_testing), user_id: nil)
-          result.should eq %("hello")
+          result.should eq %("you can delete this file")
           code.should eq 200
         end
 
