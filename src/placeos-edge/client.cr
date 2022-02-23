@@ -19,7 +19,6 @@ module PlaceOS::Edge
 
     class_property binary_directory : String = File.join(Dir.current, "/bin/drivers")
 
-    getter edge_id : String
     private getter secret : String
 
     private getter! uri : URI
@@ -31,42 +30,28 @@ module PlaceOS::Edge
 
     private getter close_channel = Channel(Nil).new
 
-    def self.extract_token(token : String)
-      parts = token.split('_')
-      raise "Invalid token: #{token}" unless parts.size == 2
-      edge_id, secret = parts
-      ({edge_id, secret})
-    end
-
-    def self.create_token(edge_id : String, secret : String)
-      Base64.urlsafe_encode("#{edge_id}_#{secret}")
-    end
-
     def host
       uri.to_s.gsub(uri.request_target, "")
     end
 
     def initialize(
       uri : URI = PLACE_URI,
-      edge_id : String? = nil,
       secret : String? = nil,
       @sequence_id : UInt64 = 0,
       @skip_handshake : Bool = false,
       @ping : Bool = true
     )
-      if secret && edge_id && secret.presence && edge_id.presence
-        @edge_id = edge_id
-        @secret = secret
-      else
-        Log.info { "using secret from environment" }
-        id, secret = Client.extract_token(CLIENT_SECRET) rescue abort("Invalid secret: #{CLIENT_SECRET}")
-        @edge_id, @secret = id, secret
-      end
+      @secret = if secret && secret.presence
+                  secret
+                else
+                  Log.info { "using PLACE_EDGE_KEY from environment" }
+                  CLIENT_SECRET
+                end
 
       # Mutate a copy as secret is embedded in uri
       uri = uri.dup
       uri.path = WEBSOCKET_API_PATH
-      uri.query = "token=#{Client.create_token(@edge_id, @secret)}"
+      uri.query = "token=#{secret}"
       @uri = uri
     end
 
@@ -74,7 +59,6 @@ module PlaceOS::Edge
     #
     # Optionally accepts a block called after connection has been established.
     def connect(initial_socket : HTTP::WebSocket? = nil)
-      Log.context.set(edge_id: edge_id)
       Log.info { "connecting to #{host}" }
 
       @transport = Transport.new do |(sequence_id, request)|
