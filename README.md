@@ -24,14 +24,6 @@ Modules are instantiations of drivers which are distributed across core nodes th
 
 Core is a clustered service. This is implemented through the [clustering](https://github.com/aca-labs/clustering) lib.
 
-## Testing
+## Contributing
 
-- `$ ./test` (run tests and tear down the test environment on exit)
-- `$ ./test --watch` (run test suite on change)
-
-### Dependencies
-
-These will need to be installed prior to running `./test`:
-
-- [docker](https://www.docker.com/)
-- [docker-compose](https://github.com/docker/compose)
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
