@@ -1,5 +1,5 @@
 name: placeos-core
-version: 3.12.0
+version: 4.0.1
 crystal: ~> 1.0
 
 targets:
@@ -43,11 +43,11 @@ dependencies:
 
   placeos-compiler:
     github: placeos/compiler
-    version: ~> 4.7
+    version: ~> 4.9
 
   placeos-driver:
     github: placeos/driver
-    version: ~> 5.8
+    version: ~> 6.1
 
   placeos-log-backend:
     github: place-labs/log-backend
@@ -55,7 +55,7 @@ dependencies:
 
   placeos-models:
     github: placeos/models
-    version: ~> 5.9
+    version: ~> 6.0
 
   placeos-resource:
     github: place-labs/resource

@@ -1,0 +1,6 @@
+name: Validate PR
+on: pull_request
+
+jobs:
+  title:
+    uses: PlaceOS/.github/.github/workflows/validate-pr-title.yml@main

@@ -1,4 +1,6 @@
 require "uuid"
+require "placeos-core-client"
+
 require "../lib/action-controller/spec/curl_context"
 
 # Application config

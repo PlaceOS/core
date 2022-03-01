@@ -75,14 +75,15 @@ module PlaceOS::Core
       elsif !response.success
         output = response.output
         if output
-          error = NamedTuple(message: String, backtrace: Array(String)).from_json(output)
+          error = NamedTuple(message: String, backtrace: Array(String), code: Int32?).from_json(output)
           backtrace = error[:backtrace]
+          error_code = error[:code]
           message, error_class = ProcessManager::Edge.extract_remote_error_class(error[:message])
         end
 
-        raise PlaceOS::Driver::RemoteException.new(message, error_class, backtrace || [] of String)
+        raise PlaceOS::Driver::RemoteException.new(message, error_class, backtrace || [] of String, error_code || 500)
       else
-        response.output
+        {response.output, response.code || 200}
       end
     end
 

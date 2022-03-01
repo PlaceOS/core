@@ -56,9 +56,10 @@ module PlaceOS::Core::ProcessManager
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
           pm.load(module_id: module_id, driver_key: driver_key)
-          pm.start(module_id: module_id, payload: Resources::Modules.start_payload(mod))
-          result = pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:used_for_place_testing), user_id: nil)
+          pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
+          result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:used_for_place_testing), user_id: nil)
           result.should eq %("you can delete this file")
+          code.should eq 200
         end
 
         it "debug" do
@@ -72,8 +73,9 @@ module PlaceOS::Core::ProcessManager
             message_channel.send(message)
           end
 
-          result = pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:echo, ["hello"]), user_id: nil)
+          result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
           result.should eq %("hello")
+          code.should eq 200
 
           select
           when message = message_channel.receive
@@ -97,8 +99,9 @@ module PlaceOS::Core::ProcessManager
 
           pm.debug(module_id, &callback)
 
-          result = pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:echo, ["hello"]), user_id: nil)
+          result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
           result.should eq %("hello")
+          code.should eq 200
 
           select
           when message = message_channel.receive
@@ -108,8 +111,9 @@ module PlaceOS::Core::ProcessManager
           end
 
           pm.ignore(module_id, &callback)
-          result = pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:echo, ["hello"]), user_id: nil)
+          result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
           result.should eq %("hello")
+          code.should eq 200
 
           expect_raises(Exception) do
             select

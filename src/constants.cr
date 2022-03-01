@@ -26,5 +26,7 @@ module PlaceOS::Core
 
   PROD = ENV["SG_ENV"]?.try(&.downcase) == "production"
 
+  RESPONSE_CODE_HEADER = "Response-Code"
+
   class_getter? production : Bool = PROD
 end

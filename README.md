@@ -1,6 +1,6 @@
 # PlaceOS Core
 
-[![Build Dev Image](https://github.com/PlaceOS/core/actions/workflows/build-dev-image.yml/badge.svg)](https://github.com/PlaceOS/core/actions/workflows/build-dev-image.yml)
+[![Build](https://github.com/PlaceOS/core/actions/workflows/build.yml/badge.svg)](https://github.com/PlaceOS/core/actions/workflows/build.yml)
 [![CI](https://github.com/PlaceOS/core/actions/workflows/ci.yml/badge.svg)](https://github.com/PlaceOS/core/actions/workflows/ci.yml)
 
 The coordination service for running drivers on [PlaceOS](https://place.technology).
@@ -23,14 +23,6 @@ Modules are instantiations of drivers which are distributed across core nodes th
 
 Core is a clustered service. This is implemented through the [clustering](https://github.com/aca-labs/clustering) lib.
 
-## Testing
+## Contributing
 
-- `$ ./test` (run tests and tear down the test environment on exit)
-- `$ ./test --watch` (run test suite on change)
-
-### Dependencies
-
-These will need to be installed prior to running `./test`:
-
-- [docker](https://www.docker.com/)
-- [docker-compose](https://github.com/docker/compose)
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md).

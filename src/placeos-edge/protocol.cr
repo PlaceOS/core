@@ -333,8 +333,9 @@ module PlaceOS::Edge::Protocol
 
     struct ExecuteResponse < Client::Response
       getter output : String?
+      getter code : Int32?
 
-      def initialize(@success, @output)
+      def initialize(@success, @output, @code)
       end
     end
 

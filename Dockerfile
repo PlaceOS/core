@@ -1,6 +1,6 @@
 # One of `core` | `edge`
 ARG TARGET=core
-ARG CRYSTAL_VERSION=1.2.0
+ARG CRYSTAL_VERSION=1.3.2
 
 FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine as build
 
@@ -10,17 +10,24 @@ ARG PLACE_VERSION="DEV"
 
 WORKDIR /app
 
-# Install the latest version of...
-# - ping
-# - trusted certificate authorities
-RUN apk update && \
-    apk add --no-cache \
-        'apk-tools>=2.10.8-r0' \
-        'libcurl>=7.79.1-r0' \
-        ca-certificates \
-        iputils \
-    && \
-    update-ca-certificates
+RUN apk add \
+  --update \
+  --no-cache \
+  --repository=http://dl-cdn.alpinelinux.org/alpine/v3.15/main \
+    'git' \
+    'expat'
+
+RUN apk add --update --no-cache \
+    'apk-tools>=2.10.8-r0' \
+    ca-certificates \
+    'expat>=2.2.10-r1' \
+    iputils \
+    'libcurl>=7.79.1-r0' \
+    libssh2-static \
+    yaml-static
+
+# Add trusted CAs for communicating with external services
+RUN update-ca-certificates
 
 # Create a non-privileged user
 ARG IMAGE_UID="10001"
@@ -51,7 +58,8 @@ RUN UNAME_AT_COMPILE_TIME=true \
     shards build ${TARGET} \
       --error-trace \
       --production \
-      --release
+      --release \
+      --static
 
 RUN mkdir -p /app/bin/drivers
 RUN chown appuser -R /app

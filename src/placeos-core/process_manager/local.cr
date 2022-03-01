@@ -93,7 +93,9 @@ module PlaceOS::Core
       if core_uri == discovery.uri
         if manager = protocol_manager_by_module?(remote_module_id)
           # responds with a JSON string
-          request.payload = manager.execute(remote_module_id, raw_execute_json)
+          response = manager.execute(remote_module_id, raw_execute_json)
+          request.code = response[1]
+          request.payload = response[0]
         else
           raise "could not locate module #{remote_module_id}. It may not be running."
         end
@@ -106,20 +108,24 @@ module PlaceOS::Core
           body: raw_execute_json
         )
 
+        request.code = response.headers[RESPONSE_CODE_HEADER]?.try(&.to_i) || 500
+
         case response.status_code
         when 200
           # exec was successful, json string returned
           request.payload = response.body
         when 203
           # exec sent to module and it raised an error
-          info = NamedTuple(message: String, backtrace: Array(String)?).from_json(response.body)
+          info = NamedTuple(message: String, backtrace: Array(String)?, code: Int32?).from_json(response.body)
           request.payload = info[:message]
           request.backtrace = info[:backtrace]
+          request.code = info[:code] || 500
           request.error = "RequestFailed"
         else
           # some other failure 3
           request.payload = "unexpected response code #{response.status_code}"
           request.error = "UnexpectedFailure"
+          request.code ||= 500
         end
       end
 
