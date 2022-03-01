@@ -21,6 +21,7 @@ RUN apk add \
 RUN apk add --update --no-cache \
     'apk-tools>=2.10.8-r0' \
     ca-certificates \
+    'expat>=2.2.10-r1' \
     iputils \
     'libcurl>=7.79.1-r0' \
     libssh2-static \
