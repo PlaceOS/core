@@ -1,3 +1,9 @@
+## v4.0.2 (2022-03-02)
+
+### Fix
+
+- better module stopped errors ([#163](https://github.com/PlaceOS/core/pull/163))
+
 ## v4.0.1 (2022-03-01)
 
 ### Fix
