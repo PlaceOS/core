@@ -1,3 +1,9 @@
+## v4.0.3 (2022-03-03)
+
+### Refactor
+
+- **module_manager**: remove `ext`, `require "uri/json"`
+
 ## v4.0.2 (2022-03-02)
 
 ### Fix
