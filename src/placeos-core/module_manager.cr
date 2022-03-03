@@ -273,6 +273,16 @@ module PlaceOS::Core
       end
     end
 
+    def process_manager(driver_key : String, edge_id : String?) : ProcessManager?
+      manager = if edge_id.nil? || !own_node?(edge_id)
+                  local_processes
+                else
+                  edge_processes.for?(edge_id)
+                end
+
+      manager if manager && manager.driver_loaded?(driver_key)
+    end
+
     # Clustering
     ###############################################################################################
 
