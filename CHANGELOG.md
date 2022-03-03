@@ -1,3 +1,9 @@
+## v4.0.5 (2022-03-03)
+
+### Fix
+
+- **edge**: update require
+
 ## v4.0.4 (2022-03-03)
 
 ### Refactor
