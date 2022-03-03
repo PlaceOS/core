@@ -29,7 +29,6 @@ module PlaceOS
       Log.context.set(settings_id: settings.id)
       result = Result::Success
 
-      # TODO: Perform asynchronously
       # Find each module affected by the Settings change
       settings.dependent_modules.each do |mod|
         begin
