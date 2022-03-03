@@ -1,3 +1,10 @@
+## v4.0.4 (2022-03-03)
+
+### Refactor
+
+- **module_manager**: move process manager lookup by path to ModuleManager
+- use `Log.with_context` with args
+
 ## v4.0.3 (2022-03-03)
 
 ### Refactor
