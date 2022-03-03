@@ -2,6 +2,7 @@ require "clustering"
 require "hound-dog"
 require "mutex"
 require "redis"
+require "uri/json"
 
 require "placeos-compiler/compiler"
 require "placeos-compiler/helper"
