@@ -35,9 +35,7 @@ module PlaceOS::Core::ProcessManager::Common
   #
   def unload(module_id : String)
     driver_key = driver_key_for?(module_id)
-    ::Log.with_context do
-      Log.context.set(driver_key: driver_key, module_id: module_id)
-
+    ::Log.with_context(driver_key: driver_key, module_id: module_id) do
       stop(module_id)
 
       existing_manager = set_module_protocol_manager(module_id, nil)

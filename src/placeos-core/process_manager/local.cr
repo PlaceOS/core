@@ -19,9 +19,7 @@ module PlaceOS::Core
 
     def load(module_id : String, driver_key : String)
       driver_key = ProcessManager.path_to_key(driver_key)
-      ::Log.with_context do
-        Log.context.set(module_id: module_id, driver_key: driver_key)
-
+      ::Log.with_context(module_id: module_id, driver_key: driver_key) do
         if protocol_manager_by_module?(module_id)
           Log.info { "module already loaded" }
           return true

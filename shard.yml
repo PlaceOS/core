@@ -1,6 +1,6 @@
 name: placeos-core
 version: 4.0.3
-crystal: ~> 1.0
+crystal: ~> 1.3
 
 targets:
   core:
