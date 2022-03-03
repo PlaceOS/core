@@ -1,7 +1,6 @@
 require "action-controller/logger"
 require "log_helper"
-
-require "./ext"
+require "uri/json"
 
 # :nodoc:
 abstract class PlaceOS::Driver; end
