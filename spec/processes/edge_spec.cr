@@ -1,5 +1,4 @@
 require "../helper"
-
 require "./local_spec"
 
 module PlaceOS::Core::ProcessManager
@@ -28,10 +27,13 @@ module PlaceOS::Core::ProcessManager
   def self.with_edge
     with_driver do |mod, driver_path, _driver|
       if (existing_edge_id = mod.edge_id)
+        mod.running = false
+        mod.save!
         edge = Model::Edge.find!(existing_edge_id)
       else
         edge = Model::Generator.edge.save!
         mod.edge_id = edge.id.as(String)
+        mod.running = false
         mod.save!
       end
 
@@ -94,12 +96,14 @@ module PlaceOS::Core::ProcessManager
 
     describe "driver_status" do
       it "returns driver status if present" do
-        # TODO: Could do with a double check of values
         with_edge do |ctx, client, pm|
           pm.load(module_id: "mod", driver_key: ctx.driver_path)
 
           pm.driver_status(ctx.driver_path).should_not be_nil
-          client.driver_status(ctx.driver_key).should_not be_nil
+          status = client.driver_status(ctx.driver_key)
+          status.should_not be_nil
+          status.not_nil!.running.should be_false
+          status.not_nil!.launch_count.should eq(0)
         end
       end
 
