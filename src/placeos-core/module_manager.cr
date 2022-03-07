@@ -29,7 +29,6 @@ module PlaceOS::Core
 
     delegate stop, to: clustering
 
-    # TODO: Remove after this is resolved https://github.com/place-technology/roadmap/issues/24
     delegate path_for?, to: local_processes
 
     delegate manage_edge, to: edge_processes
