@@ -111,7 +111,7 @@ module PlaceOS::Core
       remote_module_id = request.id
 
       # Build remote core request
-      # TODO: This should use `PlaceOS/core-client`
+      # TODO: Use `PlaceOS/core-client` for forwarding execute requests
       core_uri.path = "/api/core/v1/command/#{remote_module_id}/execute"
       response = HTTP::Client.post(
         core_uri,

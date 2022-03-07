@@ -257,7 +257,7 @@ module PlaceOS::Core
                 in Model::Module
                   mod.edge_id if mod.on_edge?
                 in String
-                  # TODO: Cache module to edge relation
+                  # TODO: Cache `Module` to `Edge` relation in `ModuleManager`
                   Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
                 end
 

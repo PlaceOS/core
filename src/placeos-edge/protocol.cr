@@ -90,13 +90,16 @@ module PlaceOS::Edge::Protocol
 
   # Messages, grouped by producer
   module Message
+    # TODO: Refactor Message for better type safety
+    # - Potentially refactor to indivual enums for better case exhaustiveness
+    #   - success, error
+    #   - request, response
+    #   - server, client
+    # - Maybe make a macro that casts a Body based on `Body::Type`
+    # - Add a macro for simply defining messages
     # :nodoc:
     abstract struct Body
       include JSON::Serializable
-
-      # TODO:
-      # - Refactor to indivual enums for better case exhaustiveness
-      # - Maybe make a macro that casts a Body based on type
 
       enum Type
         # Request

@@ -303,9 +303,7 @@ module PlaceOS::Core
     # Utilities
     ###############################################################################################
 
-    # Uses a `Regex` to extract the remote exception
-    #
-    # TODO: refactor PlaceOS::Driver::RemoteException
+    # Uses a `Regex` to extract the remote exception.
     def self.extract_remote_error_class(message : String) : {String, String}
       match = message.match(/\((.*?)\)$/)
       exception = match.try &.captures.first || "Exception"
