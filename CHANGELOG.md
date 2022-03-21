@@ -1,4 +1,8 @@
-## Unreleased
+## v4.0.6 (2022-03-21)
+
+### Fix
+
+- possible race condition in spawn ([#171](https://github.com/PlaceOS/core/pull/171))
 
 ## v4.0.5 (2022-03-03)
 
