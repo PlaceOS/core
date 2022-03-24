@@ -40,9 +40,8 @@ module PlaceOS::Core
     # Acquire resources on startup
     resource_manager.start do
       # Start managing modules once relevant resources present
-      fiber = spawn(same_thread: true) { module_manager.start }
-      Fiber.current.enqueue
-      fiber.resume
+      spawn(same_thread: true) { module_manager.start }
+      Fiber.yield
     end
   end
 
