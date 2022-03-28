@@ -130,11 +130,11 @@ shards:
 
   placeos-core-client:
     git: https://github.com/placeos/core-client.git
-    version: 0.4.1
+    version: 0.5.1
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.2.1
+    version: 6.3.1
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -142,7 +142,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 7.0.0
+    version: 7.6.7
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -178,7 +178,7 @@ shards:
 
   rethinkdb-orm:
     git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 6.0.1
+    version: 6.0.2
 
   retriable:
     git: https://github.com/sija/retriable.cr.git
@@ -198,7 +198,7 @@ shards:
 
   ssh2:
     git: https://github.com/spider-gazelle/ssh2.cr.git
-    version: 1.5.2
+    version: 1.5.3
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
