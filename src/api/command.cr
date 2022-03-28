@@ -48,6 +48,7 @@ module PlaceOS::Core::Api
         end
       rescue error : PlaceOS::Driver::RemoteException
         Log.error(exception: error) { "execute errored" }
+        response.headers[RESPONSE_CODE_HEADER] = error.code.to_s
         render :non_authoritative_information, json: {
           message:   error.message,
           backtrace: error.backtrace?,
