@@ -1,4 +1,8 @@
-## Unreleased
+## v4.0.7 (2022-03-28)
+
+### Fix
+
+- **api**: add error codes to coming from RemoteExceptions ([#172](https://github.com/PlaceOS/core/pull/172))
 
 ## v4.0.6 (2022-03-21)
 
