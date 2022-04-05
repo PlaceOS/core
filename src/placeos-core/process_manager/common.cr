@@ -11,6 +11,8 @@ module PlaceOS::Core::ProcessManager::Common
       request_body,
       user_id: user_id,
     )
+  rescue error : PlaceOS::Driver::RemoteException
+    raise error
   rescue exception
     raise module_error(module_id, exception)
   end
