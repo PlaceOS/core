@@ -1,4 +1,8 @@
-## Unreleased
+## v4.0.8 (2022-04-06)
+
+### Fix
+
+- **process_manager/common**: should propagate RemoteExceptions ([#175](https://github.com/PlaceOS/core/pull/175))
 
 ## v4.0.7 (2022-03-28)
 
