@@ -56,7 +56,7 @@ module PlaceOS::Core
       end
     end
 
-    describe "startup", focus: true do
+    describe "startup" do
       it "registers to etcd" do
         # Remove metadata in etcd
         namespace = HoundDog.settings.service_namespace
