@@ -71,6 +71,8 @@ module PlaceOS::Core
         module_manager = ModuleManager.new(uri: CORE_URL)
         module_manager.start
 
+        sleep 3
+
         # Check that the node is registered in etcd
         module_manager.discovery.nodes.map(&.[:name]).should contain(module_manager.discovery.name)
 
