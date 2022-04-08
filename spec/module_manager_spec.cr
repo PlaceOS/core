@@ -56,7 +56,7 @@ module PlaceOS::Core
       end
     end
 
-    describe "startup" do
+    describe "startup", focus: true do
       it "registers to etcd" do
         # Remove metadata in etcd
         namespace = HoundDog.settings.service_namespace
@@ -70,6 +70,8 @@ module PlaceOS::Core
         # Start module manager
         module_manager = ModuleManager.new(uri: CORE_URL)
         module_manager.start
+
+        sleep 3
 
         # Check that the node is registered in etcd
         module_manager.discovery.nodes.map(&.[:name]).should contain(module_manager.discovery.name)
