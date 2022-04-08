@@ -1,0 +1,12 @@
+{
+    "name": "Place Service Test Container",
+
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "test",
+
+    "workspaceFolder": "/workspace",
+
+    "extensions": [
+        "crystal-lang-tools.crystal-lang"
+    ]
+}
