@@ -96,7 +96,6 @@ module PlaceOS::Edge
       close_channel.close
     end
 
-    # ameba:disable Metrics/CyclomaticComplexity
     def handle_request(sequence_id : UInt64, request : Protocol::Server::Request)
       Log.debug { {sequence_id: sequence_id.to_s, type: request.type.to_s, message: "received request"} }
 
