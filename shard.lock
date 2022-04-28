@@ -143,7 +143,7 @@ shards:
 
   opentelemetry-api:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
-    version: 0.2.1+git.commit.e5ef4a7be6b738edb3a575b000336089babb1090
+    version: 0.2.2+git.commit.89135d783f8ffe7ddbd2849d8c523ac9fb6cce07
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
@@ -171,7 +171,7 @@ shards:
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.7.3
+    version: 0.8.3
 
   placeos-models:
     git: https://github.com/placeos/models.git
