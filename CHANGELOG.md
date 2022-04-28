@@ -1,3 +1,9 @@
+## v4.2.1 (2022-04-28)
+
+### Fix
+
+- **telemetry**: seperate telemetry file
+
 ## v4.2.0 (2022-04-27)
 
 ### Feat
