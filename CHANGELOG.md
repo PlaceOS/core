@@ -1,3 +1,9 @@
+## v4.2.3 (2022-05-03)
+
+### Fix
+
+- **telemetry**: ensure `Instrument` in scope
+
 ## v4.2.2 (2022-05-03)
 
 ### Fix
