@@ -1,3 +1,7 @@
 dependencies:
   pars:
     github: spider-gazelle/pars
+
+  opentelemetry-api:
+    github: place-labs/opentelemetry-api.cr
+    branch: fix/trace/in_span
