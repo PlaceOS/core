@@ -1,3 +1,6 @@
+require "hardware"
+require "placeos-compiler/compiler"
+
 # Methods for interacting with module processes common across a local and edge node
 module PlaceOS::Core::ProcessManager::Common
   def execute(module_id : String, payload : String | IO, user_id : String?)

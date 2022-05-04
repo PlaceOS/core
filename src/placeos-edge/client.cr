@@ -4,7 +4,7 @@ require "uri"
 
 require "placeos-driver/protocol/management"
 
-require "../placeos-core/process_manager/local"
+require "../placeos-core/process_manager/common"
 
 require "./constants"
 require "./protocol"
@@ -12,7 +12,7 @@ require "./transport"
 
 module PlaceOS::Edge
   class Client
-    include Core::ProcessManager::Local::Common
+    include Core::ProcessManager::Common
 
     Log                = ::Log.for(self)
     WEBSOCKET_API_PATH = "/api/engine/v2/edges/control"
