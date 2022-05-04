@@ -1,3 +1,9 @@
+## v4.2.4 (2022-05-04)
+
+### Fix
+
+- **edge**: resolve `crystal not found` error ([#178](https://github.com/PlaceOS/core/pull/178))
+
 ## v4.2.3 (2022-05-03)
 
 ### Fix
