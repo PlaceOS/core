@@ -141,13 +141,13 @@ shards:
     git: https://github.com/spider-gazelle/openssl_ext.git
     version: 2.1.5
 
-  opentelemetry-api: # Overridden
-    git: https://github.com/place-labs/opentelemetry-api.cr.git
-    version: 0.2.3+git.commit.1b9fe5de5a599fa38e4bbccf0285f1f020c15c80
+  opentelemetry-api:
+    git: https://github.com/wyhaines/opentelemetry-api.cr.git
+    version: 0.2.4
 
   opentelemetry-instrumentation:
-    git: https://github.com/place-labs/opentelemetry-instrumentation.cr.git
-    version: 0.2.9+git.commit.2bed74e37ba785bc89200189ddfd00edde3452cc
+    git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
+    version: 0.3.0+git.commit.c716bd3a9b2891e07857db9e2421a7e3aa45e168
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -171,7 +171,7 @@ shards:
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.8.10
+    version: 0.8.11
 
   placeos-models:
     git: https://github.com/placeos/models.git
