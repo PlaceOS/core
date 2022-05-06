@@ -17,6 +17,9 @@ dependencies:
     github: place-labs/clustering
     version: ~> 3.0
 
+  git-repository:
+    github: place-labs/git-repository
+
   habitat:
     github: luckyframework/habitat
     version: ~> 0.4
@@ -47,7 +50,7 @@ dependencies:
 
   placeos-log-backend:
     github: place-labs/log-backend
-    version: ">= 0.8.9"
+    version: ">= 0.8.13"
 
 
   placeos-models:

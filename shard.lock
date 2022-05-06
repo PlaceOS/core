@@ -85,6 +85,10 @@ shards:
     git: https://github.com/crystal-community/future.cr.git
     version: 1.0.0
 
+  git-repository:
+    git: https://github.com/place-labs/git-repository.git
+    version: 1.0.0+git.commit.51816ca0d60737a262de53a2f46f1370691c241c
+
   habitat:
     git: https://github.com/luckyframework/habitat.git
     version: 0.4.7
@@ -147,7 +151,7 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.3.0+git.commit.c716bd3a9b2891e07857db9e2421a7e3aa45e168
+    version: 0.3.0+git.commit.7b92eab3619e733066507f2e9c1fb4959c6f7f2e
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -171,15 +175,15 @@ shards:
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.8.11
+    version: 0.8.13
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 8.4.1
+    version: 8.5.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 2.5.2
+    version: 2.5.4
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
