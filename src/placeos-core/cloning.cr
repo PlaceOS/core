@@ -4,6 +4,7 @@ require "placeos-compiler/git"
 require "placeos-compiler/helper"
 require "placeos-models"
 require "placeos-resource"
+require "git-repository"
 
 require "./module_manager"
 
@@ -67,6 +68,14 @@ module PlaceOS
 
       Log.debug { "cloning repository" }
 
+
+      GitRepository.new(
+        repository: repository.uri,
+        username: repsitory.username,
+        password: repsitory.password,
+      )
+
+
       # NOTE:: `repository` argument maps to the folder on the filesystem
       Compiler.clone_and_install(
         repository: repository.folder_name,
@@ -78,8 +87,12 @@ module PlaceOS
         pull_if_exists: !testing,
       )
 
+      # everything needs reference, branches have REF_HEAD - commit_hash 
+      # reference - if he
+
       # Update commit hash if repository id maps to current node, or during startup
       current_commit = Compiler::Git.current_repository_commit(repository.folder_name, working_dir)
+
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
 
       if current_commit != repository.commit_hash && own_node
