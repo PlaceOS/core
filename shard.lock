@@ -179,7 +179,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 8.5.0
+    version: 8.7.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
