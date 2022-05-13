@@ -59,7 +59,7 @@ shards:
 
   defined:
     git: https://github.com/wyhaines/defined.cr.git
-    version: 0.3.3
+    version: 0.3.4
 
   dtls:
     git: https://github.com/spider-gazelle/crystal-dtls.git
@@ -87,7 +87,7 @@ shards:
 
   git-repository:
     git: https://github.com/place-labs/git-repository.git
-    version: 1.0.0+git.commit.51816ca0d60737a262de53a2f46f1370691c241c
+    version: 1.0.2
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
@@ -151,7 +151,7 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.3.0+git.commit.7b92eab3619e733066507f2e9c1fb4959c6f7f2e
+    version: 0.3.0+git.commit.48f4e73ea86838dd7ee0e5a70e39f135ee188b8e
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -175,7 +175,7 @@ shards:
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.8.13
+    version: 0.10.2
 
   placeos-models:
     git: https://github.com/placeos/models.git
