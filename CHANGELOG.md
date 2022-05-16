@@ -1,4 +1,8 @@
-## Unreleased
+## v4.3.0 (2022-05-16)
+
+### Feat
+
+- **cloning**: use deployed_commit_hash to indicate current commit ([#179](https://github.com/PlaceOS/core/pull/179))
 
 ## v4.2.4 (2022-05-04)
 
