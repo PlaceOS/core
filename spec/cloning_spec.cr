@@ -3,7 +3,7 @@ require "uuid"
 require "./helper"
 
 module PlaceOS::Core
-  describe Cloning, tags: "resource" do
+  describe Cloning, tags: "resource", focus: true do
     it "switches branches" do
       initial_branch = "master"
       secondary_branch = "fixture"

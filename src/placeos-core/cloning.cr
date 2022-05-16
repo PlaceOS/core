@@ -96,7 +96,8 @@ module PlaceOS
         end
 
         # Refresh the repository model commit hash
-        repository.update_fields(deployed_commit_hash: current_commit)
+        repository.deployed_commit_hash = current_commit
+        repository.save
       end
 
       Log.info { {
