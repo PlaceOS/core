@@ -82,7 +82,7 @@ module PlaceOS
       current_commit = Compiler::Git.current_repository_commit(repository.folder_name, working_dir)
       own_node = startup || ModuleManager.instance.discovery.own_node?(repository_id)
 
-      if current_commit != repository.commit_hash && own_node
+      if current_commit != repository.deployed_commit_hash && own_node
         if startup
           Log.warn { {
             message:        "updating commit on repository during startup",
@@ -96,7 +96,8 @@ module PlaceOS
         end
 
         # Refresh the repository model commit hash
-        repository.update_fields(commit_hash: current_commit)
+        repository.deployed_commit_hash = current_commit
+        repository.save
       end
 
       Log.info { {
