@@ -1,6 +1,6 @@
 # One of `core` | `edge`
 ARG TARGET=core
-ARG CRYSTAL_VERSION=1.3.2
+ARG CRYSTAL_VERSION=1.4.1
 
 FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine as build
 
