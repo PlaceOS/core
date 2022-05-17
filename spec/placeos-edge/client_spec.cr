@@ -9,19 +9,19 @@ module PlaceOS::Edge
       client_ws, server_ws = mock_sockets
 
       spawn {
-        client.connect(client_ws) do
+        client.connect do
           coordination.send(true)
         end
       }
 
       messages = Channel(Protocol::Text).new
 
-      server_ws.on_message do |m|
-        messages.send Protocol::Text.from_json(m)
-        server_ws.send(Protocol::Text.new(0_u64, Protocol::Message::RegisterResponse.new(true)).to_json)
-      end
+      # server_ws.on_message do |m|
+      #   messages.send Protocol::Text.from_json(m)
+      #   server_ws.send(Protocol::Text.new(0_u64, Protocol::Message::RegisterResponse.new(true)).to_json)
+      # end
 
-      spawn { server_ws.run }
+      # spawn { server_ws.run }
 
       Fiber.yield
 
