@@ -20,9 +20,14 @@ module PlaceOS::Edge
   end
 
   protected def self.decode_token(token)
-    String.new(Base64.decode(token)) if token.presence
-  rescue
-    Log.error { "malformed token" }
+    # Token is in the form hash.secret so validate the two parts best we can
+    # Using string length is a bit shit but not sure how else we can do
+    parts = token.split(".")
+    raise "malformed Token" if parts[0].size != 32
+    raise "malformed Token" if parts[1].size != 43
+    token if token.presence
+  rescue ex
+    Log.error { ex.message }
     nil
   end
 end
