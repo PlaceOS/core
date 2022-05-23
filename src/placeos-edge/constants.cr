@@ -8,7 +8,7 @@ module PlaceOS::Edge
   CLIENT_SECRET = ENV["PLACE_EDGE_KEY"]?.try { |t| decode_token(t) } || (production? ? abort("missing PLACE_EDGE_KEY in environment") : "edge-1000_secret")
 
   # URI of PlaceOS instance
-  PLACE_URI = URI.parse(ENV["PLACE_URI"]? || "https://localhost:8443".tap { |v| Log.warn { "missing PLACE_URI in environment, using #{v}" } })
+  PLACE_URI = URI.parse(ENV["PLACE_URI"]? || "http://localhost:6000".tap { |v| Log.warn { "missing PLACE_URI in environment, using #{v}" } })
 
   PROD = ENV["SG_ENV"]? == "production"
 
