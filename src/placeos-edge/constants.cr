@@ -15,7 +15,7 @@ module PlaceOS::Edge
   LOG_STDOUT = ActionController.default_backend
   Log        = ::Log.for(self)
 
-  ID_LENGTH = 32
+  ID_LENGTH   = 32
   HASH_LENGTH = 43
 
   def self.production?
