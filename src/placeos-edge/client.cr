@@ -52,8 +52,6 @@ module PlaceOS::Edge
       uri = uri.dup
       uri.path = WEBSOCKET_API_PATH
       uri.query = "api-key=#{@secret}"
-      Log.info {"URI IS:"}
-      Log.info {uri.inspect}
       @uri = uri
     end
 
