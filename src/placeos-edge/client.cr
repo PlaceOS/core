@@ -51,7 +51,7 @@ module PlaceOS::Edge
       # Mutate a copy as secret is embedded in uri
       uri = uri.dup
       uri.path = WEBSOCKET_API_PATH
-      uri.query = "token=#{secret}"
+      uri.query = "api-key=#{@secret}"
       @uri = uri
     end
 
