@@ -1,4 +1,8 @@
-## Unreleased
+## v4.3.1 (2022-05-25)
+
+### Fix
+
+- **edge**: use correct api-key param and update key validation  ([#181](https://github.com/PlaceOS/core/pull/181))
 
 ## v4.3.0 (2022-05-16)
 
