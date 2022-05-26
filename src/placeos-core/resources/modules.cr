@@ -4,11 +4,7 @@ require "mutex"
 require "redis"
 require "uri/json"
 
-require "placeos-models/control_system"
-require "placeos-models/driver"
-require "placeos-models/module"
-require "placeos-models/settings"
-
+require "placeos-models"
 require "placeos-resource"
 
 require "placeos-build/driver_store/filesystem"
@@ -142,7 +138,14 @@ module PlaceOS::Core
           driver_name: driver.name,
           driver_commit: driver.commit,
         ) do
-          driver_path = PlaceOS::Compiler.is_built?(driver.file_name, repository_folder, driver.commit, id: driver_id)
+          # TODO: load _latest_ build for this commit
+          executable = binary_store.query(
+            entrypoint: driver.file_name,
+            commit: driver.commit,
+          ).first?
+
+          driver_path = executable.try { |e| binary_store.path(e) }
+
           # Check if the driver is built
           if driver_path.nil?
             Log.error { "driver is not loaded for module" }
@@ -265,7 +268,7 @@ module PlaceOS::Core
                 in Model::Module
                   mod.edge_id if mod.on_edge?
                 in String
-                  # TODO: Cache `Module` to `Edge` relation in `ModuleManager`
+                  # TODO: Cache `Module` to `Edge` relation in `Resources::Modules`
                   Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
                 end
 
