@@ -1,3 +1,94 @@
+## v4.3.1 (2022-05-25)
+
+### Fix
+
+- **edge**: use correct api-key param and update key validation  ([#181](https://github.com/PlaceOS/core/pull/181))
+
+## v4.3.0 (2022-05-16)
+
+### Feat
+
+- **cloning**: use deployed_commit_hash to indicate current commit ([#179](https://github.com/PlaceOS/core/pull/179))
+
+## v4.2.4 (2022-05-04)
+
+### Fix
+
+- **edge**: resolve `crystal not found` error ([#178](https://github.com/PlaceOS/core/pull/178))
+
+## v4.2.3 (2022-05-03)
+
+### Fix
+
+- **telemetry**: ensure `Instrument` in scope
+
+## v4.2.2 (2022-05-03)
+
+### Fix
+
+- update `placeos-log-backend`
+
+## v4.2.1 (2022-04-28)
+
+### Fix
+
+- **telemetry**: seperate telemetry file
+
+## v4.2.0 (2022-04-27)
+
+### Feat
+
+- **logging**: configure OpenTelemetry
+
+## v4.1.0 (2022-04-26)
+
+### Feat
+
+- **logging**: add configuration by LOG_LEVEL env var
+
+## v4.0.8 (2022-04-06)
+
+### Fix
+
+- **process_manager/common**: should propagate RemoteExceptions ([#175](https://github.com/PlaceOS/core/pull/175))
+
+## v4.0.7 (2022-03-28)
+
+### Fix
+
+- **api**: add error codes to coming from RemoteExceptions ([#172](https://github.com/PlaceOS/core/pull/172))
+
+## v4.0.6 (2022-03-21)
+
+### Fix
+
+- possible race condition in spawn ([#171](https://github.com/PlaceOS/core/pull/171))
+
+## v4.0.5 (2022-03-03)
+
+### Fix
+
+- **edge**: update require
+
+## v4.0.4 (2022-03-03)
+
+### Refactor
+
+- **module_manager**: move process manager lookup by path to ModuleManager
+- use `Log.with_context` with args
+
+## v4.0.3 (2022-03-03)
+
+### Refactor
+
+- **module_manager**: remove `ext`, `require "uri/json"`
+
+## v4.0.2 (2022-03-02)
+
+### Fix
+
+- better module stopped errors ([#163](https://github.com/PlaceOS/core/pull/163))
+
 ## v4.0.1 (2022-03-01)
 
 ### Fix

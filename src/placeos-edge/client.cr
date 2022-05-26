@@ -4,7 +4,7 @@ require "uri"
 
 require "placeos-driver/protocol/management"
 
-require "../placeos-core/process_manager/local"
+require "../placeos-core/process_manager/common"
 
 require "./constants"
 require "./protocol"
@@ -12,7 +12,7 @@ require "./transport"
 
 module PlaceOS::Edge
   class Client
-    include Core::ProcessManager::Local::Common
+    include Core::ProcessManager::Common
 
     Log                = ::Log.for(self)
     WEBSOCKET_API_PATH = "/api/engine/v2/edges/control"
@@ -51,7 +51,7 @@ module PlaceOS::Edge
       # Mutate a copy as secret is embedded in uri
       uri = uri.dup
       uri.path = WEBSOCKET_API_PATH
-      uri.query = "token=#{secret}"
+      uri.query = "api-key=#{@secret}"
       @uri = uri
     end
 
@@ -96,7 +96,6 @@ module PlaceOS::Edge
       close_channel.close
     end
 
-    # ameba:disable Metrics/CyclomaticComplexity
     def handle_request(sequence_id : UInt64, request : Protocol::Server::Request)
       Log.debug { {sequence_id: sequence_id.to_s, type: request.type.to_s, message: "received request"} }
 

@@ -196,7 +196,6 @@ module PlaceOS::Edge
         end
       in Protocol::Request
         spawn(same_thread: true) do
-          # TODO: remove casts once crystal correctly trims union here
           begin
             on_request.call({message.sequence_id, body})
           rescue e

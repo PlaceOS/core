@@ -1,8 +1,8 @@
 module PlaceOS::Core
-  class Error < Exception
+  class Error < ::Exception
     getter message
 
-    def initialize(@message : String = "", @cause = nil)
+    def initialize(@message : String = "", @cause : Exception? = nil)
       super
     end
   end

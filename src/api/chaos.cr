@@ -8,19 +8,12 @@ module PlaceOS::Core::Api
 
     getter module_manager : Resources::Modules { Resources::Modules.instance }
 
-    # terminate a process
+    # Terminate a process by executable path
     post "/terminate", :terminate do
       driver_key = params["path"]
       edge_id = params["edge_id"]?.presence
 
-      # TODO: move this to Resources::Modules
-      manager = if edge_id.nil? || !module_manager.own_node?(edge_id)
-                  module_manager.local_processes
-                else
-                  module_manager.edge_processes.for?(edge_id)
-                end
-
-      head :not_found unless manager && manager.driver_loaded?(driver_key)
+      head :not_found unless manager = module_manager.process_manager(driver_key, edge_id)
 
       manager.kill(driver_key)
 

@@ -2,6 +2,7 @@ require "clustering"
 require "hound-dog"
 require "mutex"
 require "redis"
+require "uri/json"
 
 require "placeos-models/control_system"
 require "placeos-models/driver"
@@ -29,7 +30,6 @@ module PlaceOS::Core
 
     delegate stop, to: clustering
 
-    # TODO: Remove after this is resolved https://github.com/place-technology/roadmap/issues/24
     delegate path_for?, to: local_processes
 
     delegate manage_edge, to: edge_processes
@@ -134,24 +134,15 @@ module PlaceOS::Core
         driver = mod.driver!
         driver_id = driver.id.as(String)
 
-        ::Log.with_context do
-          Log.context.set(
-            driver_id: driver_id,
-            module_id: module_id,
-            module_name: mod.name,
-            custom_name: mod.custom_name,
-            driver_name: driver.name,
-            driver_commit: driver.commit,
-          )
-
-          # TODO: load _latest_ build for this commit
-          executable = binary_store.query(
-            entrypoint: driver.file_name,
-            commit: driver.commit,
-          ).first?
-
-          driver_path = executable.try { |e| binary_store.path(e) }
-
+        ::Log.with_context(
+          driver_id: driver_id,
+          module_id: module_id,
+          module_name: mod.name,
+          custom_name: mod.custom_name,
+          driver_name: driver.name,
+          driver_commit: driver.commit,
+        ) do
+          driver_path = PlaceOS::Compiler.is_built?(driver.file_name, repository_folder, driver.commit, id: driver_id)
           # Check if the driver is built
           if driver_path.nil?
             Log.error { "driver is not loaded for module" }
@@ -274,7 +265,7 @@ module PlaceOS::Core
                 in Model::Module
                   mod.edge_id if mod.on_edge?
                 in String
-                  # TODO: Cache module to edge relation
+                  # TODO: Cache `Module` to `Edge` relation in `ModuleManager`
                   Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
                 end
 
@@ -287,6 +278,16 @@ module PlaceOS::Core
       else
         yield local_processes
       end
+    end
+
+    def process_manager(driver_key : String, edge_id : String?) : ProcessManager?
+      manager = if edge_id.nil? || !own_node?(edge_id)
+                  local_processes
+                else
+                  edge_processes.for?(edge_id)
+                end
+
+      manager if manager && manager.driver_loaded?(driver_key)
     end
 
     # Clustering

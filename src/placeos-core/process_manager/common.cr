@@ -1,3 +1,6 @@
+require "hardware"
+require "placeos-compiler/compiler"
+
 # Methods for interacting with module processes common across a local and edge node
 module PlaceOS::Core::ProcessManager::Common
   def execute(module_id : String, payload : String | IO, user_id : String?)
@@ -11,6 +14,8 @@ module PlaceOS::Core::ProcessManager::Common
       request_body,
       user_id: user_id,
     )
+  rescue error : PlaceOS::Driver::RemoteException
+    raise error
   rescue exception
     raise module_error(module_id, exception)
   end
@@ -35,9 +40,7 @@ module PlaceOS::Core::ProcessManager::Common
   #
   def unload(module_id : String)
     driver_key = driver_key_for?(module_id)
-    ::Log.with_context do
-      Log.context.set(driver_key: driver_key, module_id: module_id)
-
+    ::Log.with_context(driver_key: driver_key, module_id: module_id) do
       stop(module_id)
 
       existing_manager = set_module_protocol_manager(module_id, nil)

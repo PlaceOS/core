@@ -39,6 +39,7 @@ module PlaceOS::Core::Api
         execute_output = module_manager.process_manager(module_id) do |manager|
           manager.execute(module_id, body, user_id: user_id)
         end
+
         response.content_type = "application/json"
         if execute_output
           response.headers[RESPONSE_CODE_HEADER] = execute_output[1].to_s
@@ -48,6 +49,7 @@ module PlaceOS::Core::Api
         end
       rescue error : PlaceOS::Driver::RemoteException
         Log.error(exception: error) { "execute errored" }
+        response.headers[RESPONSE_CODE_HEADER] = error.code.to_s
         render :non_authoritative_information, json: {
           message:   error.message,
           backtrace: error.backtrace?,
@@ -90,12 +92,6 @@ module PlaceOS::Core::Api
       module_manager.process_manager(module_id) do |manager|
         manager.ignore(module_id, &callback)
       end
-    end
-
-    # In the long term we should move to a single websocket between API instances
-    # and core instances, then we multiplex the debugging signals across.
-    ws "/debugger", :debugger do |_socket|
-      raise "not implemented"
     end
 
     # Overriding initializers for dependency injection

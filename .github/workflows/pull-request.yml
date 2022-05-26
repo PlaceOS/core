@@ -1,0 +1,12 @@
+name: Pull Request
+
+on:
+  pull_request_target:
+
+jobs:
+  placeos:
+    name: PlaceOS PR Actions
+    uses: PlaceOS/.github/.github/workflows/pull-request.yml@main
+    with:
+      title: ${{ github.event.pull_request.title }}
+      opened: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
