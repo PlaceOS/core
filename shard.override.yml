@@ -1,5 +1,14 @@
 dependencies:
   secrets-env:
     github: spider-gazelle/secrets-env
+
   pars:
     github: spider-gazelle/pars
+
+  placeos-core-client:
+    github: placeos/core-client
+    branch: feat/build
+
+  placeos-build:
+    github: placeos/build
+    branch: main

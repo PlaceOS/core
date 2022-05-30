@@ -1,3 +1,5 @@
+require "opentelemetry-api"
+
 require "placeos-models"
 require "placeos-models/driver"
 require "placeos-models/repository"
@@ -47,6 +49,7 @@ module PlaceOS::Core::Resources
       case action
       in .created?, .updated?
         unless Drivers.load(driver, binary_store, module_manager)
+          Log.error { "failed to load executable for driver" }
           raise Resource::ProcessingError.new(driver.name, driver.compilation_output)
         end
         Resource::Result::Success
@@ -60,7 +63,6 @@ module PlaceOS::Core::Resources
 
     # TODO:
     # - Delete driver from the binary store on delete
-    # - Ensure reloads are correct
     def self.load(
       driver : Model::Driver,
       binary_store : Build::Filesystem,
@@ -69,20 +71,21 @@ module PlaceOS::Core::Resources
       driver_id = driver.id.as(String)
       repository = driver.repository!
       commit = driver.commit
-      Log.context.set(
+      Log.with_context(
         driver_id: driver_id,
         name: driver.name,
         file_name: driver.file_name,
         repository_name: repository.folder_name,
         commit: commit,
-      )
-
-      fetch_driver(
-        driver: driver,
-        binary_store: binary_store,
-        own_node: module_manager.discovery.own_node?(driver_id),
       ) do
-        reload_modules(driver, module_manager)
+        fetch_driver(
+          driver: driver,
+          binary_store: binary_store,
+          own_node: module_manager.discovery.own_node?(driver_id),
+        ) do
+          puts "<>"
+          reload_modules(driver, module_manager)
+        end
       end
     end
 
@@ -91,8 +94,6 @@ module PlaceOS::Core::Resources
       # TODO: Ensure that drivers are reloaded _for_ the driver only
       #       May need to associate driver manager with a `driver_id`
       module_manager.reload_modules(driver)
-
-      # TODO: Use a LRU cache for drivers not in use
     end
 
     def self.fetch_driver(
@@ -100,53 +101,53 @@ module PlaceOS::Core::Resources
       binary_store : Build::Filesystem,
       own_node : Bool,
       request_id : String? = nil
-    ) : Build::Executable?
-      # Check binary store first
-      # TODO: Add crystal version to driver model
-      query = binary_store.query(driver.file_name, commit: driver.commit)
+    ) : Model::Executable?
+      OpenTelemetry.trace.in_span("Fetch driver") do
+        # Check binary store first
+        query = binary_store.query(driver.file_name, commit: driver.commit)
 
-      unless executable = query.first?
-        yield executable
-        return executable
-      end
-
-      result = Build::Client.client(BUILD_URI) do |client|
-        client.compile(
-          file: driver.file_name,
-          url: driver.repository!.uri,
-          commit: driver.commit,
-          username: driver.repository!.username,
-          password: driver.repository!.decrypt_password,
-          request_id: request_id
-        ) do |key, driver_io|
-          # Write the compiled driver to the binary store
-          binary_store.write(key, driver_io)
+        if executable = query.first?
+          yield executable
+          return executable
         end
-      end
 
-      # Perform updates to modules before updating data
-      if result.is_a? Build::Compilation::Success
-        executable = result.executable
-        yield executable
-      end
-
-      if own_node
-        case result
-        in Build::Compilation::Success
-          driver.compilation_output = nil unless driver.compilation_output.nil?
-          driver.commit = result.executable.commit unless driver.commit == result.executable.commit
-          driver.save!
-        in Build::Compilation::NotFound
-          output = "Driver #{driver.file_name} not found in #{driver.repository!.uri} at #{driver.commit}"
-          driver.update_fields(compilation_output: output) unless driver.compilation_output == output
-          driver.compilation_output = output
-        in Build::Compilation::Failure
-          driver.update_fields(compilation_output: result.error) unless driver.compilation_output == result.error
-          driver.compilation_output = result.error
+        result = Build::Client.client(BUILD_URI) do |client|
+          client.compile(
+            file: driver.file_name,
+            url: driver.repository!.uri,
+            commit: driver.commit,
+            username: driver.repository!.username,
+            password: driver.repository!.decrypt_password,
+            request_id: request_id
+          ) do |key, driver_io|
+            # Write the compiled driver to the binary store
+            binary_store.write(key, driver_io)
+          end
         end
-      end
 
-      executable
+        # Perform updates to modules before updating data
+        if result.is_a? Build::Compilation::Success
+          yield (executable = result.executable)
+        end
+
+        if own_node
+          case result
+          in Build::Compilation::Success
+            driver.compilation_output = nil unless driver.compilation_output.nil?
+            driver.commit = result.executable.commit unless driver.commit == result.executable.commit
+            driver.save!
+          in Build::Compilation::NotFound
+            output = "Driver #{driver.file_name} not found in #{driver.repository!.uri} at #{driver.commit}"
+            driver.update_fields(compilation_output: output) unless driver.compilation_output == output
+            driver.compilation_output = output
+          in Build::Compilation::Failure
+            driver.update_fields(compilation_output: result.error) unless driver.compilation_output == result.error
+            driver.compilation_output = result.error
+          end
+        end
+
+        executable
+      end
     end
 
     def start

@@ -18,11 +18,13 @@ module PlaceOS::Core::Api
     }
 
     describe "command/:module_id/execute" do
-      it "executes a command on a running module" do
-        _, _, mod, resource_manager = create_resources
+      it "executes a command on a running module", focus: true do
+        _, _, mod, resource_manager = create_resources(use_head: false)
         mod_id = mod.id.as(String)
         module_manager = module_manager_mock
         module_manager.load_module(mod)
+
+        puts "\n<<<<<<<<<<"
 
         route = File.join(namespace, mod_id, "execute")
 
@@ -46,7 +48,7 @@ module PlaceOS::Core::Api
 
     describe "command/:module_id/debugger" do
       it "pipes debug output of a module" do
-        _, _, mod, resource_manager = create_resources
+        _, _, mod, resource_manager = create_resources(use_head: false)
         mod_id = mod.id.as(String)
 
         # Mock resources

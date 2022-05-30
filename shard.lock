@@ -185,21 +185,21 @@ shards:
     git: https://github.com/wyhaines/parsedate.cr.git
     version: 0.1.2
 
-  placeos-build:
+  placeos-build: # Overridden
     git: https://github.com/placeos/build.git
-    version: 0.13.3
+    version: 1.0.2+git.commit.ea8cbae4cd3a6e044b740798464e81eacda1facf
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
     version: 4.9.2
 
-  placeos-core-client:
+  placeos-core-client: # Overridden
     git: https://github.com/placeos/core-client.git
-    version: 0.5.2
+    version: 0.5.2+git.commit.26adb20be800f052fbbb14182b6548fb26589f87
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.3.5
+    version: 6.3.6
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -207,7 +207,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 8.8.1
+    version: 8.9.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git

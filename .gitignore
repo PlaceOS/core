@@ -1,6 +1,7 @@
 *.dwarf
 .DS_Store
 .crystal
+.test-drivers
 .shards
 app
 bin

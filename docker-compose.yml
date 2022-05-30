@@ -26,21 +26,20 @@ services:
   test: # Module coordinator
     image: placeos/service-spec-runner:${CRYSTAL_VERSION:-1.4.1}
     volumes:
-      - ${PWD}/bin:/app/bin
-      - ${PWD}/lib:/app/lib
-      - ${PWD}/shard.lock:/app/shard.lock
-      - ${PWD}/shard.yml:/app/shard.yml
-      - ${PWD}/shard.override.yml:/app/shard.override.yml
-      - ${PWD}/spec:/app/spec
-      - ${PWD}/src:/app/src
+      - ${PWD}/bin:/app/bin:rw
+      - ${PWD}/.test-drivers/test:/app/bin/drivers:rw
+      - ${PWD}/lib:/app/lib:rw
+      - ${PWD}/shard.lock:/app/shard.lock:rw
+      - ${PWD}/shard.yml:/app/shard.yml:rw
+      - ${PWD}/shard.override.yml:/app/shard.override.yml:rw
+      - ${PWD}/spec:/app/spec:rw
+      - ${PWD}/src:/app/src:rw
     depends_on:
       - build
       - etcd
       - redis
       - rethink
     environment:
-      # Environment
-      CRYSTAL_VERSION: ${CRYSTAL_VERSION:-1.2.2}
       GITHUB_ACTION: ${GITHUB_ACTION:-}
       # Service Hosts
       << : *build-client-env
@@ -56,12 +55,13 @@ services:
     restart: always
     hostname: build
     volumes:
-      - ${PWD}/bin/drivers:/app/bin/drivers
+      - ${PWD}/.test-drivers/build:/app/bin/drivers:rw
     environment:
       TZ: $TZ
+      LOG_LEVEL: trace
 
   redis:
-    image: eqalpha/keydb
+    image: eqalpha/keydb:alpine
     restart: always
     hostname: redis
 

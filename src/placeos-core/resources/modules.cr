@@ -118,11 +118,10 @@ module PlaceOS::Core
     # Module lifecycle
     ###############################################################################################
 
-    # Note: Create a set of callbacks are set on loaded modules
-    # on start, register the callbacks that were waiting
-
     # Load the module if current node is responsible
     #
+    # Note: Create a set of callbacks are set on loaded modules
+    # on start, register the callbacks that were waiting
     def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
       module_id = mod.id.as(String)
 
@@ -138,19 +137,26 @@ module PlaceOS::Core
           driver_name: driver.name,
           driver_commit: driver.commit,
         ) do
-          # TODO: load _latest_ build for this commit
+          Log.info { "querying binary store" }
+
           executable = binary_store.query(
             entrypoint: driver.file_name,
             commit: driver.commit,
-          ).first?
-
+          ).sort_by do |exe|
+            File.info(binary_store.path(exe)).modification_time
+          end.last?
           driver_path = executable.try { |e| binary_store.path(e) }
+
+          pp! driver_path
 
           # Check if the driver is built
           if driver_path.nil?
-            Log.error { "driver is not loaded for module" }
+            Log.error { "driver not loaded for module" }
             return
           end
+
+          pp! driver_path
+          puts "<> <> <> oki?"
 
           process_manager(mod, &.load(module_id, driver_path))
         end
@@ -220,6 +226,7 @@ module PlaceOS::Core
 
       # Set when a module_manager found for stale driver
       driver.modules.reduce(nil) do |path, mod|
+        puts "<><>"
         module_id = mod.id.as(String)
 
         # Grab the stale driver path, if there is one
@@ -237,21 +244,23 @@ module PlaceOS::Core
           end
         end
 
-        if started?
-          # Reload module on new driver binary
-          Log.debug { {
-            message:   "loading module after compilation",
-            module_id: module_id,
-            driver_id: driver_id,
-            file_name: driver.file_name,
-            commit:    driver.commit,
-          } }
-          load_module(mod)
-          process_manager(mod) do |manager|
-            # Move callbacks to new module instance
-            callbacks.try &.each do |callback|
-              manager.debug(module_id, &callback)
-            end
+        puts "<><><>"
+
+        # Reload module on new driver binary
+        Log.debug { {
+          message:   "loading module after compilation",
+          module_id: module_id,
+          driver_id: driver_id,
+          file_name: driver.file_name,
+          commit:    driver.commit,
+        } }
+
+        load_module(mod)
+
+        process_manager(mod) do |manager|
+          # Move callbacks to new module instance
+          callbacks.try &.each do |callback|
+            manager.debug(module_id, &callback)
           end
         end
 

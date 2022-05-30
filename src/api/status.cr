@@ -2,6 +2,7 @@ require "hardware"
 
 require "../placeos-core/resources"
 require "../placeos-core/resources/modules"
+require "../placeos-core/process_manager"
 require "./application"
 
 module PlaceOS::Core::Api
@@ -15,7 +16,7 @@ module PlaceOS::Core::Api
     #
     def index
       render json: {
-        driver_binaries: [] of String, # TODO: List of executables present
+        driver_binaries: module_manager.binary_store.query,
         run_count:       {
           local: module_manager.local_processes.run_count,
           edge:  module_manager.edge_processes.run_count,
@@ -23,25 +24,31 @@ module PlaceOS::Core::Api
       }
     end
 
-    # details related to a process (+ anything else we can think of)
+    # Details related to a process (+ anything else we can think of)
+    #
     # /api/core/v1/status/driver/:id
     get "/driver/:id", :driver do
-      # TODO: Parse the executable name
-      # path = params["id"]
+      key = Core::ProcessManager.path_to_key(params["id"])
 
-      # TODO: query for compiled drivers
-      #       then `driver_status(executable)`
-      driver_path = nil
+      executable = begin
+        Model::Executable.new(key)
+      rescue error : Model::Error
+        Log.info(exception: error) { "failed to parse #{key} as a well-formed executable" }
+        nil
+      end
 
-      head :unprocessable_entity unless driver_path
-
-      render json: {
-        local: module_manager.local_processes.driver_status(driver_path),
-        edge:  module_manager.edge_processes.driver_status(driver_path),
-      }
+      if executable.nil?
+        head :unprocessable_entity
+      else
+        render json: {
+          local: module_manager.local_processes.driver_status(driver_path),
+          edge:  module_manager.edge_processes.driver_status(driver_path),
+        }
+      end
     end
 
-    # details about the overall machine load
+    # Details about the overall machine load
+    #
     get "/load", :load do
       render json: {
         local: module_manager.local_processes.system_status,
@@ -50,6 +57,7 @@ module PlaceOS::Core::Api
     end
 
     # Returns the lists of modules drivers have loaded for this core, and managed edges
+    #
     get "/modules", :loaded do
       render json: {
         local: module_manager.local_processes.loaded_modules,

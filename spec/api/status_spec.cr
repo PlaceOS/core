@@ -8,7 +8,7 @@ module PlaceOS::Core::Api
     }
 
     describe "status/" do
-      pending "renders data about node" do
+      it "renders data about node" do
         _, driver, _, resource_manager = create_resources
 
         driver.reload!
@@ -24,17 +24,13 @@ module PlaceOS::Core::Api
 
         status = Core::Client::CoreStatus.from_json(ctx.response.output.to_s)
 
-        # TODO: Update to new binary names
-        # status.compiled_drivers.should contain binary
-
         status.run_count.local.modules.should eq 0
         status.run_count.local.drivers.should eq 0
         status.run_count.edge.should be_empty
+        status.driver_binaries.should_not be_empty
       ensure
         resource_manager.try &.stop
       end
-
-      pending "deletes standalone driver binary used for metadata"
     end
 
     pending "status/driver"

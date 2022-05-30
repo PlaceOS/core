@@ -1,5 +1,6 @@
 require "uuid"
 require "placeos-core-client"
+require "git-repository"
 
 require "../lib/action-controller/spec/curl_context"
 
@@ -88,13 +89,12 @@ end
 
 # Set up a temporary directory
 def set_temporary_working_directory(fresh : Bool = false, path : String? = nil) : String
-  temp_dir = fresh ? get_temp : TEMP_DIR
-  # TODO: set binary store
-  temp_dir
+  fresh ? get_temp : TEMP_DIR
 end
 
 # Create models for a test
-def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::Driver::Role? = nil)
+# ameba:disable Metrics/CyclomaticComplexity
+def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::Driver::Role? = nil, use_head : Bool = false)
   # Set up a temporary directory
   temp_dir = set_temporary_working_directory(fresh)
 
@@ -107,7 +107,13 @@ def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::
   driver_file_name = "drivers/place/private_helper.cr"
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
-  driver_commit = "HEAD"
+
+  if use_head
+    driver_commit = "HEAD"
+  else
+    driver_commit = GitRepository.new(repository_uri).commits("master", depth: 1).first.hash
+  end
+
   driver_role = role || PlaceOS::Model::Driver::Role::Logic
 
   existing_repo = PlaceOS::Model::Repository.where(uri: repository_uri).first?
@@ -158,9 +164,9 @@ def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::
   {temp_dir, repository, driver, mod}
 end
 
-def create_resources(fresh : Bool = false, process : Bool = true)
+def create_resources(fresh : Bool = false, process : Bool = true, use_head : Bool = false)
   # Prepare models, set working dir
-  _, repository, driver, mod = setup(fresh)
+  _, repository, driver, mod = setup(fresh, use_head: use_head)
 
   # Clone, compile
   resource_manager = PlaceOS::Core::Resources::Manager.new(testing: true)
