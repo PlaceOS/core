@@ -3,10 +3,11 @@
 .crystal
 .test-drivers
 .shards
+.test-drivers
 app
 bin
+data
 docs
 drivers
 lib
 repositories
-data
