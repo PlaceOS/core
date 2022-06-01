@@ -2,10 +2,11 @@
 .DS_Store
 .crystal
 .shards
+.test-drivers
 app
 bin
+data
 docs
 drivers
 lib
 repositories
-data
