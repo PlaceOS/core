@@ -9,12 +9,8 @@ module PlaceOS::Core::Api
 
     describe "status/" do
       it "renders data about node" do
-        _, driver, _, resource_manager = create_resources
+        _, _driver, _, resource_manager = create_resources
 
-        driver.reload!
-
-        # TODO: Update to new binary names
-        # binary = Compiler.executable_name(driver.file_name, driver.commit, driver.id.as(String))
         io = IO::Memory.new
         ctx = context("GET", namespace, json_headers)
         ctx.response.output = io
