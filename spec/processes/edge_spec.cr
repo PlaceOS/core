@@ -50,7 +50,7 @@ module PlaceOS::Core::ProcessManager
     end
   end
 
-  describe Edge, tags: ["edge", "processes"] do
+  pending Edge, tags: ["edge", "processes"] do
     it "debug" do
       with_edge do |ctx, _client, pm|
         module_id = ctx.module.id.as(String)

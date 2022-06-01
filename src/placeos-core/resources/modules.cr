@@ -118,6 +118,15 @@ module PlaceOS::Core
     # Module lifecycle
     ###############################################################################################
 
+    def executables_for(driver : Model::Driver) : Array(Model::Executable)
+        binary_store.query(
+          entrypoint: driver.file_name,
+          commit: driver.commit,
+        ).sort_by do |exe|
+          File.info(binary_store.path(exe)).modification_time
+        end.reverse!
+    end
+
     # Load the module if current node is responsible
     #
     # Note: Create a set of callbacks are set on loaded modules
@@ -139,24 +148,14 @@ module PlaceOS::Core
         ) do
           Log.info { "querying binary store" }
 
-          executable = binary_store.query(
-            entrypoint: driver.file_name,
-            commit: driver.commit,
-          ).sort_by do |exe|
-            File.info(binary_store.path(exe)).modification_time
-          end.last?
+          executable = executables_for(driver).first?
           driver_path = executable.try { |e| binary_store.path(e) }
-
-          pp! driver_path
 
           # Check if the driver is built
           if driver_path.nil?
             Log.error { "driver not loaded for module" }
             return
           end
-
-          pp! driver_path
-          puts "<> <> <> oki?"
 
           process_manager(mod, &.load(module_id, driver_path))
         end
@@ -226,7 +225,6 @@ module PlaceOS::Core
 
       # Set when a module_manager found for stale driver
       driver.modules.reduce(nil) do |path, mod|
-        puts "<><>"
         module_id = mod.id.as(String)
 
         # Grab the stale driver path, if there is one
@@ -243,8 +241,6 @@ module PlaceOS::Core
             unload_module(mod)
           end
         end
-
-        puts "<><><>"
 
         # Reload module on new driver binary
         Log.debug { {
