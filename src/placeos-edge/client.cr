@@ -78,9 +78,7 @@ module PlaceOS::Edge
 
       # Send ping frames
 
-      spawn(same_thread: true) do 
-        transport.ping if ping? 
-      end
+      spawn(same_thread: true) { transport.ping if ping? }
 
       handshake unless skip_handshake?
 
