@@ -77,7 +77,15 @@ module PlaceOS::Edge
       end
 
       # Send ping frames
-      spawn(same_thread: true) { transport.ping if ping? }
+
+      spawn(same_thread: true) do 
+        puts "SCHEDULING PINGS"
+        transport.ping if ping? 
+        transport.socket.on_pong do |message|
+          puts  "GOT MESSAGE:" 
+          puts message.inspect
+        end
+      end
 
       handshake unless skip_handshake?
 
