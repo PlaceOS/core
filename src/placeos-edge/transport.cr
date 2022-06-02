@@ -72,7 +72,7 @@ module PlaceOS::Edge
       until close_channel.closed?
         socket_lock.synchronize do
           socket?.try(&.ping) rescue nil
-          socket?.try(&.on_pong) do 
+          socket?.try.on_pong do 
             Log.info {"GOT TO ON PONG"}
             puts "GOT TO ON PONG"
           end
