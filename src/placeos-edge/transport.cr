@@ -60,6 +60,7 @@ module PlaceOS::Edge
         }) do
         socket = initial || HTTP::WebSocket.new(uri)
         run_socket(socket.as(HTTP::WebSocket)).run
+        raise "rest api disconnected" unless close_channel.closed?
       end
     rescue error
       disconnect
@@ -72,12 +73,6 @@ module PlaceOS::Edge
       until close_channel.closed?
         socket_lock.synchronize do
           socket?.try(&.ping) rescue nil
-          socket?.try do |socket|
-            socket.on_pong do 
-              Log.info {"GOT TO ON PONG"}
-              puts "GOT TO ON PONG"
-            end
-          end
         end
         sleep(interval)
       end
