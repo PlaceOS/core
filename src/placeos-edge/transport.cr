@@ -59,13 +59,13 @@ module PlaceOS::Edge
           initial = nil
         }) do
         socket = initial || HTTP::WebSocket.new(uri)
-        if !socket.nil?
-          socket.on_pong do 
-            Log.info {"GOT TO ON PONG"}
-            puts "GOT TO ON PONG"
-          end
-        end
         run_socket(socket.as(HTTP::WebSocket)).run
+      end
+      if !socket.nil?
+        socket.on_pong do 
+          Log.info {"GOT TO ON PONG"}
+          puts "GOT TO ON PONG"
+        end
       end
     rescue error
       disconnect
