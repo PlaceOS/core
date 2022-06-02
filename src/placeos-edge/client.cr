@@ -78,13 +78,13 @@ module PlaceOS::Edge
 
       # Send ping frames
 
-      Log.debug { "OUTSIDE THREAD" }
+      Log.info { "OUTSIDE THREAD" }
       spawn(same_thread: true) do 
-        Log.debug { "SCHEDULING PINGS" }
+        Log.info { "SCHEDULING PINGS" }
         transport.ping if ping? 
         transport.socket.on_pong do |message|
-          Log.debug {  "GOT MESSAGE:"  }
-          Log.debug { message.inspect }
+          Log.info {  "GOT MESSAGE:"  }
+          Log.info { message.inspect }
         end
       end
 
