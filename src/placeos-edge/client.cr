@@ -82,10 +82,6 @@ module PlaceOS::Edge
       spawn(same_thread: true) do 
         Log.info { "SCHEDULING PINGS" }
         transport.ping if ping? 
-        transport.socket.on_pong do |message|
-          Log.info {  "GOT MESSAGE:"  }
-          Log.info { message.inspect }
-        end
       end
 
       handshake unless skip_handshake?
