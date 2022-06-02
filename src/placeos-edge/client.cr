@@ -78,9 +78,7 @@ module PlaceOS::Edge
 
       # Send ping frames
 
-      Log.info { "OUTSIDE THREAD" }
       spawn(same_thread: true) do 
-        Log.info { "SCHEDULING PINGS" }
         transport.ping if ping? 
       end
 
