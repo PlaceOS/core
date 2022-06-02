@@ -25,6 +25,7 @@ x-rethinkdb-client-env: &rethinkdb-client-env
 services:
   test: # Module coordinator
     image: placeos/service-spec-runner:${CRYSTAL_VERSION:-1.4.1}
+    init: true
     volumes:
       - ${PWD}/bin:/app/bin:rw
       - ${PWD}/.test-drivers/test:/app/bin/drivers:rw

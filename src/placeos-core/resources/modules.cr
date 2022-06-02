@@ -12,6 +12,7 @@ require "placeos-build/driver_store/filesystem"
 require "../../placeos-edge/server"
 
 require "../../constants"
+require "../executables_for"
 require "../process_manager/edge"
 require "../process_manager/local"
 
@@ -19,6 +20,8 @@ require "./drivers"
 
 module PlaceOS::Core
   class Resources::Modules < Resource(Model::Module)
+    include ExecutablesFor
+
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
 
     getter clustering : Clustering
@@ -49,10 +52,11 @@ module PlaceOS::Core
     # Manager for remote edge module processes
     getter edge_processes : Edge::Server = Edge::Server.new
 
-    # Manager for local module processes
-    getter local_processes : ProcessManager::Local { ProcessManager::Local.new(discovery) }
-
+    # Store for driver binaries
     getter binary_store : Build::Filesystem
+
+    # Manager for local module processes
+    getter local_processes : ProcessManager::Local { ProcessManager::Local.new(discovery, binary_store) }
 
     # Start up process is as follows..
     # - registered
@@ -117,15 +121,6 @@ module PlaceOS::Core
 
     # Module lifecycle
     ###############################################################################################
-
-    def executables_for(driver : Model::Driver) : Array(Model::Executable)
-        binary_store.query(
-          entrypoint: driver.file_name,
-          commit: driver.commit,
-        ).sort_by do |exe|
-          File.info(binary_store.path(exe)).modification_time
-        end.reverse!
-    end
 
     # Load the module if current node is responsible
     #

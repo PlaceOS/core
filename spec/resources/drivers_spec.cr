@@ -7,16 +7,17 @@ require "../helper"
 module PlaceOS::Core::Resources
   describe Drivers, tags: "resource" do
     it "compiles drivers" do
-      # Set up a temporary directory
-      _, _, driver, _ = setup
+      _, driver, _ = setup
+
+      drivers_resource = Drivers.new
 
       # Commence compilation
-      Drivers.new.process_resource(:created, driver).success?.should be_true
+      drivers_resource.process_resource(:created, driver).success?.should be_true
 
       driver.reload!
 
-      # # TODO: Update to use new executable format
-      # PlaceOS::Compiler::Helper.compiled?(driver.file_name, driver.commit, driver.id.not_nil!).should be_true
+      # Check that a binary was produced for the driver
+      drivers_resource.binary_store.query(entrypoint: driver.file_name).should_not be_empty
     end
   end
 end

@@ -40,9 +40,10 @@ module PlaceOS::Core::Api
       if executable.nil?
         head :unprocessable_entity
       else
+        key = executable.filename
         render json: {
-          local: module_manager.local_processes.driver_status(driver_path),
-          edge:  module_manager.edge_processes.driver_status(driver_path),
+          local: module_manager.local_processes.driver_status(key),
+          edge:  module_manager.edge_processes.driver_status(key),
         }
       end
     end

@@ -2,12 +2,14 @@ require "placeos-driver/protocol/management"
 require "redis-cluster"
 
 require "../process_manager"
+require "../executables_for"
 require "../../placeos-edge/transport"
 require "../../placeos-edge/protocol"
 
 module PlaceOS::Core
   class ProcessManager::Edge
     include ProcessManager
+    include ExecutablesFor
 
     alias Transport = PlaceOS::Edge::Transport
     alias Protocol = PlaceOS::Edge::Protocol
@@ -17,7 +19,12 @@ module PlaceOS::Core
 
     getter redis : Redis::Client { Redis::Client.boot(REDIS_URL) }
 
-    def initialize(@edge_id : String, socket : HTTP::WebSocket, @redis : Redis? = nil)
+    def initialize(
+      @edge_id : String,
+      socket : HTTP::WebSocket,
+      @binary_store : Build::Filesystem,
+      @redis : Redis? = nil
+    )
       @transport = Transport.new do |(sequence_id, request)|
         if request.is_a?(Protocol::Client::Request)
           handle_request(sequence_id, request)
@@ -109,22 +116,37 @@ module PlaceOS::Core
 
     alias Module = Protocol::Message::RegisterResponse::Module
 
-    # Have to look
-
     # Calculates the modules/drivers that the edge needs to add/remove
     #
+    # NOTE: As this is dependent on the exectuables being compiled and on disk, it can be flakey.
     protected def register(drivers : Set(String), modules : Set(String))
       allocated_drivers = Set(String).new
       allocated_modules = Set(Module).new
       PlaceOS::Model::Module.on_edge(edge_id).each do |mod|
         driver = mod.driver.not_nil!
-        # ameba:disable Lint/UselessAssign
-        repository = driver.repository.not_nil!
+        begin
+          driver_key = Retriable.retry(
+            max_elapsed_time: 5.minutes, # Wait some time before ending registration
+            base_interval: 5.seconds,
+            on_retry: ->(_e : Exception, n : Int32, _t : Time::Span, _i : Time::Span) {
+              Log.warn { "attempt #{n} searching for #{driver.id} executable" }
+            }
+          ) do
+            # Ensure binary present when registering
+            if driver.compilation_output.nil? || (executable = executables_for(driver).first?).nil?
+              raise Error.new("Executable for #{driver.id} not present")
+            end
 
-        driver_key = "TODO" # TODO: Fetch the executable here
+            executable.filename
+          end
+        rescue e
+          Log.error(exception: e) { "when attempting to allocate #{driver.id}" }
+        end
 
-        allocated_modules << Protocol::Message::RegisterResponse::Module.new(driver_key, mod.id.as(String))
-        allocated_drivers << driver_key
+        if driver_key
+          allocated_modules << Protocol::Message::RegisterResponse::Module.new(driver_key, mod.id.as(String))
+          allocated_drivers << driver_key
+        end
       end
 
       add_modules = allocated_modules.reject { |mod| modules.includes?(mod.module_id) }

@@ -14,7 +14,7 @@ module PlaceOS::Core
 
     private getter discovery : HoundDog::Discovery
 
-    def initialize(@discovery : HoundDog::Discovery)
+    def initialize(@discovery : HoundDog::Discovery, @binary_store : Build::Filesystem)
     end
 
     def load(module_id : String, driver_key : String)

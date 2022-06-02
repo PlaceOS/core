@@ -83,7 +83,6 @@ module PlaceOS::Core::Resources
           binary_store: binary_store,
           own_node: module_manager.discovery.own_node?(driver_id),
         ) do
-          puts "<>"
           reload_modules(driver, module_manager)
         end
       end

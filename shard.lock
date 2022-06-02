@@ -187,7 +187,7 @@ shards:
 
   placeos-build: # Overridden
     git: https://github.com/placeos/build.git
-    version: 1.0.2+git.commit.b9c643fd51e543ad106331a8891f9f0d80997077
+    version: 1.0.3+git.commit.de23f32b8009af035b188fe8e9cd85ed6268806f
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git

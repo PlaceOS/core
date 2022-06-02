@@ -5,6 +5,7 @@ require "uri"
 require "placeos-driver/protocol/management"
 
 require "../placeos-core/process_manager/common"
+require "placeos-build/driver_store/filesystem"
 
 require "./constants"
 require "./protocol"
@@ -17,11 +18,11 @@ module PlaceOS::Edge
     Log                = ::Log.for(self)
     WEBSOCKET_API_PATH = "/api/engine/v2/edges/control"
 
-    class_property binary_directory : String = File.join(Dir.current, "/bin/drivers")
-
     private getter secret : String
 
     private getter! uri : URI
+    getter host : String { uri.to_s.gsub(uri.request_target, "") }
+
     protected getter! transport : Transport
 
     # NOTE: For testing purposes
@@ -30,16 +31,15 @@ module PlaceOS::Edge
 
     private getter close_channel = Channel(Nil).new
 
-    def host
-      uri.to_s.gsub(uri.request_target, "")
-    end
+    getter binary_store : Build::Filesystem
 
     def initialize(
       uri : URI = PLACE_URI,
       secret : String? = nil,
       @sequence_id : UInt64 = 0,
       @skip_handshake : Bool = false,
-      @ping : Bool = true
+      @ping : Bool = true,
+      @binary_store : Build::Filesystem = Build::Filesystem.new
     )
       @secret = if secret && secret.presence
                   secret
@@ -230,27 +230,28 @@ module PlaceOS::Edge
 
     # List the driver binaries present on this client
     #
-    def drivers
-      Dir.mkdir_p(self.class.binary_directory) unless Dir.exists?(self.class.binary_directory)
-      Dir.children(self.class.binary_directory).reject do |file|
-        file.includes?(".") || File.directory?(file)
-      end.to_set
+    def drivers : Set(String)
+      binary_store.query.map(&.filename).to_set
     end
 
     # Load binary, first checking if present locally then fetch from core
     #
     def load_binary(key : String) : Bool
-      Log.debug { {key: key, message: "loading binary"} }
-      return true if File.exists?(path(key))
+      executable = Model::Executable.new(key)
+      Log.debug { {path: executable.filename, message: "loading binary"} }
+
+      if binary_store.exists?(executable)
+        Log.debug { {path: executable.filename, message: "binary already present"} }
+        return true
+      end
 
       binary = begin
-        Retriable.retry(max_attempts: 5, base_interval: 5.seconds) do
-          result = fetch_binary(key)
-          raise "retry" if result.nil?
+        Retriable.retry(max_elapsed_time: 2.minutes, base_interval: 5.seconds) do
+          raise "retry" unless result = fetch_binary(key)
           result
         end
       rescue e
-        Log.error(exception: e) { "while fetching binary" } unless e.message == "retry"
+        Log.error(exception: e) { "while fetching binary for #{key}" } unless e.message == "retry"
         nil
       end
 
@@ -265,25 +266,23 @@ module PlaceOS::Edge
     end
 
     def add_binary(key : String, binary : IO)
-      path = path(key)
-      Log.debug { {path: path, message: "writing binary"} }
-      return true if File.exists?(path(key))
+      executable = Model::Executable.new(key)
 
-      # Default permissions + execute for owner
-      File.open(path, mode: "w+", perm: File::Permissions.new(0o744)) do |file|
-        IO.copy(binary, file)
+      if binary_store.exists?(executable)
+        Log.debug { {path: executable.filename, message: "binary already present"} }
+        return true
       end
+
+      Log.debug { {path: executable.filename, message: "writing binary"} }
+
+      binary_store.write(key, binary)
     end
 
-    def remove_binary(key : String)
-      File.delete(path(key))
+    def remove_binary(driver_key : String)
+      File.delete(binary_store.path(Model::Executable.new(driver_key)))
       true
     rescue
       false
-    end
-
-    protected def path(key : String)
-      File.join(self.class.binary_directory, key)
     end
 
     # Modules
@@ -304,8 +303,11 @@ module PlaceOS::Edge
             return
           end
 
+          executable = Model::Executable.new(driver_key)
+          executable_path = binary_store.path(executable)
+
           # Create a new protocol manager
-          manager = Driver::Protocol::Management.new(path(driver_key), on_edge: true)
+          manager = Driver::Protocol::Management.new(executable_path, on_edge: true)
 
           # Callbacks
           manager.on_setting = ->(id : String, setting_name : String, setting_value : YAML::Any) {

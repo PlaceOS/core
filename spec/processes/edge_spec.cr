@@ -8,6 +8,8 @@ module PlaceOS::Core::ProcessManager
     driver_path : String,
     driver_key : String
 
+  class_getter binary_store : Build::Filesystem { Build::Filesystem.new(Dir.tempdir) }
+
   def self.client_server(edge_id)
     client_ws, server_ws = mock_sockets
     client = ::PlaceOS::Edge::Client.new(
@@ -16,7 +18,7 @@ module PlaceOS::Core::ProcessManager
       ping: false
     )
 
-    edge_manager = Edge.new(edge_id: edge_id, socket: server_ws)
+    edge_manager = Edge.new(edge_id: edge_id, socket: server_ws, binary_store: binary_store)
     spawn { server_ws.run }
     Fiber.yield
     spawn { client.connect(client_ws) }
@@ -25,7 +27,7 @@ module PlaceOS::Core::ProcessManager
   end
 
   def self.with_edge
-    with_driver do |mod, driver_path, _driver|
+    with_driver do |mod, driver_path, driver_key, _driver|
       if (existing_edge_id = mod.edge_id)
         mod.running = false
         mod.save!
@@ -41,7 +43,7 @@ module PlaceOS::Core::ProcessManager
         module: mod,
         edge: edge,
         driver_path: driver_path,
-        driver_key: ProcessManager.path_to_key(driver_path),
+        driver_key: driver_key,
       )
 
       client, process_manager = client_server(edge.id.as(String))
@@ -50,11 +52,11 @@ module PlaceOS::Core::ProcessManager
     end
   end
 
-  pending Edge, tags: ["edge", "processes"] do
+  describe Edge, tags: ["edge", "processes"] do
     it "debug" do
       with_edge do |ctx, _client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_key: ctx.driver_path)
+        pm.load(module_id: module_id, driver_key: ctx.driver_key)
         pm.start(module_id: module_id, payload: Resources::Modules.start_payload(ctx.module))
 
         message_channel = Channel(String).new
@@ -97,9 +99,9 @@ module PlaceOS::Core::ProcessManager
     describe "driver_status" do
       it "returns driver status if present" do
         with_edge do |ctx, client, pm|
-          pm.load(module_id: "mod", driver_key: ctx.driver_path)
+          pm.load(module_id: "mod", driver_key: ctx.driver_key)
 
-          pm.driver_status(ctx.driver_path).should_not be_nil
+          pm.driver_status(ctx.driver_key).should_not be_nil
           status = client.driver_status(ctx.driver_key)
           status.should_not be_nil
           status.not_nil!.running.should be_false
@@ -118,7 +120,7 @@ module PlaceOS::Core::ProcessManager
     it "execute" do
       with_edge do |ctx, _client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_key: ctx.driver_path)
+        pm.load(module_id: module_id, driver_key: ctx.driver_key)
         pm.start(module_id: module_id, payload: Resources::Modules.start_payload(ctx.module))
         result, code = pm.execute(module_id: module_id, payload: Resources::Modules.execute_payload(:used_for_place_testing), user_id: nil)
         result.should eq %("you can delete this file")
@@ -129,7 +131,7 @@ module PlaceOS::Core::ProcessManager
     it "ignore" do
       with_edge do |ctx, _client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_key: ctx.driver_path)
+        pm.load(module_id: module_id, driver_key: ctx.driver_key)
         pm.start(module_id: module_id, payload: Resources::Modules.start_payload(ctx.module))
         message_channel = Channel(String).new
 
@@ -172,7 +174,7 @@ module PlaceOS::Core::ProcessManager
         pid = client.protocol_manager_by_driver?(ctx.driver_key).try(&.pid).not_nil!
 
         Process.exists?(pid).should be_true
-        pm.kill(ctx.driver_path).should be_true
+        pm.kill(ctx.driver_key).should be_true
 
         success = Channel(Nil).new
 
@@ -194,13 +196,13 @@ module PlaceOS::Core::ProcessManager
 
     it "load" do
       with_edge do |ctx, client, pm|
-        pm.driver_loaded?(ctx.driver_path).should be_false
+        pm.driver_loaded?(ctx.driver_key).should be_false
         pm.module_loaded?("mod").should be_false
         client.module_loaded?("mod").should be_false
 
-        pm.load(module_id: "mod", driver_key: ctx.driver_path)
+        pm.load(module_id: "mod", driver_key: ctx.driver_key)
 
-        pm.driver_loaded?(ctx.driver_path).should be_true
+        pm.driver_loaded?(ctx.driver_key).should be_true
         client.driver_loaded?(ctx.driver_key).should be_true
 
         pm.module_loaded?("mod").should be_true
@@ -217,7 +219,7 @@ module PlaceOS::Core::ProcessManager
     describe "module_loaded?" do
       it "confirms a module is loaded" do
         with_edge do |ctx, _client, pm|
-          pm.load(module_id: "mod", driver_key: ctx.driver_path)
+          pm.load(module_id: "mod", driver_key: ctx.driver_key)
           pm.module_loaded?("mod").should be_true
         end
       end
@@ -231,7 +233,7 @@ module PlaceOS::Core::ProcessManager
 
     it "run_count" do
       with_edge do |ctx, _client, pm|
-        pm.load(module_id: "mod", driver_key: ctx.driver_path)
+        pm.load(module_id: "mod", driver_key: ctx.driver_key)
         pm.run_count.should eq(ProcessManager::Count.new(1, 1))
       end
     end
@@ -245,17 +247,17 @@ module PlaceOS::Core::ProcessManager
     it "start" do
       with_edge do |ctx, client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_key: ctx.driver_path)
+        pm.load(module_id: module_id, driver_key: ctx.driver_key)
         pm.start(module_id: module_id, payload: Resources::Modules.start_payload(ctx.module))
         pm.loaded_modules.should eq({ctx.driver_key => [module_id]})
         client.loaded_modules.should eq({ctx.driver_key => [module_id]})
-        pm.kill(ctx.driver_path)
+        pm.kill(ctx.driver_key)
       end
     end
 
     it "stop" do
       with_edge do |ctx, _client, pm|
-        pm.kill(ctx.driver_path)
+        pm.kill(ctx.driver_key)
         test_starting(pm, ctx.module, ctx.driver_key)
         pm.stop(ctx.module.id.as(String))
 
@@ -274,11 +276,14 @@ module PlaceOS::Core::ProcessManager
       it "removes driver if no dependent modules running" do
         with_edge do |ctx, _client, pm|
           pm.system_status.should be_a(SystemStatus)
-          path = ctx.driver_path + UUID.random.to_s
+
           module_id = "mod"
+          rand_string = UUID.random.to_s
+          key = rand_string + ctx.driver_key
+          path = (Path[ctx.driver_path].parent / key).to_s
           File.copy(ctx.driver_path, path)
 
-          pm.load(module_id: module_id, driver_key: path)
+          pm.load(module_id: module_id, driver_key: key)
           pm.driver_loaded?(path).should be_true
           pm.module_loaded?(module_id).should be_true
           pm.unload(module_id)
@@ -289,20 +294,18 @@ module PlaceOS::Core::ProcessManager
 
       it "keeps driver if dependent modules still running" do
         with_edge do |ctx, _client, pm|
-          path = ctx.driver_path + UUID.random.to_s
           module0 = "mod0"
           module1 = "mod1"
-          File.copy(ctx.driver_path, path)
 
-          pm.load(module_id: module0, driver_key: path)
-          pm.load(module_id: module1, driver_key: path)
-          pm.driver_loaded?(path).should be_true
+          pm.load(module_id: module0, driver_key: ctx.driver_key)
+          pm.load(module_id: module1, driver_key: ctx.driver_key)
+          pm.driver_loaded?(ctx.driver_key).should be_true
           pm.module_loaded?(module0).should be_true
           pm.module_loaded?(module1).should be_true
           pm.unload(module0)
           pm.module_loaded?(module0).should be_false
           pm.module_loaded?(module1).should be_true
-          pm.driver_loaded?(path).should be_true
+          pm.driver_loaded?(ctx.driver_key).should be_true
         end
       end
     end

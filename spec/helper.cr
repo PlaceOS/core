@@ -17,23 +17,10 @@ require "spec"
 SPEC_DRIVER = "drivers/place/private_helper.cr"
 CORE_URL    = ENV["CORE_URL"]? || "http://core:3000"
 
-# To reduce the run-time of the very setup heavy specs.
-# - Use teardown if you need to clear a temporary repository
-# - Use setup(fresh: true) if you require a clean working directory
-TEMP_DIR = get_temp
-
 PRIVATE_DRIVER_ID = "driver-#{random_id}"
 
 def random_id
   UUID.random.to_s.split('-').first
-end
-
-def get_temp
-  "#{Dir.tempdir}/core-spec-#{random_id}"
-end
-
-def teardown(temp_dir = TEMP_DIR)
-  `rm -rf #{temp_dir}`
 end
 
 def clear_tables
@@ -69,9 +56,6 @@ around_suite ->{
 }
 
 Spec.before_suite do
-  # Set the working directory before specs
-  set_temporary_working_directory(path: ".")
-  set_temporary_working_directory
   Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :warn)
   Log.builder.bind("place_os.*", backend: PlaceOS::Core::LOG_STDOUT, level: :trace)
   Log.builder.bind("http.client", backend: PlaceOS::Core::LOG_STDOUT, level: :warn)
@@ -84,20 +68,11 @@ Spec.after_suite do
   Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
   puts "\n> Terminating stray driver processes"
   `pkill -f ".*core-spec.*"` rescue nil
-  teardown
-end
-
-# Set up a temporary directory
-def set_temporary_working_directory(fresh : Bool = false, path : String? = nil) : String
-  fresh ? get_temp : TEMP_DIR
 end
 
 # Create models for a test
 # ameba:disable Metrics/CyclomaticComplexity
-def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::Driver::Role? = nil, use_head : Bool = false)
-  # Set up a temporary directory
-  temp_dir = set_temporary_working_directory(fresh)
-
+def setup(role : PlaceOS::Model::Driver::Role? = nil, use_head : Bool = false)
   # Repository metadata
   repository_uri = "https://github.com/placeos/private-drivers"
   repository_name = "Private Drivers"
@@ -161,12 +136,12 @@ def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::
     control_system.save
   end
 
-  {temp_dir, repository, driver, mod}
+  {repository, driver, mod}
 end
 
-def create_resources(fresh : Bool = false, process : Bool = true, use_head : Bool = false)
-  # Prepare models, set working dir
-  _, repository, driver, mod = setup(fresh, use_head: use_head)
+def create_resources(process : Bool = true, use_head : Bool = false)
+  # Prepare models
+  repository, driver, mod = setup(use_head: use_head)
 
   # Clone, compile
   resource_manager = PlaceOS::Core::Resources::Manager.new(testing: true)

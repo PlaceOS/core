@@ -5,7 +5,7 @@ module PlaceOS::Edge
     it "handshakes on register" do
       coordination = Channel(Bool).new
 
-      client = Client.new
+      client = Client.new(binary_store: Build::Filesystem.new(Dir.tempdir))
       client_ws, server_ws = mock_sockets
 
       spawn {
