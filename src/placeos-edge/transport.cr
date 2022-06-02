@@ -59,6 +59,10 @@ module PlaceOS::Edge
           initial = nil
         }) do
         socket = initial || HTTP::WebSocket.new(uri)
+        socket.on_pong do 
+          Log.info {"GOT TO ON PONG"}
+          puts "GOT TO ON PONG"
+        end
         run_socket(socket.as(HTTP::WebSocket)).run
       end
     rescue error
