@@ -5,14 +5,6 @@
 
 The coordination service for running drivers on [PlaceOS](https://place.technology).
 
-## ENV
-
-TODO: write up the environment variables
-
-## HTTP API
-
-TODO: write up the interface
-
 ## Implementation
 
 ### Module Management
