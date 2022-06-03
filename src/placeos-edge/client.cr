@@ -174,10 +174,8 @@ module PlaceOS::Edge
       Retriable.retry(max_interval: 5.seconds) do
         begin
           response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
-          unless response
-            Log.warn { "failed to register to core" }
-            raise "handshake failed"
-          end
+
+          raise "failed to register to core" if response.nil?
 
           response.remove_modules.each do |mod|
             unload(mod)
