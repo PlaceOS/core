@@ -1,5 +1,4 @@
 require "./helper"
-require "placeos-compiler/helper"
 
 module PlaceOS::Core
   describe Resources::Manager, tags: "resource" do

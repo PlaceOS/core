@@ -202,12 +202,15 @@ module PlaceOS::Core::ProcessManager
 
         describe "unload" do
           it "removes driver if no dependent modules running" do
-            path = driver_path + UUID.random.to_s
             module_id = "mod"
+
+            rand_string = UUID.random.to_s.delete('-')
+            key = rand_string + driver_key
+            path = (Path[driver_path].parent / key).to_s
             File.copy(driver_path, path)
 
             pm = local
-            pm.load(module_id: module_id, driver_key: path)
+            pm.load(module_id: module_id, driver_key: key)
             pm.driver_loaded?(path).should be_true
             pm.module_loaded?(module_id).should be_true
             pm.unload(module_id)
@@ -219,21 +222,25 @@ module PlaceOS::Core::ProcessManager
           end
 
           it "keeps driver if dependent modules still running" do
-            path = driver_path + UUID.random.to_s
+            rand_string = UUID.random.to_s.delete('-')
+            key = rand_string + driver_key
+            path = (Path[driver_path].parent / key).to_s
+            File.copy(driver_path, path)
+
             module0 = "mod0"
             module1 = "mod1"
             File.copy(driver_path, path)
 
             pm = local
-            pm.load(module_id: module0, driver_key: path)
-            pm.load(module_id: module1, driver_key: path)
-            pm.driver_loaded?(path).should be_true
+            pm.load(module_id: module0, driver_key: key)
+            pm.load(module_id: module1, driver_key: key)
+            pm.driver_loaded?(key).should be_true
             pm.module_loaded?(module0).should be_true
             pm.module_loaded?(module1).should be_true
             pm.unload(module0)
             pm.module_loaded?(module0).should be_false
             pm.module_loaded?(module1).should be_true
-            pm.driver_loaded?(path).should be_true
+            pm.driver_loaded?(key).should be_true
             File.exists?(path).should be_true
 
             File.delete(path) rescue nil

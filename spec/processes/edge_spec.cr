@@ -278,7 +278,7 @@ module PlaceOS::Core::ProcessManager
           pm.system_status.should be_a(SystemStatus)
 
           module_id = "mod"
-          rand_string = UUID.random.to_s
+          rand_string = UUID.random.to_s.delete('-')
           key = rand_string + ctx.driver_key
           path = (Path[ctx.driver_path].parent / key).to_s
           File.copy(ctx.driver_path, path)

@@ -1,9 +1,6 @@
 require "hardware"
 require "hound-dog"
 
-# For looking up binary directory
-require "placeos-compiler/compiler"
-
 require "../process_manager"
 require "./common"
 
@@ -65,7 +62,7 @@ module PlaceOS::Core
     end
 
     private def driver_manager(driver_key : String)
-      path = driver_path(driver_key).to_s
+      path = driver_path(driver_key)
       Log.info { {driver_path: path, message: "creating new driver protocol manager"} }
 
       Driver::Protocol::Management.new(path).tap do
@@ -75,8 +72,9 @@ module PlaceOS::Core
       end
     end
 
-    private def driver_path(driver_key : String) : Path
-      Path.new(Compiler.binary_dir, ProcessManager.path_to_key(driver_key))
+    private def driver_path(driver_key : String) : String
+      key = ProcessManager.path_to_key(driver_key)
+      binary_store.path(Model::Executable.new(key))
     end
 
     # Callbacks

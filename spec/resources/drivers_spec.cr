@@ -1,6 +1,4 @@
 require "file_utils"
-require "placeos-compiler/compiler"
-require "placeos-compiler/helper"
 
 require "../helper"
 

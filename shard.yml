@@ -44,10 +44,6 @@ dependencies:
     github: placeos/build
     branch: main
 
-  placeos-compiler:
-    github: placeos/compiler
-    version: ~> 4.9
-
   placeos-driver:
     github: placeos/driver
     version: ~> 6.1

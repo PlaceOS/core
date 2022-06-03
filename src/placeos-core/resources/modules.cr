@@ -215,7 +215,7 @@ module PlaceOS::Core
 
     # Stops modules on stale driver and starts them on the new driver
     #
-    def reload_modules(driver : Model::Driver) : Path?
+    def reload_modules(driver : Model::Driver) : String?
       driver_id = driver.id.as(String)
 
       # Set when a module_manager found for stale driver

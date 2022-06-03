@@ -258,8 +258,13 @@ module PlaceOS::Core
     ###############################################################################################
 
     def fetch_binary(driver_key : String) : Protocol::Message::BinaryBody
-      path = File.join(PlaceOS::Compiler.binary_dir, driver_key)
-      Protocol::Message::BinaryBody.new(success: File.exists?(path), key: driver_key, path: path)
+      executable = Model::Executable.new(driver_key)
+
+      Protocol::Message::BinaryBody.new(
+        success: binary_store.exists?(executable),
+        key: executable.filename,
+        path: binary_store.path(executable)
+      )
     end
 
     # Metadata
