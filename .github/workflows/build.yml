@@ -1,7 +1,16 @@
 name: Build
 on: push
 jobs:
-  build:
+  build-edge:
     uses: PlaceOS/.github/.github/workflows/build-dev-image.yml@main
+    with:
+      target_image: placeos/edge
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
+
+  build-core:
+    uses: PlaceOS/.github/.github/workflows/build-dev-image.yml@main
+    with:
+      target_image: placeos/core
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
