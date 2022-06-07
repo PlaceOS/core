@@ -1,3 +1,6 @@
 dependencies:
   pars:
     github: spider-gazelle/pars
+  opentelemetry-instrumentation:
+    github: wyhaines/opentelemetry-instrumentation.cr
+    commit: 551543ad0f4e5d7eefdb5277809493e154e4f5c2
