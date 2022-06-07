@@ -90,8 +90,9 @@ module PlaceOS::Core::Resources
 
     # (Re)load modules onto the compiled driver
     def self.reload_modules(driver, module_manager)
-      # TODO: Ensure that drivers are reloaded _for_ the driver only
-      #       May need to associate driver manager with a `driver_id`
+      # TODO: Ensure that modules are reloaded for the specific driver only
+      #
+      # It may be necessary to associate driver manager with a `driver_id`.
       module_manager.reload_modules(driver)
     end
 

@@ -24,6 +24,8 @@ RUN apk add --update --no-cache \
     iputils \
     'libcurl>=7.79.1-r0' \
     libssh2-static \
+    lz4-dev \
+    lz4-static \
     yaml-static
 
 # Add trusted CAs for communicating with external services
