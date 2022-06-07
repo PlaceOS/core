@@ -155,7 +155,7 @@ shards:
 
   neuroplastic:
     git: https://github.com/spider-gazelle/neuroplastic.git
-    version: 1.11.0
+    version: 1.11.1
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
@@ -173,7 +173,7 @@ shards:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
     version: 0.3.2
 
-  opentelemetry-instrumentation:
+  opentelemetry-instrumentation: # Overridden
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
     version: 0.3.3+git.commit.551543ad0f4e5d7eefdb5277809493e154e4f5c2
 
@@ -191,7 +191,7 @@ shards:
 
   placeos-core-client: # Overridden
     git: https://github.com/placeos/core-client.git
-    version: 0.5.2+git.commit.26adb20be800f052fbbb14182b6548fb26589f87
+    version: 1.0.0
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
@@ -199,7 +199,7 @@ shards:
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.10.2
+    version: 0.10.3
 
   placeos-models:
     git: https://github.com/placeos/models.git
