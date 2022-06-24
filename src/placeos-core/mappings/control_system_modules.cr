@@ -30,8 +30,12 @@ module PlaceOS::Core
       startup : Bool = false,
       module_manager : ModuleManager = ModuleManager.instance
     ) : Resource::Result
+      Log.warn { "\n\nUPDATING SYSTEM: #{system.display_name}" }
+
       relevant_node = startup || module_manager.discovery.own_node?(system.id.as(String))
-      return Resource::Result::Skipped unless relevant_node
+      unless relevant_node
+        return update_logic_modules(system, module_manager) > 0 ? Resource::Result::Success : Resource::Result::Skipped
+      end
 
       destroyed = system.destroyed?
 
@@ -65,6 +69,7 @@ module PlaceOS::Core
         total += 1
         begin
           # ensure module has the latest version of the control system model
+          Log.warn { "UPDATING LOGIC: #{mod.id}" }
           mod.control_system = system
           module_manager.refresh_module(mod)
           Log.debug { {message: "#{mod.running_was == false ? "started" : "updated"} system logic module", module_id: mod.id, control_system_id: control_system_id} }
