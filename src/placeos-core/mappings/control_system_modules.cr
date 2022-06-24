@@ -69,7 +69,6 @@ module PlaceOS::Core
         total += 1
         begin
           # ensure module has the latest version of the control system model
-          Log.warn { "\n\nUPDATING LOGIC: #{mod.id}" }
           mod.control_system = system
           module_manager.refresh_module(mod)
           Log.debug { {message: "#{mod.running_was == false ? "started" : "updated"} system logic module", module_id: mod.id, control_system_id: control_system_id} }
