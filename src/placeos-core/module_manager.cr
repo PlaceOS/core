@@ -381,6 +381,7 @@ module PlaceOS::Core
       payload = mod.to_json.rchop
 
       # The settings object needs to be unescaped
+      Log.warn { "\n\nUPDATING SETTINGS for #{mod.id} on #{mod.control_system.display_name}\n\n" }
       %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{merged_settings}})
     end
 
