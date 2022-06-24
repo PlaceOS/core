@@ -34,6 +34,8 @@ services:
       - etcd
       - redis
       - rethink
+    security_opt:
+      - seccomp:unconfined
     environment:
       # Environment
       GITHUB_ACTION: ${GITHUB_ACTION:-}
