@@ -183,7 +183,7 @@ shards:
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 2.5.0
+    version: 2.4.0
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
