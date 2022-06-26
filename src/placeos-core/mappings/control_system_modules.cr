@@ -31,7 +31,9 @@ module PlaceOS::Core
       module_manager : ModuleManager = ModuleManager.instance
     ) : Resource::Result
       relevant_node = startup || module_manager.discovery.own_node?(system.id.as(String))
-      return Resource::Result::Skipped unless relevant_node
+      unless relevant_node
+        return update_logic_modules(system, module_manager) > 0 ? Resource::Result::Success : Resource::Result::Skipped
+      end
 
       destroyed = system.destroyed?
 
@@ -62,8 +64,12 @@ module PlaceOS::Core
       control_system_id = system.id.as(String)
       total = 0
       updated_modules = Model::Module.logic_for(control_system_id).sum do |mod|
+        next 0 unless module_manager.discovery.own_node?(mod.id.as(String))
+
         total += 1
         begin
+          # ensure module has the latest version of the control system model
+          mod.control_system = system
           module_manager.refresh_module(mod)
           Log.debug { {message: "#{mod.running_was == false ? "started" : "updated"} system logic module", module_id: mod.id, control_system_id: control_system_id} }
           1
