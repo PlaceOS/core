@@ -55,11 +55,11 @@ shards:
 
   debug:
     git: https://github.com/sija/debug.cr.git
-    version: 2.0.1
+    version: 2.0.2
 
   defined:
     git: https://github.com/wyhaines/defined.cr.git
-    version: 0.3.4
+    version: 0.3.6
 
   dtls:
     git: https://github.com/spider-gazelle/crystal-dtls.git
@@ -109,6 +109,10 @@ shards:
     git: https://github.com/sija/ipaddress.cr.git
     version: 0.2.1
 
+  json-merge-patch:
+    git: https://github.com/caspiano/json-merge-patch.git
+    version: 0.1.1
+
   jwt:
     git: https://github.com/crystal-community/jwt.git
     version: 1.6.0
@@ -131,7 +135,7 @@ shards:
 
   neuroplastic:
     git: https://github.com/spider-gazelle/neuroplastic.git
-    version: 1.11.1
+    version: 1.12.0
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
@@ -147,11 +151,11 @@ shards:
 
   opentelemetry-api:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
-    version: 0.3.4
+    version: 0.5.0
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.3.6+git.commit.79c78edd5d5c393635b75115645abfa4caecd2b9
+    version: 0.3.5
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -171,15 +175,15 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.3.7
+    version: 6.3.11
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.10.4
+    version: 0.10.6
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 8.9.2
+    version: 8.11.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -192,10 +196,6 @@ shards:
   promise:
     git: https://github.com/spider-gazelle/promise.git
     version: 3.0.0
-
-  protobuf:
-    git: https://github.com/jeromegn/protobuf.cr.git
-    version: 2.2.3
 
   redis:
     git: https://github.com/stefanwille/crystal-redis.git
