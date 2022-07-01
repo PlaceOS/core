@@ -55,11 +55,11 @@ shards:
 
   debug:
     git: https://github.com/sija/debug.cr.git
-    version: 2.0.1
+    version: 2.0.2
 
   defined:
     git: https://github.com/wyhaines/defined.cr.git
-    version: 0.3.4
+    version: 0.3.6
 
   dtls:
     git: https://github.com/spider-gazelle/crystal-dtls.git
@@ -151,11 +151,15 @@ shards:
 
   opentelemetry-api:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
-    version: 0.3.4
+    version: 0.5.0
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.3.6+git.commit.79c78edd5d5c393635b75115645abfa4caecd2b9
+    version: 0.3.6+git.commit.2b4477f57da6b593469deadc3a439e5ed83dd23f
+
+  opentelemetry-sdk:
+    git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
+    version: 0.5.0+git.commit.5629aa05bfc0837abe6efd8f19ad28b560d9b6b7
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -175,11 +179,11 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.3.7
+    version: 6.3.11
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.10.4
+    version: 0.11.1
 
   placeos-models:
     git: https://github.com/placeos/models.git
