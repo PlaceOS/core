@@ -155,7 +155,11 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.3.5
+    version: 0.3.6+git.commit.2b4477f57da6b593469deadc3a439e5ed83dd23f
+
+  opentelemetry-sdk:
+    git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
+    version: 0.5.0+git.commit.5629aa05bfc0837abe6efd8f19ad28b560d9b6b7
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -179,7 +183,7 @@ shards:
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.10.6
+    version: 0.11.1
 
   placeos-models:
     git: https://github.com/placeos/models.git
@@ -196,6 +200,10 @@ shards:
   promise:
     git: https://github.com/spider-gazelle/promise.git
     version: 3.0.0
+
+  protobuf:
+    git: https://github.com/jeromegn/protobuf.cr.git
+    version: 2.2.3
 
   redis:
     git: https://github.com/stefanwille/crystal-redis.git
