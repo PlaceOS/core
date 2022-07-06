@@ -1,3 +1,6 @@
 dependencies:
   pars:
     github: spider-gazelle/pars
+  placeos-log-backend:
+    github: place-labs/log-backend
+    branch: feat/new-relic-logging
