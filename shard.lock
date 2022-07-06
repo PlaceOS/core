@@ -183,7 +183,7 @@ shards:
 
   placeos-log-backend: # Overridden
     git: https://github.com/place-labs/log-backend.git
-    version: 0.12.0+git.commit.9dab01d9f0473d2f9601afb33f87d78634b46dbe
+    version: 0.12.0+git.commit.ba7c38d2dbc040a130fc306f07ac48e1fa2fc9e4
 
   placeos-models:
     git: https://github.com/placeos/models.git
