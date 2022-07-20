@@ -64,11 +64,12 @@ module PlaceOS::Core
       control_system_id = system.id.as(String)
       total = 0
       updated_modules = Model::Module.logic_for(control_system_id).sum do |mod|
+        total += 1
+
         next 0 unless module_manager.discovery.own_node?(mod.id.as(String))
 
-        total += 1
         begin
-          # ensure module has the latest version of the control system model
+          # Ensure module has the latest version of the ControlSystem model
           mod.control_system = system
           module_manager.refresh_module(mod)
           Log.debug { {message: "#{mod.running_was == false ? "started" : "updated"} system logic module", module_id: mod.id, control_system_id: control_system_id} }
