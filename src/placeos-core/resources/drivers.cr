@@ -1,4 +1,4 @@
-require "opentelemetry-api"
+require "opentelemetry-sdk"
 
 require "placeos-models"
 require "placeos-models/driver"

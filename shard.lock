@@ -71,11 +71,11 @@ shards:
 
   debug:
     git: https://github.com/sija/debug.cr.git
-    version: 2.0.1
+    version: 2.0.2
 
   defined:
     git: https://github.com/wyhaines/defined.cr.git
-    version: 0.3.4
+    version: 0.3.6
 
   dtls:
     git: https://github.com/spider-gazelle/crystal-dtls.git
@@ -125,6 +125,10 @@ shards:
     git: https://github.com/sija/ipaddress.cr.git
     version: 0.2.1
 
+  json-merge-patch:
+    git: https://github.com/caspiano/json-merge-patch.git
+    version: 0.1.1
+
   jwt:
     git: https://github.com/crystal-community/jwt.git
     version: 1.6.0
@@ -155,7 +159,7 @@ shards:
 
   neuroplastic:
     git: https://github.com/spider-gazelle/neuroplastic.git
-    version: 1.11.1
+    version: 1.12.0
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
@@ -167,15 +171,19 @@ shards:
 
   openssl_ext:
     git: https://github.com/spider-gazelle/openssl_ext.git
-    version: 2.1.5
+    version: 2.2.0
 
   opentelemetry-api:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
-    version: 0.3.2
+    version: 0.5.0
 
-  opentelemetry-instrumentation: # Overridden
+  opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.3.3+git.commit.551543ad0f4e5d7eefdb5277809493e154e4f5c2
+    version: 0.5.0+git.commit.7d83b9a53c9540fbc159f06eeed5d4bdad5c4377
+
+  opentelemetry-sdk:
+    git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
+    version: 0.5.1
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -187,7 +195,7 @@ shards:
 
   placeos-build: # Overridden
     git: https://github.com/placeos/build.git
-    version: 1.0.3+git.commit.2311332c276689476fc634fc4837cedd1ac9d73a
+    version: 1.0.6+git.commit.f8d65b6ed947b1c28378214a9df54261bff2bd76
 
   placeos-core-client: # Overridden
     git: https://github.com/placeos/core-client.git
@@ -195,15 +203,15 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.3.7
+    version: 6.4.4
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.10.3
+    version: 0.11.0
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 8.9.2
+    version: 8.11.2
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -223,7 +231,7 @@ shards:
 
   raven:
     git: https://github.com/sija/raven.cr.git
-    version: 1.9.1+git.commit.d53319dc4ce26fc44f13b9c1c6ffb8699e22899b
+    version: 1.9.2+git.commit.de91bb38858124270ea06be61641153b8947e18f
 
   redis:
     git: https://github.com/stefanwille/crystal-redis.git

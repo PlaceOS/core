@@ -40,6 +40,8 @@ services:
       - etcd
       - redis
       - rethink
+    security_opt:
+      - seccomp:unconfined
     environment:
       GITHUB_ACTION: ${GITHUB_ACTION:-}
       # Service Hosts
