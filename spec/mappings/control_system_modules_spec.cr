@@ -14,6 +14,12 @@ module PlaceOS::Core::Mappings
     end
   end
 
+  def self.mocked_fail_manager
+    discovery = discovery_mock
+    clustering = MockClustering.new(uri: CORE_URL, discovery: discovery)
+    Mock.new(CORE_URL, discovery: discovery, clustering: clustering)
+  end
+
   describe ControlSystemModules, tags: "mappings" do
     describe ".update_mapping" do
       it "ignores systems not mapped to node" do
@@ -53,7 +59,7 @@ module PlaceOS::Core::Mappings
         ControlSystemModules.update_mapping(
           cs,
           startup: true,
-          module_manager: Mock.new(CORE_URL),
+          module_manager: self.mocked_fail_manager,
         ).success?.should be_true
 
         storage["logic/1"]?.should eq borked.id
@@ -89,7 +95,7 @@ module PlaceOS::Core::Mappings
         driver = Model::Generator.driver(:logic).save!
         cs = Model::Generator.control_system.save!
 
-        mock_manager = Mock.new(CORE_URL)
+        mock_manager = self.mocked_fail_manager
 
         mods = (0...2).map do
           Model::Generator.module(driver, cs)
@@ -108,7 +114,7 @@ module PlaceOS::Core::Mappings
         driver = Model::Generator.driver(:logic).save!
         cs = Model::Generator.control_system.save!
 
-        mock_manager = Mock.new(CORE_URL)
+        mock_manager = self.mocked_fail_manager
         okay = Model::Generator.module(driver, cs)
         okay.save!
         ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 1
