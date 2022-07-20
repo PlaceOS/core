@@ -5,7 +5,7 @@ set -e
 # this function is called when Ctrl-C is sent
 function trap_ctrlc ()
 {
-    echo "### cleaning up"
+    echo "░░░ Cleaning up..."
     docker-compose down
     exit 2
 }
