@@ -1,4 +1,9 @@
-## Unreleased
+## v4.3.2 (2022-07-20)
+
+### Fix
+
+- **control_system_modules**: ensure correct totals when refreshing ([#222](https://github.com/PlaceOS/core/pull/222))
+- **control_system_modules**: update system references in modules ([#215](https://github.com/PlaceOS/core/pull/215))
 
 ## v4.3.1 (2022-05-25)
 
