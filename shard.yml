@@ -50,8 +50,7 @@ dependencies:
 
   placeos-log-backend:
     github: place-labs/log-backend
-    version: ">= 0.11.0"
-
+    version: ">= 0.11.2"
 
   placeos-models:
     github: placeos/models

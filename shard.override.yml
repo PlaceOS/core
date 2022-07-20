@@ -12,3 +12,11 @@ dependencies:
   placeos-build:
     github: placeos/build
     branch: main
+
+  opentelemetry-instrumentation:
+    github: wyhaines/opentelemetry-instrumentation.cr
+    branch: main
+
+  opentelemetry-sdk:
+    github: wyhaines/opentelemetry-sdk.cr
+    branch: main

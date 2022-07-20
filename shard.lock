@@ -177,13 +177,13 @@ shards:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
     version: 0.5.0
 
-  opentelemetry-instrumentation:
+  opentelemetry-instrumentation: # Overridden
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
     version: 0.5.0+git.commit.7d83b9a53c9540fbc159f06eeed5d4bdad5c4377
 
-  opentelemetry-sdk:
+  opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
-    version: 0.5.1
+    version: 0.5.1+git.commit.857f4dc24e3c4f2ed04b81118b39beccdecdb105
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -207,7 +207,7 @@ shards:
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.11.0
+    version: 0.11.2
 
   placeos-models:
     git: https://github.com/placeos/models.git
