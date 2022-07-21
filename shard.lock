@@ -195,7 +195,7 @@ shards:
 
   placeos-build: # Overridden
     git: https://github.com/placeos/build.git
-    version: 1.0.6+git.commit.f8d65b6ed947b1c28378214a9df54261bff2bd76
+    version: 1.0.8+git.commit.5f31d8b73e4d8cf72bf3ca0ae1741262ce293a06
 
   placeos-core-client: # Overridden
     git: https://github.com/placeos/core-client.git
