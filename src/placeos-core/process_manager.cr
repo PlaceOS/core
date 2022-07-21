@@ -21,6 +21,16 @@ module PlaceOS::Core
 
     abstract def stop(module_id : String)
 
+    def attach_debugger(module_id : String, socket : HTTP::WebSocket)
+        Log.trace { {message: "binding debug session to module", module_id: module_id} }
+
+        debug_lock = Mutex.new
+        callback = ->(message : String) { debug_lock.synchronize { socket.send(message) }; nil }
+        debug(module_id, &callback)
+        # Stop debugging when the socket closes
+        socket.on_close { ignore(module_id, &callback) }
+    end
+
     abstract def debug(module_id : String, &on_message : DebugCallback)
 
     abstract def ignore(module_id : String, &on_message : DebugCallback)
