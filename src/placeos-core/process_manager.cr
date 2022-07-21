@@ -62,6 +62,19 @@ module PlaceOS::Core
     #
     abstract def on_system_model(request : Request, response_callback : Request ->)
 
+    # Debugging
+    ###############################################################################################
+
+    def attach_debugger(module_id : String, socket : HTTP::WebSocket)
+      debug_lock = Mutex.new
+      callback = ->(message : String) { debug_lock.synchronize { socket.send(message) }; nil }
+
+      debug(module_id, &callback)
+
+      # Stop debugging when the socket closes
+      socket.on_close { ignore(module_id, &callback) }
+    end
+
     # Metadata
     ###############################################################################################
 
@@ -119,10 +132,11 @@ module PlaceOS::Core
     # Helper for extracting the driver key
     #
     def self.path_to_key(path : String, driver_id : String) : String
-      driver_name(path) + Base64.urlsafe_encode(driver_id, padding: false)
+      driver_name(path) + driver_id
     end
 
     def self.driver_name(path : String)
       Path[path].basename
+    end
   end
 end

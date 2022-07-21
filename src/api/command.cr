@@ -3,29 +3,42 @@ require "./application"
 require "../placeos-core/resources/modules"
 
 module PlaceOS::Core::Api
+  # Management API for modules running on the node
   class Command < Application
     base "/api/core/v1/command/"
 
+    before_action :current_module, only: [:load]
+
+    ###############################################################################################
+
     getter module_manager : Resources::Modules { Resources::Modules.instance }
 
-    # Loads if not already loaded
+    getter module_id : String do
+      route_params["module_id"].tap { |id| Log.context.set(module_id: id) }
+    end
+
+    # Will respond with a 404 (not found) if the document does not exist.
+    getter current_module : Model::Module do
+      Model::Module.find!(id, runopts: {"read_mode" => "majority"})
+    end
+
+    ###############################################################################################
+
+    # Loads if not already loaded.
+    #
     # If the module is already running, it will be updated to latest settings.
     post "/:module_id/load", :load do
-      mod = Model::Module.find(params["module_id"])
-      head :not_found if mod.nil?
-
-      module_manager.load_module(mod)
+      module_manager.load_module(current_module)
 
       head :ok
     end
 
-    # Executes a command against a module
+    # Executes a command against a module.
     post "/:module_id/execute", :execute do
-      module_id = params["module_id"]
       user_id = params["user_id"]?.presence
 
       unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
-        Log.info { {module_id: module_id, message: "module not loaded"} }
+        Log.info { "module not loaded" }
         head :not_found
       end
 
@@ -57,40 +70,14 @@ module PlaceOS::Core::Api
       end
     end
 
-    # For now a one-to-one debug session to websocket should be fine as it's not
-    # a common operation and limited to system administrators
+    # For now a one-to-one debug session to websocket is fine as it's not
+    # a common operation and limited to system administrators.
     ws "/:module_id/debugger", :module_debugger do |socket|
-      module_id = params["module_id"]
-
-      Log.trace { {message: "binding debug session to module", module_id: module_id} }
-
-      # Add a check for the module id
-
-      # If it exists
-
-      # setup a callback holder with driver id
-
-      # start websocket session
-
-      # before module start, check for debug session
-
-      # Need to hook into process manager
-      # must add the callbacks on/before start
+      Log.trace { "binding debug session to module" }
 
       # Forward debug messages to the websocket
       module_manager.process_manager(module_id) do |manager|
-        debug_lock = Mutex.new
-        callback = ->(message : String) { debug_lock.synchronize { socket.send(message) }; nil }
-        manager.debug(module_id, &callback)
-        # Stop debugging when the socket closes
-        socket.on_close { stop_debugging(module_id, callback) }
-      end
-    end
-
-    # Stop debugging against the current module manager for `module_id`
-    protected def stop_debugging(module_id, callback)
-      module_manager.process_manager(module_id) do |manager|
-        manager.ignore(module_id, &callback)
+        manager.attach_debugger(module_id, socket)
       end
     end
 

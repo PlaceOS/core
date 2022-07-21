@@ -10,6 +10,9 @@ module PlaceOS::Core::Api
 
     # Terminate a process by executable path
     post "/terminate", :terminate do
+      # TODO: Add option to kill via driver_id
+      # driver_key = params["path"]?.presence
+      # driver_id = params["driver_id"]?.presence
       driver_key = params["path"]
       edge_id = params["edge_id"]?.presence
 

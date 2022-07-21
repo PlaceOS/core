@@ -9,6 +9,20 @@ module PlaceOS::Core::Api
   class Status < Application
     base "/api/core/v1/status/"
 
+    # TODO: Enable this when lookup is implemented with respect to the driver_id
+    # before_action :current_driver, only: [:driver]
+
+    ###############################################################################################
+
+    getter current_driver : Model::Driver do
+      id = route_params["driver_id"]
+      Log.context.set(driver_id: id)
+      # Find will raise a 404 (not found) if there is an error
+      Model::Driver.find!(id, runopts: {"read_mode" => "majority"})
+    end
+
+    ###############################################################################################
+
     getter module_manager : Resources::Modules { Resources::Modules.instance }
     getter resource_manager : Resources::Manager { Resources::Manager.instance }
 
@@ -24,11 +38,10 @@ module PlaceOS::Core::Api
       }
     end
 
-    # Details related to a process (+ anything else we can think of)
-    #
-    # /api/core/v1/status/driver/:executable/:driver_id
-    get "/driver/:executable/:driver_id", :driver do
-      driver_name = Core::ProcessManager.driver_name(params["executable"])
+    # /api/core/v1/status/driver/:id
+    get "/driver/:id", :driver do
+      # TODO: Implement lookup via driver_id
+      key = Core::ProcessManager.path_to_key(params["id"])
 
       executable = begin
         Model::Executable.new(driver_name)

@@ -20,5 +20,11 @@ module PlaceOS::Core::Api
       )
       response.headers["X-Request-ID"] = request_id
     end
+
+    # 404 if resource not present
+    rescue_from RethinkORM::Error::DocumentNotFound do |error|
+      Log.debug { error.message }
+      head :not_found
+    end
   end
 end
