@@ -1,5 +1,6 @@
 require "placeos-build/driver_store/filesystem"
 require "placeos-driver/protocol/management"
+require "base64"
 
 require "./error"
 
@@ -117,8 +118,11 @@ module PlaceOS::Core
 
     # Helper for extracting the driver key
     #
-    def self.path_to_key(path : String) : String
-      Path[path].basename
+    def self.path_to_key(path : String, driver_id : String) : String
+      driver_name(path) + Base64.urlsafe_encode(driver_id, padding: false)
     end
+
+    def self.driver_name(path : String)
+      Path[path].basename
   end
 end

@@ -59,8 +59,8 @@ RUN UNAME_AT_COMPILE_TIME=true \
     PLACE_COMMIT=${PLACE_COMMIT} \
     shards build ${TARGET} \
       --error-trace \
-      --production \
-      --release \
+      # --production \
+      # --release \
       --static
 
 RUN mkdir -p /app/bin/drivers

@@ -26,23 +26,23 @@ module PlaceOS::Core::Api
 
     # Details related to a process (+ anything else we can think of)
     #
-    # /api/core/v1/status/driver/:id
-    get "/driver/:id", :driver do
-      key = Core::ProcessManager.path_to_key(params["id"])
+    # /api/core/v1/status/driver/:executable/:driver_id
+    get "/driver/:executable/:driver_id", :driver do
+      driver_name = Core::ProcessManager.driver_name(params["executable"])
 
       executable = begin
-        Model::Executable.new(key)
+        Model::Executable.new(driver_name)
       rescue error : Model::Error
-        Log.info(exception: error) { "failed to parse #{key} as a well-formed executable" }
+        Log.info(exception: error) { "failed to parse #{driver_name} as a well-formed executable" }
         nil
       end
 
       if executable.nil?
         head :unprocessable_entity
       else
-        key = executable.filename
+        driver_key = Core::ProcessManager.path_to_key(executable.filename, params["driver_id"])
         render json: {
-          local: module_manager.local_processes.driver_status(key),
+          local: module_manager.local_processes.driver_status(driver_key),
           edge:  module_manager.edge_processes.driver_status(key),
         }
       end
