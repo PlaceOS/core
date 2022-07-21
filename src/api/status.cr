@@ -9,16 +9,19 @@ module PlaceOS::Core::Api
   class Status < Application
     base "/api/core/v1/status/"
 
-    # TODO: Enable this when lookup is implemented with respect to the driver_id
-    # before_action :current_driver, only: [:driver]
+    # Callbacks
+    ###############################################################################################
+
+    before_action :current_driver, only: [:driver]
 
     ###############################################################################################
 
+    getter driver_id : String { route_params["driver_id"] }
+
+    # Returns 404 if the document is not found.
     getter current_driver : Model::Driver do
-      id = route_params["driver_id"]
-      Log.context.set(driver_id: id)
-      # Find will raise a 404 (not found) if there is an error
-      Model::Driver.find!(id, runopts: {"read_mode" => "majority"})
+      Log.context.set(driver_id: driver_id)
+      Model::Driver.find!(driver_id, runopts: {"read_mode" => "majority"})
     end
 
     ###############################################################################################
@@ -40,11 +43,8 @@ module PlaceOS::Core::Api
 
     # /api/core/v1/status/driver/:id
     get "/driver/:id", :driver do
-      # TODO: Implement lookup via driver_id
-      key = Core::ProcessManager.path_to_key(params["id"])
-
       executable = begin
-        Model::Executable.new(driver_name)
+        Model::Executable.new(Core::ProcessManager.driver_name(current_driver.file_name))
       rescue error : Model::Error
         Log.info(exception: error) { "failed to parse #{driver_name} as a well-formed executable" }
         nil
@@ -53,10 +53,9 @@ module PlaceOS::Core::Api
       if executable.nil?
         head :unprocessable_entity
       else
-        driver_key = Core::ProcessManager.path_to_key(executable.filename, params["driver_id"])
         render json: {
-          local: module_manager.local_processes.driver_status(driver_key),
-          edge:  module_manager.edge_processes.driver_status(key),
+          local: module_manager.local_processes.driver_status(executable.filename, driver_id),
+          edge:  module_manager.edge_processes.driver_status(executable.filename, driver_id),
         }
       end
     end

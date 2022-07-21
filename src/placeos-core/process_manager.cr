@@ -17,7 +17,7 @@ module PlaceOS::Core
 
     getter binary_store : Build::Filesystem
 
-    abstract def load(module_id : String, driver_key : String)
+    abstract def load(module_id : String, driver_key : String, driver_id : String)
 
     abstract def unload(module_id : String)
 
@@ -31,7 +31,11 @@ module PlaceOS::Core
 
     abstract def ignore(module_id : String) : Array(DebugCallback)
 
-    abstract def kill(driver_key : String)
+    abstract def kill(driver_path : String)
+
+    def kill(driver_key : String, driver_id : String) : Bool
+      kill(ProcessManager.driver_scoped_name(driver_key, driver_id))
+    end
 
     # Execute a driver method on a module
     #
@@ -92,7 +96,7 @@ module PlaceOS::Core
 
     # Generate a system status report
     #
-    abstract def driver_status(driver_key : String) : DriverStatus?
+    abstract def driver_status(driver_key : String, driver_id : String) : DriverStatus?
 
     record(
       SystemStatus,
@@ -117,7 +121,7 @@ module PlaceOS::Core
 
     # Check for the presence of a running driver on a ProcessManager
     #
-    abstract def driver_loaded?(driver_key : String) : Bool
+    abstract def driver_loaded?(driver_key : String, driver_id : String) : Bool
 
     # Returns the count of ...
     # - unique drivers running
@@ -129,10 +133,10 @@ module PlaceOS::Core
     #
     abstract def loaded_modules
 
-    # Helper for extracting the driver key
+    # Helper for extracting the driver name on filesystem
     #
-    def self.path_to_key(path : String, driver_id : String) : String
-      driver_name(path) + driver_id
+    def self.driver_scoped_name(key : String, driver_id : String)
+      driver_name(key) + driver_id.gsub("-", "_")
     end
 
     def self.driver_name(path : String)

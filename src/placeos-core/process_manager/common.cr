@@ -38,8 +38,8 @@ module PlaceOS::Core::ProcessManager::Common
   # Stop and unload the module from node
   #
   def unload(module_id : String)
-    driver_key = driver_key_for?(module_id)
-    ::Log.with_context(driver_key: driver_key, module_id: module_id) do
+    driver_scoped_name = driver_key_for?(module_id)
+    ::Log.with_context(driver_scoped_name: driver_scoped_name, module_id: module_id) do
       stop(module_id)
 
       existing_manager = set_module_protocol_manager(module_id, nil)
@@ -53,8 +53,8 @@ module PlaceOS::Core::ProcessManager::Common
       })
 
       # Delete driver indexed manager if there are no other module references.
-      if driver_key && no_module_references
-        remove_driver_manager(driver_key)
+      if driver_scoped_name && no_module_references
+        remove_driver_manager(driver_scoped_name)
         Log.info { "no modules for driver after unloading module" }
       end
     end
@@ -62,8 +62,8 @@ module PlaceOS::Core::ProcessManager::Common
     raise module_error(module_id, exception)
   end
 
-  def kill(driver_key : String) : Bool
-    !!protocol_manager_by_driver?(driver_key).try do |manager|
+  def kill(driver_path : String) : Bool
+    !!protocol_manager_by_driver?(driver_path).try do |manager|
       pid = manager.pid
       Process.signal(Signal::KILL, pid)
       true
@@ -123,8 +123,9 @@ module PlaceOS::Core::ProcessManager::Common
     )
   end
 
-  def driver_status(driver_key : String) : DriverStatus?
-    manager = protocol_manager_by_driver?(driver_key)
+  def driver_status(driver_key : String, driver_id : String) : DriverStatus?
+    driver_scoped_name = ProcessManager.driver_scoped_name(driver_key, driver_id)
+    manager = protocol_manager_by_driver?(driver_scoped_name)
     return if manager.nil?
 
     # Obtain process statistics - anything that might be useful for debugging
@@ -156,8 +157,8 @@ module PlaceOS::Core::ProcessManager::Common
     !protocol_manager_by_module?(module_id).nil?
   end
 
-  def driver_loaded?(driver_key : String) : Bool
-    !protocol_manager_by_driver?(driver_key).nil?
+  def driver_loaded?(driver_key : String, driver_id : String) : Bool
+    !protocol_manager_by_driver?(ProcessManager.driver_scoped_name(driver_key, driver_id)).nil?
   end
 
   def run_count : Count
@@ -208,7 +209,7 @@ module PlaceOS::Core::ProcessManager::Common
   # Mapping from module_id to protocol manager
   @module_protocol_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
 
-  # Mapping from driver path to protocol manager
+  # Mapping from driver scoped_path to protocol manager
   @driver_protocol_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
 
   protected def protocol_manager_by_module?(module_id) : Driver::Protocol::Management?
@@ -216,7 +217,7 @@ module PlaceOS::Core::ProcessManager::Common
   end
 
   protected def protocol_manager_by_driver?(driver_key) : Driver::Protocol::Management?
-    manager_by_key?(ProcessManager.path_to_key(driver_key), @driver_protocol_managers)
+    manager_by_key?(ProcessManager.driver_name(driver_key), @driver_protocol_managers)
   end
 
   private def manager_by_key?(key, managers)
@@ -240,7 +241,7 @@ module PlaceOS::Core::ProcessManager::Common
   end
 
   protected def set_driver_protocol_manager(driver_key, manager : Driver::Protocol::Management?)
-    driver_key = ProcessManager.path_to_key(driver_key)
+    driver_key = ProcessManager.driver_name(driver_key)
     protocol_manager_lock.synchronize do
       Log.trace { {message: "#{manager.nil? ? "removing" : "setting"} driver process manager", driver_key: driver_key} }
       if manager.nil?

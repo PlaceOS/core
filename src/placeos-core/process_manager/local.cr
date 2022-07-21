@@ -1,5 +1,6 @@
 require "hardware"
 require "hound-dog"
+require "file_utils"
 
 require "../process_manager"
 require "./common"
@@ -14,19 +15,19 @@ module PlaceOS::Core
     def initialize(@discovery : HoundDog::Discovery, @binary_store : Build::Filesystem)
     end
 
-    def load(module_id : String, driver_key : String)
-      driver_key = ProcessManager.path_to_key(driver_key)
-      ::Log.with_context(module_id: module_id, driver_key: driver_key) do
+    def load(module_id : String, driver_key : String, driver_id : String)
+      driver_scoped_name = ProcessManager.driver_scoped_name(driver_key, driver_id)
+      ::Log.with_context(module_id: module_id, driver_scoped_name: driver_scoped_name) do
         if protocol_manager_by_module?(module_id)
           Log.info { "module already loaded" }
           return true
         end
 
-        if (existing_driver_manager = protocol_manager_by_driver?(driver_key))
+        if (existing_driver_manager = protocol_manager_by_driver?(driver_scoped_name))
           Log.debug { "using existing protocol manager" }
           set_module_protocol_manager(module_id, existing_driver_manager)
         else
-          manager = driver_manager(driver_key)
+          manager = driver_manager(driver_key, driver_id)
 
           # Hook up the callbacks
           manager.on_exec = ->on_exec(Request, (Request ->))
@@ -34,7 +35,7 @@ module PlaceOS::Core
           manager.on_setting = ->on_setting(String, String, YAML::Any)
 
           set_module_protocol_manager(module_id, manager)
-          set_driver_protocol_manager(driver_key, manager)
+          set_driver_protocol_manager(driver_scoped_name, manager)
         end
 
         Log.info { "loaded module" }
@@ -44,9 +45,9 @@ module PlaceOS::Core
       # Wrap exception with additional context
       error = module_error(module_id, error)
       Log.error(exception: error) { {
-        message:    "failed to load module",
-        module_id:  module_id,
-        driver_key: driver_key,
+        message:            "failed to load module",
+        module_id:          module_id,
+        driver_scoped_name: driver_scoped_name,
       } }
       false
     end
@@ -61,19 +62,27 @@ module PlaceOS::Core
       end
     end
 
-    private def driver_manager(driver_key : String)
+    private def driver_manager(driver_key, driver_id)
       path = driver_path(driver_key)
-      Log.info { {driver_path: path, message: "creating new driver protocol manager"} }
+      driver_scoped_path = ProcessManager.driver_scoped_name(path, driver_id)
 
-      Driver::Protocol::Management.new(path).tap do
-        unless File.exists?(path)
-          Log.warn { {driver_path: path, message: "driver manager created for a driver that is not compiled"} }
-        end
+      unless File.exists?(path)
+        raise Error.new("attempted to create driver manager for a driver that is not compiled")
       end
+
+      unless File.exists?(driver_scoped_path)
+        FileUtils.cp(path, driver_scoped_path)
+        # Set copied driver as executable
+        File.chmod(driver_scoped_path, 0o755)
+      end
+
+      Log.info { {driver_path: path, driver_id: driver_id, message: "creating new driver protocol manager"} }
+
+      Driver::Protocol::Management.new(path)
     end
 
     private def driver_path(driver_key : String) : String
-      key = ProcessManager.path_to_key(driver_key)
+      key = ProcessManager.driver_name(driver_key)
       binary_store.path(Model::Executable.new(key))
     end
 

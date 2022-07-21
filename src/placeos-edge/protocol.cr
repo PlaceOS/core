@@ -175,15 +175,17 @@ module PlaceOS::Edge::Protocol
 
     struct DriverLoaded < Server::Request
       getter driver_key : String
+      getter driver_id : String
 
-      def initialize(@driver_key, @user_id = nil)
+      def initialize(@driver_key, @driver_id, @user_id = nil)
       end
     end
 
     struct DriverStatus < Server::Request
       getter driver_key : String
+      getter driver_id : String
 
-      def initialize(@driver_key, @user_id = nil)
+      def initialize(@driver_key, @driver_id, @user_id = nil)
       end
     end
 
@@ -219,8 +221,9 @@ module PlaceOS::Edge::Protocol
     struct Load < Server::Request
       getter module_id : String
       getter driver_key : String
+      getter driver_id : String
 
-      def initialize(@module_id, @driver_key, @user_id = nil)
+      def initialize(@module_id, @driver_key, @driver_id, @user_id = nil)
       end
     end
 
@@ -391,7 +394,7 @@ module PlaceOS::Edge::Protocol
       getter add_modules : Array(Module)
       getter remove_modules : Array(String)
 
-      record Module, key : String, module_id : String do
+      record Module, key : String, module_id : String, driver_id : String do
         include JSON::Serializable
       end
 

@@ -94,8 +94,8 @@ module PlaceOS::Core
       end
     end
 
-    def load(module_id : String, driver_key : String)
-      !!Protocol.request(Protocol::Message::Load.new(module_id, ProcessManager.path_to_key(driver_key)), expect: Protocol::Message::Success)
+    def load(module_id : String, driver_key : String, driver_id : String)
+      !!Protocol.request(Protocol::Message::Load.new(module_id, driver_key, driver_id), expect: Protocol::Message::Success)
     end
 
     def unload(module_id : String)
@@ -110,8 +110,8 @@ module PlaceOS::Core
       !!Protocol.request(Protocol::Message::Stop.new(module_id), expect: Protocol::Message::Success)
     end
 
-    def kill(driver_key : String)
-      !!Protocol.request(Protocol::Message::Kill.new(ProcessManager.path_to_key(driver_key)), expect: Protocol::Message::Success)
+    def kill(driver_path : String)
+      !!Protocol.request(Protocol::Message::Kill.new(driver_path), expect: Protocol::Message::Success)
     end
 
     alias Module = Protocol::Message::RegisterResponse::Module
@@ -144,7 +144,7 @@ module PlaceOS::Core
         end
 
         if driver_key
-          allocated_modules << Protocol::Message::RegisterResponse::Module.new(driver_key, mod.id.as(String))
+          allocated_modules << Protocol::Message::RegisterResponse::Module.new(driver_key, mod.id.as(String), driver.id.as(String))
           allocated_drivers << driver_key
         end
       end
@@ -270,8 +270,8 @@ module PlaceOS::Core
     # Metadata
     ###############################################################################################
 
-    def driver_loaded?(driver_key : String) : Bool
-      !!Protocol.request(Protocol::Message::DriverLoaded.new(ProcessManager.path_to_key(driver_key)), expect: Protocol::Message::Success)
+    def driver_loaded?(driver_key : String, driver_id : String) : Bool
+      !!Protocol.request(Protocol::Message::DriverLoaded.new(driver_key, driver_id), expect: Protocol::Message::Success)
     end
 
     def module_loaded?(module_id : String) : Bool
@@ -301,8 +301,8 @@ module PlaceOS::Core
       response.status
     end
 
-    def driver_status(driver_key : String) : DriverStatus?
-      response = Protocol.request(Protocol::Message::DriverStatus.new(ProcessManager.path_to_key(driver_key)), expect: Protocol::Message::DriverStatusResponse)
+    def driver_status(driver_key : String, driver_id : String) : DriverStatus?
+      response = Protocol.request(Protocol::Message::DriverStatus.new(driver_key, driver_id), expect: Protocol::Message::DriverStatusResponse)
 
       Log.warn { {message: "failed to request driver status", driver_key: driver_key} } if response.nil?
 

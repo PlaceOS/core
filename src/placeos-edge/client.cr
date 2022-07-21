@@ -1,6 +1,7 @@
 require "retriable"
 require "rwlock"
 require "uri"
+require "file_utils"
 
 require "placeos-driver/protocol/management"
 
@@ -106,10 +107,10 @@ module PlaceOS::Edge
         end
       in Protocol::Message::DriverLoaded
         boolean_command(sequence_id, request) do
-          driver_loaded?(request.driver_key)
+          driver_loaded?(request.driver_key, request.driver_id)
         end
       in Protocol::Message::DriverStatus
-        status = driver_status(request.driver_key)
+        status = driver_status(request.driver_key, request.driver_id)
         send_response(sequence_id, Protocol::Message::DriverStatusResponse.new(status))
       in Protocol::Message::Execute
         success, output, response_code = begin
@@ -139,7 +140,7 @@ module PlaceOS::Edge
         end
       in Protocol::Message::Load
         boolean_command(sequence_id, request) do
-          load(request.module_id, request.driver_key)
+          load(request.module_id, request.driver_key, request.driver_id)
         end
       in Protocol::Message::LoadedModules
         send_response(sequence_id, Protocol::Message::LoadedModulesResponse.new(loaded_modules))
@@ -188,7 +189,7 @@ module PlaceOS::Edge
           load_binaries(response.add_drivers)
 
           response.add_modules.each do |mod|
-            load(mod.module_id, mod.key)
+            load(mod.module_id, mod.key, mod.driver_id)
           end
         rescue error
           Log.error(exception: error) { "during handshake" }
@@ -288,11 +289,13 @@ module PlaceOS::Edge
 
     # Check for binary, request if it's not present
     # Start the module with redis hooks
-    def load(module_id, driver_key)
+    def load(module_id, driver_key, driver_id)
       Log.context.set(module_id: module_id, driver_key: driver_key)
 
+      driver_scoped_name = Core::ProcessManager.driver_scoped_name(driver_key, driver_id)
+
       if !protocol_manager_by_module?(module_id)
-        if (existing_driver_manager = protocol_manager_by_driver?(driver_key))
+        if (existing_driver_manager = protocol_manager_by_driver?(driver_scoped_name))
           # Use the existing driver protocol manager
           set_module_protocol_manager(module_id, existing_driver_manager)
         else
@@ -304,8 +307,13 @@ module PlaceOS::Edge
           executable = Model::Executable.new(driver_key)
           executable_path = binary_store.path(executable)
 
+          driver_scoped_path = executable_path + driver_id.gsub("-", "_")
+
+          FileUtils.cp(executable_path, driver_scoped_path)
+          File.chmod(driver_scoped_path, 0o755)
+
           # Create a new protocol manager
-          manager = Driver::Protocol::Management.new(executable_path, on_edge: true)
+          manager = Driver::Protocol::Management.new(driver_scoped_path, on_edge: true)
 
           # Callbacks
           manager.on_setting = ->(id : String, setting_name : String, setting_value : YAML::Any) {

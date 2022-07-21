@@ -138,7 +138,7 @@ module PlaceOS::Core
           module_id: module_id,
           module_name: mod.name,
           custom_name: mod.custom_name,
-          driver_name: driver.name,
+          driver_key: driver.name,
           driver_commit: driver.commit,
         ) do
           Log.info { "querying binary store" }
@@ -152,7 +152,7 @@ module PlaceOS::Core
             return
           end
 
-          process_manager(mod, &.load(module_id, driver_path))
+          process_manager(mod, &.load(module_id, driver_path, driver_id))
         end
 
         start_module(mod) if mod.running
@@ -283,14 +283,14 @@ module PlaceOS::Core
       end
     end
 
-    def process_manager(driver_key : String, edge_id : String?) : ProcessManager?
+    def process_manager(driver_key : String, driver_id, edge_id : String?) : ProcessManager?
       manager = if edge_id.nil? || !own_node?(edge_id)
                   local_processes
                 else
                   edge_processes.for?(edge_id)
                 end
 
-      manager if manager && manager.driver_loaded?(driver_key)
+      manager if manager && manager.driver_loaded?(driver_key, driver_id)
     end
 
     # Clustering
