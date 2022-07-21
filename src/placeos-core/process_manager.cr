@@ -1,3 +1,4 @@
+require "placeos-build/driver_store/filesystem"
 require "placeos-driver/protocol/management"
 
 require "./error"
@@ -12,6 +13,8 @@ module PlaceOS::Core
     macro included
       Log = ::Log.for(self)
     end
+
+    getter binary_store : Build::Filesystem
 
     abstract def load(module_id : String, driver_key : String)
 

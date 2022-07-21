@@ -2,12 +2,14 @@ require "placeos-driver/protocol/management"
 require "redis-cluster"
 
 require "../process_manager"
+require "../executables_for"
 require "../../placeos-edge/transport"
 require "../../placeos-edge/protocol"
 
 module PlaceOS::Core
   class ProcessManager::Edge
     include ProcessManager
+    include ExecutablesFor
 
     alias Transport = PlaceOS::Edge::Transport
     alias Protocol = PlaceOS::Edge::Protocol
@@ -17,7 +19,12 @@ module PlaceOS::Core
 
     getter redis : Redis::Client { Redis::Client.boot(REDIS_URL) }
 
-    def initialize(@edge_id : String, socket : HTTP::WebSocket, @redis : Redis? = nil)
+    def initialize(
+      @edge_id : String,
+      socket : HTTP::WebSocket,
+      @binary_store : Build::Filesystem,
+      @redis : Redis? = nil
+    )
       @transport = Transport.new do |(sequence_id, request)|
         if request.is_a?(Protocol::Client::Request)
           handle_request(sequence_id, request)
@@ -111,18 +118,39 @@ module PlaceOS::Core
 
     # Calculates the modules/drivers that the edge needs to add/remove
     #
+    # NOTE: As this is dependent on the exectuables being compiled and on disk, it can be flakey.
     protected def register(drivers : Set(String), modules : Set(String))
       allocated_drivers = Set(String).new
       allocated_modules = Set(Module).new
       PlaceOS::Model::Module.on_edge(edge_id).each do |mod|
         driver = mod.driver.not_nil!
-        driver_key = Compiler::Helper.driver_binary_name(driver_file: driver.file_name, commit: driver.commit, id: driver.id)
-        allocated_modules << {key: driver_key, module_id: mod.id.as(String)}
-        allocated_drivers << driver_key
+        begin
+          driver_key = Retriable.retry(
+            max_elapsed_time: 5.minutes, # Wait some time before ending registration
+            base_interval: 5.seconds,
+            on_retry: ->(_e : Exception, n : Int32, _t : Time::Span, _i : Time::Span) {
+              Log.warn { "attempt #{n} searching for #{driver.id} executable" }
+            }
+          ) do
+            # Ensure binary present when registering
+            if driver.compilation_output.nil? || (executable = executables_for(driver).first?).nil?
+              raise Error.new("Executable for #{driver.id} not present")
+            end
+
+            executable.filename
+          end
+        rescue e
+          Log.error(exception: e) { "when attempting to allocate #{driver.id}" }
+        end
+
+        if driver_key
+          allocated_modules << Protocol::Message::RegisterResponse::Module.new(driver_key, mod.id.as(String))
+          allocated_drivers << driver_key
+        end
       end
 
-      add_modules = allocated_modules.reject { |mod| modules.includes?(mod[:module_id]) }
-      remove_modules = (modules - allocated_modules.map(&.[:module_id])).to_a
+      add_modules = allocated_modules.reject { |mod| modules.includes?(mod.module_id) }
+      remove_modules = (modules - allocated_modules.map(&.module_id)).to_a
 
       Protocol::Message::RegisterResponse.new(
         success: true,
@@ -230,8 +258,13 @@ module PlaceOS::Core
     ###############################################################################################
 
     def fetch_binary(driver_key : String) : Protocol::Message::BinaryBody
-      path = File.join(PlaceOS::Compiler.binary_dir, driver_key)
-      Protocol::Message::BinaryBody.new(success: File.exists?(path), key: driver_key, path: path)
+      executable = Model::Executable.new(driver_key)
+
+      Protocol::Message::BinaryBody.new(
+        success: binary_store.exists?(executable),
+        key: executable.filename,
+        path: binary_store.path(executable)
+      )
     end
 
     # Metadata

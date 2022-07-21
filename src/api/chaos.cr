@@ -1,12 +1,12 @@
 require "./application"
 
-require "../placeos-core/module_manager"
+require "../placeos-core/resources/modules"
 
 module PlaceOS::Core::Api
   class Chaos < Application
     base "/api/core/v1/chaos/"
 
-    getter module_manager : ModuleManager { ModuleManager.instance }
+    getter module_manager : Resources::Modules { Resources::Modules.instance }
 
     # Terminate a process by executable path
     post "/terminate", :terminate do
@@ -31,7 +31,7 @@ module PlaceOS::Core::Api
     def initialize(
       context : HTTP::Server::Context,
       action_name = :index,
-      @module_manager : ModuleManager = ModuleManager.instance
+      @module_manager : Resources::Modules = Resources::Modules.instance
     )
       super(context, action_name)
     end

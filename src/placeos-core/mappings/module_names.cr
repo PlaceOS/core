@@ -3,14 +3,14 @@ require "placeos-driver/subscriptions"
 require "placeos-models/control_system"
 require "placeos-models/module"
 
-require "../module_manager"
+require "../resources/modules"
 require "./control_system_modules"
 
 module PlaceOS::Core
   class Mappings::ModuleNames < Resource(Model::Module)
-    protected getter module_manager : ModuleManager
+    protected getter module_manager : Resources::Modules
 
-    def initialize(@module_manager : ModuleManager = ModuleManager.instance)
+    def initialize(@module_manager : Resources::Modules = Resources::Modules.instance)
       super()
     end
 
@@ -25,7 +25,7 @@ module PlaceOS::Core
 
     def self.update_module_mapping(
       mod : Model::Module,
-      module_manager : ModuleManager = ModuleManager.instance
+      module_manager : Resources::Modules = Resources::Modules.instance
     ) : Resource::Result
       module_id = mod.id.as(String)
       # Only consider name change events

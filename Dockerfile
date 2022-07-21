@@ -1,6 +1,6 @@
 # One of `core` | `edge`
 ARG TARGET=core
-ARG CRYSTAL_VERSION=1.4.1
+ARG CRYSTAL_VERSION=1.5.0
 
 FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine as build
 
@@ -17,7 +17,6 @@ RUN apk add \
     'git' \
     'expat'
 
-# Install the latest version of LibSSH2, ping
 RUN apk add --update --no-cache \
     'apk-tools>=2.10.8-r0' \
     ca-certificates \
@@ -25,6 +24,8 @@ RUN apk add --update --no-cache \
     iputils \
     'libcurl>=7.79.1-r0' \
     libssh2-static \
+    lz4-dev \
+    lz4-static \
     yaml-static
 
 # Add trusted CAs for communicating with external services
@@ -43,7 +44,7 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
-# Install deps
+# Install dependencies
 COPY shard.yml /app
 COPY shard.override.yml /app
 COPY shard.lock /app
@@ -62,9 +63,21 @@ RUN UNAME_AT_COMPILE_TIME=true \
       --release \
       --static
 
-# Create binary directories
-RUN mkdir -p repositories bin/drivers
+RUN mkdir -p /app/bin/drivers
 RUN chown appuser -R /app
+
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
+# Extract target's dependencies (produces a smaller image than static compilation)
+# hadolint ignore=SC2016
+RUN for binary in "/app/bin/${TARGET}" "/bin/ping" "/bin/ping6"; do \
+        name="$(basename ${binary})"; \
+        ldd "$binary" | \
+        tr -s '[:blank:]' '\n' | \
+        grep '^/' | \
+        sed -e "s/^/\/\$name/" | \
+        xargs -I % sh -c 'mkdir -p $(dirname dependencies%); cp % dependencies%;'; \
+    done
 
 ###############################################################################
 
@@ -88,10 +101,14 @@ COPY --from=build /etc/group /etc/group
 # These provide certificate chain validation where communicating with external services over TLS
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
+# Service dependencies
+COPY --from=build /app/dependencies/${TARGET} /
 # Service binary
-COPY --from=build /app/bin /bin
+COPY --from=build /app/bin /bin/${TARGET}
 
 USER appuser:appuser
+
+COPY --from=build /app/bin /bin/drivers
 
 ###############################################################################
 
@@ -101,16 +118,12 @@ CMD ["/bin/edge"]
 
 ###############################################################################
 
-# FIXME: core currently has a number of dependandancies on the runtime for
-# retreiving repositories and compiling drivers. When the migrates into an
-# external service, this can base from `minimal` instead for cleaner images.
-FROM build as core
+FROM minimal as core
+ENV PATH=$PATH:/bin
 
-COPY --from=build /app/bin /bin
-
-WORKDIR /app
-
-USER appuser:appuser
+# Include `ping`
+COPY --from=build /app/dependencies/ping* /
+COPY --from=build /bin/ping* /
 
 EXPOSE 3000
 VOLUME ["/app/repositories/", "/app/bin/drivers/"]

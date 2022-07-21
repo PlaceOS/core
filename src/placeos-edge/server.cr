@@ -1,5 +1,6 @@
 require "http"
 require "rwlock"
+require "placeos-build/driver_store/filesystem"
 
 require "./protocol"
 require "./transport"
@@ -12,6 +13,8 @@ module PlaceOS::Edge
 
     private getter edges = {} of String => Core::ProcessManager::Edge
     private getter edges_lock = RWLock.new
+
+    getter binary_store : Build::Filesystem = Build::Filesystem.new
 
     # Macro generated calls for each `Core::ProcessManager::Edge`
     macro method_missing(call)
@@ -31,7 +34,7 @@ module PlaceOS::Edge
         end
       end
 
-      manager = PlaceOS::Core::ProcessManager::Edge.new(edge_id, socket)
+      manager = PlaceOS::Core::ProcessManager::Edge.new(edge_id, socket, binary_store)
 
       edges_lock.write do
         edges[edge_id] = manager

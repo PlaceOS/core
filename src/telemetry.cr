@@ -1,4 +1,5 @@
 require "./logging"
+require "opentelemetry-sdk"
 require "opentelemetry-instrumentation/src/opentelemetry/instrumentation/instrument"
 require "placeos-log-backend/telemetry"
 require "placeos-resource/instrumentation"

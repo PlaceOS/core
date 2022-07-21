@@ -2,6 +2,8 @@ require "promise"
 require "rethinkdb"
 require "rethinkdb-orm"
 
+require "./resources/modules"
+
 module PlaceOS::Core::Healthcheck
   def self.healthcheck? : Bool
     Promise.all(
@@ -9,7 +11,7 @@ module PlaceOS::Core::Healthcheck
         check_resource?("redis") { ::PlaceOS::Driver::RedisStorage.with_redis &.ping }
       },
       Promise.defer {
-        check_resource?("etcd") { ModuleManager.instance.discovery.etcd(&.maintenance.status) }
+        check_resource?("etcd") { ::PlaceOS::Core::Resources::Modules.instance.discovery.etcd(&.maintenance.status) }
       },
       Promise.defer {
         check_resource?("rethinkdb") { rethinkdb_healthcheck }

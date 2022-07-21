@@ -4,23 +4,23 @@ require "mutex"
 require "redis"
 require "uri/json"
 
-require "placeos-compiler/compiler"
-require "placeos-compiler/helper"
-require "placeos-models/control_system"
-require "placeos-models/driver"
-require "placeos-models/module"
-require "placeos-models/settings"
+require "placeos-models"
 require "placeos-resource"
 
-require "../placeos-edge/server"
+require "placeos-build/driver_store/filesystem"
 
-require "../constants"
-require "./process_manager/edge"
-require "./process_manager/local"
+require "../../placeos-edge/server"
+
+require "../../constants"
+require "../executables_for"
+require "../process_manager/edge"
+require "../process_manager/local"
+
+require "./drivers"
 
 module PlaceOS::Core
-  class ModuleManager < Resource(Model::Module)
-    include Compiler::Helper
+  class Resources::Modules < Resource(Model::Module)
+    include ExecutablesFor
 
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
 
@@ -43,13 +43,20 @@ module PlaceOS::Core
     getter redis : Redis { Redis.new(url: REDIS_URL) }
 
     # Singleton configured from environment
-    class_getter instance : ModuleManager { ModuleManager.new(uri: self.uri) }
+    class_getter instance : Resources::Modules do
+      Resources::Modules.new(
+        uri: self.uri,
+      )
+    end
 
     # Manager for remote edge module processes
     getter edge_processes : Edge::Server = Edge::Server.new
 
+    # Store for driver binaries
+    getter binary_store : Build::Filesystem
+
     # Manager for local module processes
-    getter local_processes : ProcessManager::Local { ProcessManager::Local.new(discovery) }
+    getter local_processes : ProcessManager::Local { ProcessManager::Local.new(discovery, binary_store) }
 
     # Start up process is as follows..
     # - registered
@@ -59,12 +66,13 @@ module PlaceOS::Core
     # - once load complete, mark in etcd that load is complete
     def initialize(
       uri : String | URI,
+      @binary_store : Build::Filesystem = Build::Filesystem.new(Path["./bin/drivers"].expand.to_s),
       discovery : HoundDog::Discovery? = nil,
       clustering : Clustering? = nil,
       @redis : Redis? = nil
     )
       @uri = uri.is_a?(URI) ? uri : URI.parse(uri)
-      ModuleManager.uri = @uri
+      Resources::Modules.uri = @uri
 
       @discovery = discovery || HoundDog::Discovery.new(service: "core", uri: @uri)
       @clustering = clustering || Clustering.new(
@@ -97,7 +105,7 @@ module PlaceOS::Core
       in .updated?
         return Resource::Result::Skipped unless own_node?(mod.id.as(String))
 
-        if ModuleManager.needs_restart?(mod)
+        if Resources::Modules.needs_restart?(mod)
           # Changes to Module state which requires a restart
           mod.running ? restart_module(mod) : stop_module(mod)
           Resource::Result::Success
@@ -116,13 +124,14 @@ module PlaceOS::Core
 
     # Load the module if current node is responsible
     #
+    # Note: Create a set of callbacks are set on loaded modules
+    # on start, register the callbacks that were waiting
     def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
       module_id = mod.id.as(String)
 
-      if ModuleManager.core_uri(mod, rendezvous_hash) == uri
+      if Resources::Modules.core_uri(mod, rendezvous_hash) == uri
         driver = mod.driver!
         driver_id = driver.id.as(String)
-        repository_folder = driver.repository.not_nil!.folder_name
 
         ::Log.with_context(
           driver_id: driver_id,
@@ -132,10 +141,14 @@ module PlaceOS::Core
           driver_name: driver.name,
           driver_commit: driver.commit,
         ) do
-          driver_path = PlaceOS::Compiler.is_built?(driver.file_name, repository_folder, driver.commit, id: driver_id)
+          Log.info { "querying binary store" }
+
+          executable = executables_for(driver).first?
+          driver_path = executable.try { |e| binary_store.path(e) }
+
           # Check if the driver is built
           if driver_path.nil?
-            Log.error { "driver does not exist for module" }
+            Log.error { "driver not loaded for module" }
             return
           end
 
@@ -160,10 +173,12 @@ module PlaceOS::Core
       Log.info { {message: "unloaded module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
     end
 
+    # NOTE: make sure the pre-start debug sessions are attached
+
     def start_module(mod : Model::Module)
       module_id = mod.id.as(String)
 
-      process_manager(mod) { |manager| manager.start(module_id, ModuleManager.start_payload(mod)) }
+      process_manager(mod) { |manager| manager.start(module_id, Resources::Modules.start_payload(mod)) }
 
       Log.info { {message: "started module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
     end
@@ -200,11 +215,11 @@ module PlaceOS::Core
 
     # Stops modules on stale driver and starts them on the new driver
     #
-    # Returns the stale driver path
-    def reload_modules(driver : Model::Driver) : Path?
+    def reload_modules(driver : Model::Driver) : String?
       driver_id = driver.id.as(String)
+
       # Set when a module_manager found for stale driver
-      stale_path = driver.modules.reduce(nil) do |path, mod|
+      driver.modules.reduce(nil) do |path, mod|
         module_id = mod.id.as(String)
 
         # Grab the stale driver path, if there is one
@@ -222,30 +237,26 @@ module PlaceOS::Core
           end
         end
 
-        if started?
-          # Reload module on new driver binary
-          Log.debug { {
-            message:   "loading module after compilation",
-            module_id: module_id,
-            driver_id: driver_id,
-            file_name: driver.file_name,
-            commit:    driver.commit,
-          } }
-          load_module(mod)
-          process_manager(mod) do |manager|
-            # Move callbacks to new module instance
-            callbacks.try &.each do |callback|
-              manager.debug(module_id, &callback)
-            end
+        # Reload module on new driver binary
+        Log.debug { {
+          message:   "loading module after compilation",
+          module_id: module_id,
+          driver_id: driver_id,
+          file_name: driver.file_name,
+          commit:    driver.commit,
+        } }
+
+        load_module(mod)
+
+        process_manager(mod) do |manager|
+          # Move callbacks to new module instance
+          callbacks.try &.each do |callback|
+            manager.debug(module_id, &callback)
           end
         end
+
         path
       end
-
-      stale_path || driver.commit_was.try { |commit|
-        # Try to create a driver path from what the commit used to be
-        Path[Compiler::Helper.driver_binary_path(driver.file_name, commit, driver_id)]
-      }
     end
 
     ###############################################################################################
@@ -257,7 +268,7 @@ module PlaceOS::Core
                 in Model::Module
                   mod.edge_id if mod.on_edge?
                 in String
-                  # TODO: Cache `Module` to `Edge` relation in `ModuleManager`
+                  # TODO: Cache `Module` to `Edge` relation in `Resources::Modules`
                   Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
                 end
 
@@ -364,7 +375,7 @@ module PlaceOS::Core
       end
     end
 
-    protected getter uri : URI = ModuleManager.uri
+    protected getter uri : URI = Resources::Modules.uri
 
     # Helpers
     ###########################################################################

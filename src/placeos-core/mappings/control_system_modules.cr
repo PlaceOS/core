@@ -3,16 +3,16 @@ require "placeos-driver/subscriptions"
 require "placeos-models/control_system"
 require "placeos-models/module"
 
-require "../module_manager"
+require "../resources/modules"
 
 module PlaceOS::Core
   class Mappings::ControlSystemModules < Resource(Model::ControlSystem)
     private getter? startup : Bool = true
-    private getter module_manager : ModuleManager
+    private getter module_manager : Resources::Modules
 
     def initialize(
       @startup : Bool = true,
-      @module_manager : ModuleManager = ModuleManager.instance
+      @module_manager : Resources::Modules = Resources::Modules.instance
     )
       super()
     end
@@ -28,7 +28,7 @@ module PlaceOS::Core
     def self.update_mapping(
       system : Model::ControlSystem,
       startup : Bool = false,
-      module_manager : ModuleManager = ModuleManager.instance
+      module_manager : Resources::Modules = Resources::Modules.instance
     ) : Resource::Result
       relevant_node = startup || module_manager.discovery.own_node?(system.id.as(String))
       unless relevant_node
@@ -57,7 +57,7 @@ module PlaceOS::Core
     #
     def self.update_logic_modules(
       system : Model::ControlSystem,
-      module_manager : ModuleManager = ModuleManager.instance
+      module_manager : Resources::Modules = Resources::Modules.instance
     ) : Int32
       return 0 if system.destroyed?
 

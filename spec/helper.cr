@@ -1,5 +1,6 @@
 require "uuid"
 require "placeos-core-client"
+require "git-repository"
 
 require "../lib/action-controller/spec/curl_context"
 
@@ -7,6 +8,7 @@ require "../lib/action-controller/spec/curl_context"
 require "../src/config"
 require "../src/placeos-core"
 require "../src/placeos-core/*"
+require "../src/placeos-core/resources/*"
 
 require "placeos-models/spec/generator"
 
@@ -15,23 +17,10 @@ require "spec"
 SPEC_DRIVER = "drivers/place/private_helper.cr"
 CORE_URL    = ENV["CORE_URL"]? || "http://core:3000"
 
-# To reduce the run-time of the very setup heavy specs.
-# - Use teardown if you need to clear a temporary repository
-# - Use setup(fresh: true) if you require a clean working directory
-TEMP_DIR = get_temp
-
 PRIVATE_DRIVER_ID = "driver-#{random_id}"
 
 def random_id
   UUID.random.to_s.split('-').first
-end
-
-def get_temp
-  "#{Dir.tempdir}/core-spec-#{random_id}"
-end
-
-def teardown(temp_dir = TEMP_DIR)
-  `rm -rf #{temp_dir}`
 end
 
 def clear_tables
@@ -49,7 +38,7 @@ end
 def module_manager_mock
   discovery = discovery_mock
   clustering = MockClustering.new(uri: CORE_URL, discovery: discovery)
-  PlaceOS::Core::ModuleManager.new(CORE_URL, discovery: discovery, clustering: clustering)
+  PlaceOS::Core::Resources::Modules.new(CORE_URL, discovery: discovery, clustering: clustering)
 end
 
 macro around_suite(block)
@@ -67,9 +56,6 @@ around_suite ->{
 }
 
 Spec.before_suite do
-  # Set the working directory before specs
-  set_temporary_working_directory(path: ".")
-  set_temporary_working_directory
   Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :warn)
   Log.builder.bind("place_os.*", backend: PlaceOS::Core::LOG_STDOUT, level: :trace)
   Log.builder.bind("http.client", backend: PlaceOS::Core::LOG_STDOUT, level: :warn)
@@ -78,31 +64,15 @@ Spec.before_suite do
 end
 
 Spec.after_suite do
-  PlaceOS::Core::ResourceManager.instance.stop
+  PlaceOS::Core::Resources::Manager.instance.stop
   Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
   puts "\n> Terminating stray driver processes"
   `pkill -f ".*core-spec.*"` rescue nil
-  teardown
-end
-
-# Set up a temporary directory
-def set_temporary_working_directory(fresh : Bool = false, path : String? = nil) : String
-  temp_dir = fresh ? get_temp : TEMP_DIR
-  temp_dir = Path[path].expand.to_s if path
-  PlaceOS::Compiler.binary_dir = "#{temp_dir}/bin"
-  PlaceOS::Compiler.repository_dir = "#{temp_dir}/repositories"
-
-  Dir.mkdir_p(File.join(PlaceOS::Compiler.binary_dir, "drivers"))
-  Dir.mkdir_p(PlaceOS::Compiler.repository_dir)
-
-  temp_dir
 end
 
 # Create models for a test
-def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::Driver::Role? = nil)
-  # Set up a temporary directory
-  temp_dir = set_temporary_working_directory(fresh)
-
+# ameba:disable Metrics/CyclomaticComplexity
+def setup(role : PlaceOS::Model::Driver::Role? = nil, use_head : Bool = false)
   # Repository metadata
   repository_uri = "https://github.com/placeos/private-drivers"
   repository_name = "Private Drivers"
@@ -112,7 +82,13 @@ def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::
   driver_file_name = "drivers/place/private_helper.cr"
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
-  driver_commit = "HEAD"
+
+  if use_head
+    driver_commit = "HEAD"
+  else
+    driver_commit = GitRepository.new(repository_uri).commits("master", depth: 1).first.hash
+  end
+
   driver_role = role || PlaceOS::Model::Driver::Role::Logic
 
   existing_repo = PlaceOS::Model::Repository.where(uri: repository_uri).first?
@@ -160,15 +136,15 @@ def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::
     control_system.save
   end
 
-  {temp_dir, repository, driver, mod}
+  {repository, driver, mod}
 end
 
-def create_resources(fresh : Bool = false, process : Bool = true)
-  # Prepare models, set working dir
-  _, repository, driver, mod = setup(fresh)
+def create_resources(process : Bool = true, use_head : Bool = false)
+  # Prepare models
+  repository, driver, mod = setup(use_head: use_head)
 
   # Clone, compile
-  resource_manager = PlaceOS::Core::ResourceManager.new(testing: true)
+  resource_manager = PlaceOS::Core::Resources::Manager.new(testing: true)
   resource_manager.start { } if process
 
   {repository, driver, mod, resource_manager}

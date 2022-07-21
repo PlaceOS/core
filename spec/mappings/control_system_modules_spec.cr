@@ -1,7 +1,7 @@
 require "../helper"
 
 module PlaceOS::Core::Mappings
-  class Mock < ModuleManager
+  class Mock < Resources::Modules
     FAILS_TO_REFRESH = "fails-to-refresh"
 
     def self.failing_id
@@ -9,7 +9,7 @@ module PlaceOS::Core::Mappings
     end
 
     def refresh_module(mod)
-      raise "failed to refresh!" if mod.id.as(String).ends_with? FAILS_TO_REFRESH
+      raise "mocked refresh error" if mod.id.as(String).ends_with? FAILS_TO_REFRESH
       true
     end
   end

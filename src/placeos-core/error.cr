@@ -9,4 +9,7 @@ module PlaceOS::Core
 
   class ModuleError < Error
   end
+
+  class DriverError < Error
+  end
 end

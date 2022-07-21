@@ -1,6 +1,18 @@
 dependencies:
+  secrets-env:
+    github: spider-gazelle/secrets-env
+
   pars:
     github: spider-gazelle/pars
+
+  placeos-core-client:
+    github: placeos/core-client
+    version: ~> 1.0
+
+  placeos-build:
+    github: placeos/build
+    branch: main
+
   opentelemetry-instrumentation:
     github: wyhaines/opentelemetry-instrumentation.cr
     branch: main

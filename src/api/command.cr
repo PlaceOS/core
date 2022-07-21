@@ -1,11 +1,12 @@
 require "./application"
-require "../placeos-core/module_manager"
+
+require "../placeos-core/resources/modules"
 
 module PlaceOS::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
-    getter module_manager : ModuleManager { ModuleManager.instance }
+    getter module_manager : Resources::Modules { Resources::Modules.instance }
 
     # Loads if not already loaded
     # If the module is already running, it will be updated to latest settings.
@@ -63,6 +64,19 @@ module PlaceOS::Core::Api
 
       Log.trace { {message: "binding debug session to module", module_id: module_id} }
 
+      # Add a check for the module id
+
+      # If it exists
+
+      # setup a callback holder with driver id
+
+      # start websocket session
+
+      # before module start, check for debug session
+
+      # Need to hook into process manager
+      # must add the callbacks on/before start
+
       # Forward debug messages to the websocket
       module_manager.process_manager(module_id) do |manager|
         debug_lock = Mutex.new
@@ -90,7 +104,7 @@ module PlaceOS::Core::Api
     def initialize(
       context : HTTP::Server::Context,
       action_name = :index,
-      @module_manager : ModuleManager = ModuleManager.instance
+      @module_manager : Resources::Modules = Resources::Modules.instance
     )
       super(context, action_name)
     end

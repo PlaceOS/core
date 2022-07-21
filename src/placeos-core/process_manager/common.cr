@@ -1,5 +1,4 @@
 require "hardware"
-require "placeos-compiler/compiler"
 
 # Methods for interacting with module processes common across a local and edge node
 module PlaceOS::Core::ProcessManager::Common
@@ -185,9 +184,9 @@ module PlaceOS::Core::ProcessManager::Common
   ###########################################################################
 
   # HACK: Retrieve the driver path from the module_id
-  def path_for?(module_id) : Path?
+  def path_for?(module_id) : String?
     driver_key_for?(module_id).try do |key|
-      Path.new(Compiler.binary_dir, key)
+      binary_store.path(Model::Executable.new(key))
     end
   end
 

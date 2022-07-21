@@ -1,12 +1,12 @@
 require "./application"
 
-require "../placeos-core/module_manager"
+require "../placeos-core/resources/modules"
 
 module PlaceOS::Core::Api
   class Edge < Application
     base "/api/core/v1/edge/"
 
-    getter module_manager : ModuleManager { ModuleManager.instance }
+    getter module_manager : Resources::Modules { Resources::Modules.instance }
 
     ws "/control" do |socket|
       edge_id = params["edge_id"]
