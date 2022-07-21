@@ -92,13 +92,18 @@ module PlaceOS::Core::Api
         ctx = context("POST", route, json_headers, EXEC_PAYLOAD)
         ctx.route_params = {"module_id" => mod_id}
         Command.new(ctx, :execute, module_manager).execute
-
         ctx.response.status_code.should eq 200
 
-        # Wait for a message on the debugger
-        message = message_channel.receive
-        message.empty?.should_not be_true
-        message.should contain("this will be propagated to backoffice!")
+        # Wait for messages on the debugger
+        messages = [] of String
+        messages << message_channel.receive
+        messages << message_channel.receive
+
+        {"proxy_in_use", "this will be propagated to backoffice!"}.each do |expected|
+          message = messages.find &.includes?(expected)
+          message.should_not be_nil
+          messages.delete(message)
+        end
       ensure
         resource_manager.try &.stop
       end
