@@ -6,26 +6,37 @@ module PlaceOS::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
+    before_action :current_module, only: [:load]
+
+    ###############################################################################################
+
     getter module_manager : Resources::Modules { Resources::Modules.instance }
+
+    getter module_id : String do
+      route_params["module_id"].tap { |id| Log.context.set(module_id: id) }
+    end
+
+    getter current_module : Model::Module do
+      # Find will raise a 404 (not found) if there is an error
+      Model::Module.find!(id, runopts: {"read_mode" => "majority"})
+    end
+
+    ###############################################################################################
 
     # Loads if not already loaded
     # If the module is already running, it will be updated to latest settings.
     post "/:module_id/load", :load do
-      mod = Model::Module.find(params["module_id"])
-      head :not_found if mod.nil?
-
-      module_manager.load_module(mod)
+      module_manager.load_module(current_module)
 
       head :ok
     end
 
     # Executes a command against a module
     post "/:module_id/execute", :execute do
-      module_id = params["module_id"]
       user_id = params["user_id"]?.presence
 
       unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
-        Log.info { {module_id: module_id, message: "module not loaded"} }
+        Log.info { "module not loaded" }
         head :not_found
       end
 
@@ -60,9 +71,7 @@ module PlaceOS::Core::Api
     # For now a one-to-one debug session to websocket should be fine as it's not
     # a common operation and limited to system administrators
     ws "/:module_id/debugger", :module_debugger do |socket|
-      module_id = params["module_id"]
-
-      Log.trace { {message: "binding debug session to module", module_id: module_id} }
+      Log.trace { "binding debug session to module" }
 
       # Add a check for the module id
 
