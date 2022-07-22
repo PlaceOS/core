@@ -2,6 +2,7 @@ require "clustering"
 require "hound-dog"
 require "mutex"
 require "redis"
+require "tasker"
 require "uri/json"
 
 require "placeos-compiler/compiler"
@@ -28,6 +29,11 @@ module PlaceOS::Core
     getter discovery : HoundDog::Discovery
 
     delegate stop, to: clustering
+
+    def stop
+      clustering.stop
+      stop_process_check
+    end
 
     delegate path_for?, to: local_processes
 
@@ -75,16 +81,26 @@ module PlaceOS::Core
     end
 
     def start
-      # Start clustering process
-      clustering.start(on_stable: ->publish_version(String)) do |nodes|
-        stabilize(nodes)
-      end
+      start_clustering
+      start_process_check
 
       super
 
       @started = true
       self
     end
+
+    ###############################################################################################
+
+    # Register core node to the cluster
+    protected def start_clustering
+      clustering.start(on_stable: ->publish_version(String)) do |nodes|
+        stabilize(nodes)
+      end
+    end
+
+    # Event loop
+    ###############################################################################################
 
     def process_resource(action : Resource::Action, resource mod : Model::Module) : Resource::Result
       case action
@@ -365,6 +381,65 @@ module PlaceOS::Core
     end
 
     protected getter uri : URI = ModuleManager.uri
+
+    # Periodic Process Check
+    ###############################################################################################
+
+    @process_check_task : Tasker::Repeat(Nil)?
+
+    # Begin scanning for dead driver processes
+    protected def start_process_check
+      @process_check_task = Tasker.every(PROCESS_CHECK_PERIOD) do
+        process_check
+      end
+    end
+
+    protected def stop_process_check
+      @process_check_task.try &.cancel
+    end
+
+    # TODO:
+    # Add `with_module_managers` to ProcessManager interface
+    # and thus provide process check support for edge nodes.
+    #
+    # NOTE: This could also be performed independently in the `Edge::Client` instead of here.
+    protected def process_check : Nil
+      # NOTE: Add `edge_processes` here once it supports process check
+      {local_processes}.each &.with_module_managers do |module_manager_map|
+        # Group module keys by protcol manager
+        grouped_managers = module_manager_map.each_with_object({} of Driver::Protocol::Management => Array(String)) do |(module_id, protocol_manager), grouped|
+          (grouped[protocol_manager] ||= [] of String) << module_id
+        end
+
+        # Check if any processes are dead
+        grouped_managers.each do |protocol_manager, module_ids|
+          process_alive = begin
+            # If there's an empty response, the modules that were meant to be running are not.
+            # This is taken as a sign that the process is dead.
+            !protocol_manager.info.empty?
+          rescue error
+            Log.warn(exception: error) { "failed to request process manager for #{module_ids.join(", ")}" }
+            false
+          end
+
+          unless process_alive
+            # Fire off a terminate request
+            begin
+              protocol_manager.terminate
+            rescue
+            end
+
+            # Remove the dead manager from the map
+            module_manager_map.reject(module_ids)
+
+            # Restart all the modules previously assigned to the dead manager
+            Model::Module.find_all(module_ids).each do |mod|
+              load_module(mod)
+            end
+          end
+        end
+      end
+    end
 
     # Helpers
     ###########################################################################

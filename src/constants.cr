@@ -25,5 +25,10 @@ module PlaceOS::Core
 
   RESPONSE_CODE_HEADER = "Response-Code"
 
+  # Process check period
+
   class_getter? production : Bool = PROD
+
+  # Used in `ModuleManager`
+  PROCESS_CHECK_PERIOD = (ENV["PLACE_CORE_PROCESS_CHECK_PERIOD"]?.try(&.to_i?) || 45).seconds
 end

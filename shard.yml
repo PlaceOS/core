@@ -83,6 +83,9 @@ dependencies:
     github: spider-gazelle/secrets-env
     version: ~> 1
 
+  tasker:
+    github: spider-gazelle/tasker
+
   git-repository:
     github: place-labs/git-repository
 
