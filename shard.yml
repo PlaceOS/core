@@ -83,8 +83,11 @@ dependencies:
     github: spider-gazelle/secrets-env
     version: ~> 1
 
-  git-repository:
-    github: place-labs/git-repository
+  tasker:
+    github: spider-gazelle/tasker
+
+  timeout:
+    github: wyhaines/timeout.cr
 
 development_dependencies:
   ameba:
