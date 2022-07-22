@@ -3,6 +3,7 @@ require "hound-dog"
 require "mutex"
 require "redis"
 require "tasker"
+require "timeout"
 require "uri/json"
 
 require "placeos-compiler/compiler"
@@ -27,8 +28,6 @@ module PlaceOS::Core
 
     getter clustering : Clustering
     getter discovery : HoundDog::Discovery
-
-    delegate stop, to: clustering
 
     def stop
       clustering.stop
@@ -413,28 +412,34 @@ module PlaceOS::Core
 
         # Check if any processes are dead
         grouped_managers.each do |protocol_manager, module_ids|
-          process_alive = begin
-            # If there's an empty response, the modules that were meant to be running are not.
-            # This is taken as a sign that the process is dead.
-            !protocol_manager.info.empty?
-          rescue error
-            Log.warn(exception: error) { "failed to request process manager for #{module_ids.join(", ")}" }
-            false
-          end
-
-          unless process_alive
-            # Ensure the process is dead.
-            begin
-              Process.signal(Signal::KILL, protocol_manager.pid)
-            rescue
+          # Asynchronously check if any processes are timing out on comms, and if so, restart them
+          spawn(same_thread: true) do
+            process_alive = begin
+              # If there's an empty response, the modules that were meant to be running are not.
+              # This is taken as a sign that the process is dead.
+              # Alternatively, if the response times out, the process is dead.
+              timeout(PROCESS_COMMS_TIMEOUT) do
+                !protocol_manager.info.empty?
+              end
+            rescue error
+              Log.warn(exception: error) { "failed to request process manager for #{module_ids.join(", ")}" }
+              false
             end
 
-            # Remove the dead manager from the map
-            module_manager_map.reject(module_ids)
+            unless process_alive
+              # Ensure the process is dead.
+              begin
+                Process.signal(Signal::KILL, protocol_manager.pid)
+              rescue
+              end
 
-            # Restart all the modules previously assigned to the dead manager
-            Model::Module.find_all(module_ids).each do |mod|
-              load_module(mod)
+              # Remove the dead manager from the map
+              module_manager_map.reject(module_ids)
+
+              # Restart all the modules previously assigned to the dead manager
+              Model::Module.find_all(module_ids).each do |mod|
+                load_module(mod)
+              end
             end
           end
         end

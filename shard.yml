@@ -86,8 +86,8 @@ dependencies:
   tasker:
     github: spider-gazelle/tasker
 
-  git-repository:
-    github: place-labs/git-repository
+  timeout:
+    github: wyhaines/timeout.cr
 
 development_dependencies:
   ameba:
