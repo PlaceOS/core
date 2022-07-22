@@ -2,8 +2,6 @@ require "clustering"
 require "hound-dog"
 require "mutex"
 require "redis"
-require "tasker"
-require "timeout"
 require "uri/json"
 
 require "placeos-compiler/compiler"
@@ -17,11 +15,13 @@ require "placeos-resource"
 require "../placeos-edge/server"
 
 require "../constants"
+require "./process_check"
 require "./process_manager/edge"
 require "./process_manager/local"
 
 module PlaceOS::Core
   class ModuleManager < Resource(Model::Module)
+    include ProcessCheck
     include Compiler::Helper
 
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
@@ -380,71 +380,6 @@ module PlaceOS::Core
     end
 
     protected getter uri : URI = ModuleManager.uri
-
-    # Periodic Process Check
-    ###############################################################################################
-
-    @process_check_task : Tasker::Repeat(Nil)?
-
-    # Begin scanning for dead driver processes
-    protected def start_process_check
-      @process_check_task = Tasker.every(PROCESS_CHECK_PERIOD) do
-        process_check
-      end
-    end
-
-    protected def stop_process_check
-      @process_check_task.try &.cancel
-    end
-
-    # TODO:
-    # Add `with_module_managers` to ProcessManager interface
-    # and thus provide process check support for edge nodes.
-    #
-    # NOTE: This could also be performed independently in the `Edge::Client` instead of here.
-    protected def process_check : Nil
-      # NOTE: Add `edge_processes` here once it supports process check
-      {local_processes}.each &.with_module_managers do |module_manager_map|
-        # Group module keys by protcol manager
-        grouped_managers = module_manager_map.each_with_object({} of Driver::Protocol::Management => Array(String)) do |(module_id, protocol_manager), grouped|
-          (grouped[protocol_manager] ||= [] of String) << module_id
-        end
-
-        # Check if any processes are dead
-        grouped_managers.each do |protocol_manager, module_ids|
-          # Asynchronously check if any processes are timing out on comms, and if so, restart them
-          spawn(same_thread: true) do
-            process_alive = begin
-              # If there's an empty response, the modules that were meant to be running are not.
-              # This is taken as a sign that the process is dead.
-              # Alternatively, if the response times out, the process is dead.
-              timeout(PROCESS_COMMS_TIMEOUT) do
-                !protocol_manager.info.empty?
-              end
-            rescue error
-              Log.warn(exception: error) { "failed to request process manager for #{module_ids.join(", ")}" }
-              false
-            end
-
-            unless process_alive
-              # Ensure the process is dead.
-              begin
-                Process.signal(Signal::KILL, protocol_manager.pid)
-              rescue
-              end
-
-              # Remove the dead manager from the map
-              module_manager_map.reject(module_ids)
-
-              # Restart all the modules previously assigned to the dead manager
-              Model::Module.find_all(module_ids).each do |mod|
-                load_module(mod)
-              end
-            end
-          end
-        end
-      end
-    end
 
     # Helpers
     ###########################################################################
