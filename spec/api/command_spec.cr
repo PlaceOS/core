@@ -105,7 +105,7 @@ module PlaceOS::Core::Api
           end
         end
 
-        messages.should contain "this will be propagated to backoffice!"
+        messages.should contain %([1,"this will be propagated to backoffice!"])
       ensure
         resource_manager.try &.stop
       end
