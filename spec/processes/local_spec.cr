@@ -69,13 +69,18 @@ module PlaceOS::Core::ProcessManager
           result.should eq %("hello")
           code.should eq 200
 
-          select
-          when message = message_channel.receive
-          when timeout 2.seconds
-            raise "timeout"
+          messages = [] of String
+          2.times do
+            select
+            when message = message_channel.receive
+              messages << message
+            when timeout 2.seconds
+              fail "timed out waiting for debug output"
+            end
           end
 
-          message.should eq %([1,"hello"])
+          messages.should contain %([1,"hello"])
+          messages.should contain %([1,"status updated: connected = true"])
         end
 
         it "ignore" do
@@ -95,21 +100,28 @@ module PlaceOS::Core::ProcessManager
           result.should eq %("hello")
           code.should eq 200
 
-          select
-          when message = message_channel.receive
-            message.should eq %([1,"hello"])
-          when timeout 2.seconds
-            raise "timeout"
+          messages = [] of String
+          2.times do
+            select
+            when message = message_channel.receive
+              messages << message
+            when timeout 2.seconds
+              fail "timed out waiting for debug output"
+            end
           end
 
+          messages.should contain %([1,"hello"])
+          messages.should contain %([1,"status updated: connected = true"])
+
           pm.ignore(module_id, &callback)
+
           result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
           result.should eq %("hello")
           code.should eq 200
 
           expect_raises(Exception) do
             select
-            when message = message_channel.receive
+            when message_channel.receive
             when timeout 0.5.seconds
               raise "timeout"
             end
