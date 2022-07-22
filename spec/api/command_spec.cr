@@ -96,14 +96,16 @@ module PlaceOS::Core::Api
 
         # Wait for messages on the debugger
         messages = [] of String
-        messages << message_channel.receive
-        messages << message_channel.receive
-
-        {"proxy_in_use", "this will be propagated to backoffice!"}.each do |expected|
-          message = messages.find &.includes?(expected)
-          message.should_not be_nil
-          messages.delete(message)
+        2.times do
+          select
+          when message = message_channel.receive
+            messages << message
+          when timeout 2.seconds
+            break
+          end
         end
+
+        messages.should contain "this will be propagated to backoffice!"
       ensure
         resource_manager.try &.stop
       end
