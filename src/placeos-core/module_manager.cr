@@ -423,9 +423,9 @@ module PlaceOS::Core
           end
 
           unless process_alive
-            # Fire off a terminate request
+            # Ensure the process is dead.
             begin
-              protocol_manager.terminate
+              Process.signal(Signal::KILL, protocol_manager.pid)
             rescue
             end
 

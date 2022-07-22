@@ -25,8 +25,6 @@ module PlaceOS::Core
 
   RESPONSE_CODE_HEADER = "Response-Code"
 
-  # Process check period
-
   class_getter? production : Bool = PROD
 
   # Used in `ModuleManager`
