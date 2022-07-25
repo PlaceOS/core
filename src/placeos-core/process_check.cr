@@ -67,10 +67,6 @@ module PlaceOS::Core
               end
             rescue error : Timeout::Error
               Log.warn(exception: error) { "unresponsive process manager for #{module_ids.join(", ")}" }
-
-              # Kill the process manager's IO, unblocking any fibers waiting on a response
-              protocol_manager.@io.try(&.close) rescue nil
-
               State::Unresponsive
             end
 
@@ -93,6 +89,9 @@ module PlaceOS::Core
           if state.unresponsive?
             Process.signal(Signal::KILL, protocol_manager.pid) rescue nil
           end
+
+          # Kill the process manager's IO, unblocking any fibers waiting on a response
+          protocol_manager.@io.try(&.close) rescue nil
 
           Log.warn { {message: "restarting unresponsive driver", driver_path: protocol_manager.@driver_path} }
 
