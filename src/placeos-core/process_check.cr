@@ -59,11 +59,7 @@ module PlaceOS::Core
               # This is taken as a sign that the process is dead.
               # Alternatively, if the response times out, the process is dead.
               timeout(PROCESS_COMMS_TIMEOUT) do
-                if protocol_manager.info.empty?
-                  State::Dead
-                else
-                  State::Running
-                end
+                State::Running if protocol_manager.info
               end
             rescue error : Timeout::Error
               Log.warn(exception: error) { "unresponsive process manager for #{module_ids.join(", ")}" }
