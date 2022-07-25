@@ -100,6 +100,8 @@ module PlaceOS::Core
           end
         end
       end
+
+      checks.close
     end
   end
 end
