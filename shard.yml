@@ -1,5 +1,5 @@
 name: placeos-core
-version: 4.3.2
+version: 4.4.0
 crystal: ~> 1.3
 
 targets:
@@ -83,8 +83,11 @@ dependencies:
     github: spider-gazelle/secrets-env
     version: ~> 1
 
-  git-repository:
-    github: place-labs/git-repository
+  tasker:
+    github: spider-gazelle/tasker
+
+  timeout:
+    github: wyhaines/timeout.cr
 
 development_dependencies:
   ameba:

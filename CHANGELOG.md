@@ -1,4 +1,8 @@
-## Unreleased
+## v4.4.0 (2022-07-22)
+
+### Feat
+
+- **module_manager**: periodically check that processes are alive ([#225](https://github.com/PlaceOS/core/pull/225))
 
 ## v4.3.2 (2022-07-20)
 
