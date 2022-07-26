@@ -96,7 +96,7 @@ module PlaceOS::Core
           # Kill the process manager's IO, unblocking any fibers waiting on a response
           protocol_manager.@io.try(&.close) rescue nil
 
-          Log.warn { {message: "restarting unresponsive driver", driver_path: protocol_manager.@driver_path} }
+          Log.warn { {message: "restarting unresponsive driver", state: state.to_s, driver_path: protocol_manager.@driver_path} }
 
           # Determine if any new modules have been loaded onto the driver that needs to be restarted
           fresh_module_ids = module_manager_map.compact_map do |module_id, pm|
