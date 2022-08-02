@@ -107,7 +107,7 @@ module PlaceOS::Core
           module_ids |= fresh_module_ids
 
           # Remove the dead manager from the map
-          module_manager_map.reject(module_ids)
+          module_manager_map.reject!(module_ids)
 
           # Restart all the modules previously assigned to the dead manager
           #
