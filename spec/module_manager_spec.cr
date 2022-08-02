@@ -2,6 +2,43 @@ require "./helper"
 
 module PlaceOS::Core
   describe ModuleManager, tags: "processes" do
+    describe ProcessCheck do
+      it "reloads drivers whose protocol managers have died" do
+        _, _driver, mod, resource_manager = create_resources
+
+        module_id = mod.id.as(String)
+
+        # Load the test driver that will brick the comms of the driver
+        # Check that the module is loaded, and the module manager can be received
+        module_manager = module_manager_mock
+        module_manager.load(mod)
+        module_manager.local_processes.run_count.modules.should eq 1
+
+        module_manager.process_manager(module_id) do |manager|
+          manager.execute(module_id, ModuleManager.execute_payload(:break_io, user_id: nil))
+        end
+
+        # TODO: add an expectation here to show that execs on a broken driver actually 500
+
+        expect_raises do
+          module_manager.process_manager(module_id) do |manager|
+            manager.execute(module_id, ModuleManager.execute_payload(:used_for_place_testing, user_id: nil))
+          end
+        end
+
+        module_manager_mock.process_check
+
+        result, _code = module_manager.process_manager(module_id) do |manager|
+          manager.execute(module_id, ModuleManager.execute_payload(:used_for_place_testing, user_id: nil))
+        end
+
+        result.should eq %("you can delete this file")
+      ensure
+        module_manager.try &.stop
+        resource_manager.try &.stop
+      end
+    end
+
     describe "edge" do
     end
 
