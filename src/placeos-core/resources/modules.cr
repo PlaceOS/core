@@ -13,21 +13,25 @@ require "../../placeos-edge/server"
 
 require "../../constants"
 require "../executables_for"
+require "../process_check"
 require "../process_manager/edge"
 require "../process_manager/local"
-
 require "./drivers"
 
 module PlaceOS::Core
   class Resources::Modules < Resource(Model::Module)
     include ExecutablesFor
+    include ProcessCheck
 
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
 
     getter clustering : Clustering
     getter discovery : HoundDog::Discovery
 
-    delegate stop, to: clustering
+    def stop
+      clustering.stop
+      stop_process_check
+    end
 
     delegate path_for?, to: local_processes
 
@@ -83,16 +87,26 @@ module PlaceOS::Core
     end
 
     def start
-      # Start clustering process
-      clustering.start(on_stable: ->publish_version(String)) do |nodes|
-        stabilize(nodes)
-      end
+      start_clustering
+      start_process_check
 
       super
 
       @started = true
       self
     end
+
+    ###############################################################################################
+
+    # Register core node to the cluster
+    protected def start_clustering
+      clustering.start(on_stable: ->publish_version(String)) do |nodes|
+        stabilize(nodes)
+      end
+    end
+
+    # Event loop
+    ###############################################################################################
 
     def process_resource(action : Resource::Action, resource mod : Model::Module) : Resource::Result
       case action

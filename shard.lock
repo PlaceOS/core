@@ -203,7 +203,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.4.4
+    version: 6.4.5
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -292,6 +292,10 @@ shards:
   time-ext:
     git: https://github.com/wyhaines/time-ext.cr.git
     version: 0.1.0+git.commit.175f658235fb6cdc9c804cb96da510fec27f4cd6
+
+  timeout:
+    git: https://github.com/wyhaines/timeout.cr.git
+    version: 0.1.0+git.commit.130d8893f5222ebaed06f743a3bdad7f6b2a7be7
 
   tokenizer:
     git: https://github.com/spider-gazelle/tokenizer.git
