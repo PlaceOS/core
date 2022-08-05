@@ -24,8 +24,6 @@ module PlaceOS::Core
       Running
       # Process is not responding
       Unresponsive
-      # Process is dead
-      Dead
     end
 
     # TODO:
@@ -58,16 +56,10 @@ module PlaceOS::Core
               # If there's an empty response, the modules that were meant to be running are not.
               # This is taken as a sign that the process is dead.
               # Alternatively, if the response times out, the process is dead.
-              info = nil
               timeout(PROCESS_COMMS_TIMEOUT) do
-                info = protocol_manager.info
+                protocol_manager.info
               end
-
-              if info.nil? || info.as(Array(String)).empty?
-                State::Dead
-              else
-                State::Running
-              end
+              State::Running
             rescue error : Timeout::Error
               Log.warn(exception: error) { "unresponsive process manager for #{module_ids.join(", ")}" }
               State::Unresponsive

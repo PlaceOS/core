@@ -1,3 +1,9 @@
+## v4.4.1 (2022-07-26)
+
+### Fix
+
+- **process_check**: fix a race condition ([#226](https://github.com/PlaceOS/core/pull/226))
+
 ## v4.4.0 (2022-07-22)
 
 ### Feat
@@ -127,7 +133,6 @@
 - **api command**: ensure debug writes are serialised ([#146](https://github.com/PlaceOS/core/pull/146))
 - **api command**: obtain latest process manager to ignore ([#144](https://github.com/PlaceOS/core/pull/144))
 - **edge**: handle proxied PUBLISH events
-- reconnection
 - **api:drivers**: account for branch in commit listing
 - bump placeos-compiler
 - **process_manager/local**: reduce severity of missing mod manager log
@@ -152,14 +157,13 @@
 
 ## v3.10.5 (2021-07-20)
 
-### Fix
-
-- **core client**: ensure body has completely downloaded
-- **core client**: ensure body has completely downloaded
-
 ### Feat
 
 - **shard.yml**: bump version
+
+### Fix
+
+- **core client**: ensure body has completely downloaded
 
 ## v3.10.3 (2021-07-19)
 
@@ -338,7 +342,6 @@
 ### Fix
 
 - update tasker
-- **command controller**: don't double serialize JSON
 - **command spec**: response is not double serialized
 - **command controller**: don't double serialize JSON
 
@@ -354,13 +357,11 @@
 
 - fixed size error buffer
 - **resource**: use same thread and avoid not_nil requirement
-- hang on core load with > 64 resources
 - nilable resource
 - use `.all`
 - hang on core load with > 64 resources
 - **app controller**: requires a local logger
 - **app controller**: requires a local logger
-- **Log**: use `Log#setup`
 - log setup on 0.35
 - **Log**: use `Log#setup`
 
@@ -392,10 +393,6 @@
 ## v1.2.5 (2020-05-08)
 
 ## v1.2.4 (2020-05-04)
-
-### Fix
-
-- **resource**: handle Resource::Result::Error
 
 ## v1.2.3 (2020-05-01)
 
