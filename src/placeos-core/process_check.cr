@@ -56,7 +56,7 @@ module PlaceOS::Core
               # If there's an empty response, the modules that were meant to be running are not.
               # This is taken as a sign that the process is dead.
               # Alternatively, if the response times out, the process is dead.
-              timeout(PROCESS_COMMS_TIMEOUT) do
+              Tasker.timeout(PROCESS_COMMS_TIMEOUT) do
                 protocol_manager.info
               end
 

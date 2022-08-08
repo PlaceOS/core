@@ -86,9 +86,6 @@ dependencies:
   tasker:
     github: spider-gazelle/tasker
 
-  timeout:
-    github: wyhaines/timeout.cr
-
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba
