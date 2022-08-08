@@ -255,7 +255,7 @@ shards:
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
-    version: 2.0.6
+    version: 2.0.7
 
   time-ext:
     git: https://github.com/wyhaines/time-ext.cr.git
