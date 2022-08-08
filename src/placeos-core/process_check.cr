@@ -1,5 +1,4 @@
 require "tasker"
-require "timeout"
 
 require "../constants"
 
@@ -61,7 +60,7 @@ module PlaceOS::Core
               end
 
               State::Running
-            rescue error : Timeout::Error
+            rescue error : Tasker::Timeout
               Log.warn(exception: error) { "unresponsive process manager for #{module_ids.join(", ")}" }
               State::Unresponsive
             end
