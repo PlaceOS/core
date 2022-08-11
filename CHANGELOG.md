@@ -1,3 +1,14 @@
+## v4.4.2 (2022-08-11)
+
+### Refactor
+
+- use Tasker instead of Timeout shard ([#229](https://github.com/PlaceOS/core/pull/229))
+
+### Fix
+
+- remove Dead state
+- **process_check**: use `reject!`
+
 ## v4.4.1 (2022-07-26)
 
 ### Fix
