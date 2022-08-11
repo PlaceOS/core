@@ -1,5 +1,4 @@
 require "tasker"
-require "timeout"
 
 require "../constants"
 
@@ -56,12 +55,12 @@ module PlaceOS::Core
               # If there's an empty response, the modules that were meant to be running are not.
               # This is taken as a sign that the process is dead.
               # Alternatively, if the response times out, the process is dead.
-              timeout(PROCESS_COMMS_TIMEOUT) do
+              Tasker.timeout(PROCESS_COMMS_TIMEOUT) do
                 protocol_manager.info
               end
 
               State::Running
-            rescue error : Timeout::Error
+            rescue error : Tasker::Timeout
               Log.warn(exception: error) { "unresponsive process manager for #{module_ids.join(", ")}" }
               State::Unresponsive
             end
