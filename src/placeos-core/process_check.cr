@@ -85,8 +85,13 @@ module PlaceOS::Core
             Process.signal(Signal::KILL, protocol_manager.pid) rescue nil
           end
 
-          # Kill the process manager's IO, unblocking any fibers waiting on a response
-          protocol_manager.@io.try(&.close) rescue nil
+          begin
+            # Kill the process manager's IO, unblocking any fibers waiting on a response
+            protocol_manager.@io.try(&.close)
+            # Terminate the driver managers
+            protocol_manager.loaded.each &.terminate
+          rescue
+          end
 
           Log.warn { {message: "restarting unresponsive driver", state: state.to_s, driver_path: protocol_manager.@driver_path} }
 
