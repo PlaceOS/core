@@ -7,7 +7,8 @@ module PlaceOS::Core::Mappings
       Model::Generator.module(driver: driver).save!
 
       updated = "updated_module_name-#{random_id}"
-      driver.update_fields(module_name: updated)
+      driver.module_name = updated
+      driver.module_name_will_change!
 
       DriverModuleNames.new
         .process_resource(:updated, driver)

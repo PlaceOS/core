@@ -12,17 +12,13 @@ module PlaceOS::Core
       raise Resource::ProcessingError.new(driver.module_name, exception.message, cause: exception)
     end
 
-    def self.update_module_names(
-      driver : Model::Driver,
-    )
+    def self.update_module_names(driver : Model::Driver)
       # Only consider `module_name` change events
       return Resource::Result::Skipped unless driver.module_name_changed?
 
       # Update the `module_name` field across all associated modules
-      driver.modules.each do |mod|
-        mod.update_fields(
-          name: driver.module_name,
-        )
+      Model::Module.table_query &.get_all([driver.id.not_nil!], index: :driver_id).update do
+        {"name" => driver.module_name}
       end
 
       Resource::Result::Success
