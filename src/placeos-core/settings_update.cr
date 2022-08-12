@@ -9,7 +9,7 @@ module PlaceOS
       super()
     end
 
-    def process_resource(action : RethinkORM::Changefeed::Event, resource settings : PlaceOS::Model::Settings) : Resource::Result
+    def process_resource(action : Resource::Action, resource settings : PlaceOS::Model::Settings) : Resource::Result
       # Ignore versions
       if settings.is_version?
         Log.debug { {message: "skipping settings version", settings_id: settings.id, parent_id: settings.settings_id} }
