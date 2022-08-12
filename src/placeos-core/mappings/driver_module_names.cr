@@ -9,19 +9,19 @@ module PlaceOS::Core
       DriverModuleNames.update_module_names(driver)
     rescue exception
       Log.error(exception: exception) { {message: "while updating `module_name` for driver modules", name: driver.module_name} }
-      raise Resource::ProcessingError.new(mod.name, exception.message, cause: exception)
+      raise Resource::ProcessingError.new(driver.module_name, exception.message, cause: exception)
     end
 
     def self.update_module_names(
       driver : Model::Driver,
     )
       # Only consider `module_name` change events
-      return Resource::Result::Skipped unless driver.resolved_name_changed?
+      return Resource::Result::Skipped unless driver.module_name_changed?
 
       # Update the `module_name` field across all associated modules
       driver.modules.each do |mod|
         mod.update_fields(
-          module_name: driver.module_name,
+          name: driver.module_name,
         )
       end
 

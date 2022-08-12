@@ -2,6 +2,7 @@ require "./cloning"
 require "./compilation"
 require "./mappings/control_system_modules"
 require "./mappings/module_names"
+require "./mappings/driver_module_names"
 
 # Sequences the acquisition and production of resources
 #
@@ -11,6 +12,7 @@ module PlaceOS::Core
     getter compilation : Compilation
     getter control_system_modules : Mappings::ControlSystemModules
     getter module_names : Mappings::ModuleNames
+    getter driver_module_names : Mappings::DriverModuleNames
     getter settings_updates : SettingsUpdate
     getter? started = false
 
@@ -28,6 +30,7 @@ module PlaceOS::Core
       @control_system_modules : Mappings::ControlSystemModules = Mappings::ControlSystemModules.new,
       @module_names : Mappings::ModuleNames = Mappings::ModuleNames.new,
       @settings_updates : SettingsUpdate = SettingsUpdate.new,
+      @driver_module_names : Mappings::DriverModuleNames = Mappings::DriverModuleNames.new,
       testing : Bool = false
     )
       @cloning = cloning || Cloning.new(testing: testing)
@@ -48,6 +51,9 @@ module PlaceOS::Core
 
         Log.info { "maintaining ControlSystem Module redis mappings" }
         control_system_modules.start
+
+        Log.info { "watching for Driver `module_name` changes" }
+        driver_module_names.start
 
         Log.info { "synchronising Module name changes with redis mappings" }
         module_names.start
