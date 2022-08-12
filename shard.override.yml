@@ -1,6 +1,11 @@
 dependencies:
+  placeos-models:
+    github: placeos/models
+    branch: feat/resolved-name-changed
+
   pars:
     github: spider-gazelle/pars
+
   opentelemetry-instrumentation:
     github: wyhaines/opentelemetry-instrumentation.cr
     branch: main
