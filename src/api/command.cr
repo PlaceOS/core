@@ -61,23 +61,8 @@ module PlaceOS::Core::Api
     ws "/:module_id/debugger", :module_debugger do |socket|
       module_id = params["module_id"]
 
-      Log.trace { {message: "binding debug session to module", module_id: module_id} }
-
       # Forward debug messages to the websocket
-      module_manager.process_manager(module_id) do |manager|
-        debug_lock = Mutex.new
-        callback = ->(message : String) { debug_lock.synchronize { socket.send(message) }; nil }
-        manager.debug(module_id, &callback)
-        # Stop debugging when the socket closes
-        socket.on_close { stop_debugging(module_id, callback) }
-      end
-    end
-
-    # Stop debugging against the current module manager for `module_id`
-    protected def stop_debugging(module_id, callback)
-      module_manager.process_manager(module_id) do |manager|
-        manager.ignore(module_id, &callback)
-      end
+      module_manager.process_manager(module_id, &.attach_debugger(module_id, socket))
     end
 
     # Overriding initializers for dependency injection
