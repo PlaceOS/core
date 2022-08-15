@@ -14,7 +14,7 @@ module PlaceOS::Core
       super()
     end
 
-    def process_resource(action : RethinkORM::Changefeed::Event, resource mod : PlaceOS::Model::Module) : Resource::Result
+    def process_resource(action : Resource::Action, resource mod : PlaceOS::Model::Module) : Resource::Result
       return Resource::Result::Skipped unless action.updated?
 
       ModuleNames.update_module_mapping(mod, module_manager)
@@ -29,7 +29,7 @@ module PlaceOS::Core
     ) : Resource::Result
       module_id = mod.id.as(String)
       # Only consider name change events
-      return Resource::Result::Skipped unless mod.custom_name_changed?
+      return Resource::Result::Skipped unless mod.resolved_name_changed?
       # Only one core updates the mappings
       return Resource::Result::Skipped unless module_manager.discovery.own_node?(module_id)
 

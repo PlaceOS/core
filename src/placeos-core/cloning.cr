@@ -22,7 +22,7 @@ module PlaceOS
       super()
     end
 
-    def process_resource(action : RethinkORM::Changefeed::Event, resource repository : PlaceOS::Model::Repository) : Resource::Result
+    def process_resource(action : Resource::Action, resource repository : PlaceOS::Model::Repository) : Resource::Result
       # Ignore interface repositories
       return Result::Skipped if repository.repo_type.interface?
 
