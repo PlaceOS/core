@@ -1,13 +1,23 @@
-## v4.4.2 (2022-08-11)
+## v4.4.3 (2022-08-15)
+
+### Fix
+
+- handle driver `module_name` changes in module mappings ([#230](https://github.com/PlaceOS/core/pull/230))
 
 ### Refactor
 
-- use Tasker instead of Timeout shard ([#229](https://github.com/PlaceOS/core/pull/229))
+- **api/command**: extract attaching debugger ([#224](https://github.com/PlaceOS/core/pull/224))
+
+## v4.4.2 (2022-08-11)
 
 ### Fix
 
 - remove Dead state
 - **process_check**: use `reject!`
+
+### Refactor
+
+- use Tasker instead of Timeout shard ([#229](https://github.com/PlaceOS/core/pull/229))
 
 ## v4.4.1 (2022-07-26)
 
@@ -127,12 +137,6 @@
 
 ## v4.0.0 (2022-02-24)
 
-### Refactor
-
-- **edge/client**: update secret, remove `edge_id` ([#162](https://github.com/PlaceOS/core/pull/162))
-- central build ci ([#159](https://github.com/PlaceOS/core/pull/159))
-- **process_manager**: load errors messages ([#154](https://github.com/PlaceOS/core/pull/154))
-
 ### Feat
 
 - add support for custom response codes ([#161](https://github.com/PlaceOS/core/pull/161))
@@ -149,6 +153,12 @@
 - **process_manager/local**: reduce severity of missing mod manager log
 - driver compilation from non-default branches
 - **resource:cloning**: decrypt password on use
+
+### Refactor
+
+- **edge/client**: update secret, remove `edge_id` ([#162](https://github.com/PlaceOS/core/pull/162))
+- central build ci ([#159](https://github.com/PlaceOS/core/pull/159))
+- **process_manager**: load errors messages ([#154](https://github.com/PlaceOS/core/pull/154))
 
 ## v3.11.0 (2021-07-29)
 
@@ -184,6 +194,15 @@
 
 ## v3.10.1 (2021-07-09)
 
+### Feat
+
+- embed curl in CLI
+
+### Fix
+
+- **module_manager**: pass repository to compiled check
+- **Dockerfile**: add yaml-static
+
 ### Refactor
 
 - move controllers to an api folder
@@ -191,16 +210,12 @@
 - clean up Log contexts
 - **managers**: less noise in handlers
 
-### Fix
-
-- **module_manager**: pass repository to compiled check
-- **Dockerfile**: add yaml-static
+## v3.10.0 (2021-06-28)
 
 ### Feat
 
-- embed curl in CLI
-
-## v3.10.0 (2021-06-28)
+- **core/client:branches**: add branches to client
+- **controller/drivers**: add branch listing
 
 ### Fix
 
@@ -212,12 +227,16 @@
 - **controller/drivers**: use a more explicit id param
 - **config**: extract logging to logging.cr
 
+## v3.8.1 (2021-04-26)
+
 ### Feat
 
-- **core/client:branches**: add branches to client
-- **controller/drivers**: add branch listing
-
-## v3.8.1 (2021-04-26)
+- support branch switching
+- **controllers:command**: trace log when adding a debug session
+- add verbose signalling
+- add cause to raised Resource::ProcessingError
+- **controller:root**: better healthcheck
+- **resource:compilation**: add failed compilation output to the driver
 
 ### Fix
 
@@ -230,15 +249,6 @@
 - **spec**: stop using a global ResourceManager instance
 - **root**: pull readiness check out of controller
 
-### Feat
-
-- support branch switching
-- **controllers:command**: trace log when adding a debug session
-- add verbose signalling
-- add cause to raised Resource::ProcessingError
-- **controller:root**: better healthcheck
-- **resource:compilation**: add failed compilation output to the driver
-
 ### Perf
 
 - **module_manager**: allocate an array of batch size
@@ -246,19 +256,15 @@
 
 ## v3.4.0 (2021-03-08)
 
-### Refactor
-
-- use driver binary name rather than path
-
 ### Fix
 
 - **module_manager**: prevent multiple stabilisations via lock
 
-## v3.3.0 (2021-02-25)
-
 ### Refactor
 
-- use placeos log backend
+- use driver binary name rather than path
+
+## v3.3.0 (2021-02-25)
 
 ### Feat
 
@@ -267,6 +273,10 @@
 ### Fix
 
 - **config**: report logs in milliseconds only
+
+### Refactor
+
+- use placeos log backend
 
 ## v3.2.0 (2021-02-17)
 
@@ -293,16 +303,16 @@
 
 ## v2.5.10 (2020-12-03)
 
+### Feat
+
+- launch webserver as core boots
+- allow --watch exec to run test on filesystem changes ([#49](https://github.com/PlaceOS/core/pull/49))
+
 ### Fix
 
 - ensure module manager starts in resource manager callback
 - **test**: remove container names from docker-compose
 - **log**: bind to correct log namespace
-
-### Feat
-
-- launch webserver as core boots
-- allow --watch exec to run test on filesystem changes ([#49](https://github.com/PlaceOS/core/pull/49))
 
 ## v2.5.9 (2020-10-22)
 
@@ -340,13 +350,13 @@
 
 ## v2.5.3 (2020-08-07)
 
-### Refactor
-
-- models refresh ([#41](https://github.com/PlaceOS/core/pull/41))
-
 ### Fix
 
 - **resource**: retry changefeed
+
+### Refactor
+
+- models refresh ([#41](https://github.com/PlaceOS/core/pull/41))
 
 ## v2.5.1 (2020-07-15)
 
@@ -364,6 +374,10 @@
 
 ## v2.3.3 (2020-06-24)
 
+### Feat
+
+- **resource**: log the resource loaded count
+
 ### Fix
 
 - fixed size error buffer
@@ -375,10 +389,6 @@
 - **app controller**: requires a local logger
 - log setup on 0.35
 - **Log**: use `Log#setup`
-
-### Feat
-
-- **resource**: log the resource loaded count
 
 ## v2.3.1 (2020-06-17)
 
@@ -429,14 +439,14 @@
 
 ## v1.2.0 (2020-04-23)
 
-### Refactor
-
-- migrate to Log
-
 ### Fix
 
 - **client**: correct `load` path
 - **config**: hounddog no longer needs a logger
+
+### Refactor
+
+- migrate to Log
 
 ## v1.1.4 (2020-04-20)
 
@@ -447,13 +457,13 @@
 
 ## v1.1.3 (2020-04-19)
 
-### Fix
-
-- **client**: correct path for driver status, have defaults in case of error
-
 ### Feat
 
 - **client**: `#loaded` shows the modules on a driver
+
+### Fix
+
+- **client**: correct path for driver status, have defaults in case of error
 
 ## v1.1.2 (2020-04-17)
 
@@ -463,13 +473,13 @@
 
 ## v1.1.0 (2020-04-14)
 
-### Fix
-
-- **module_manager**: load modules on start up
-
 ### Feat
 
 - **client**: add `load` and `driver_compiled?`
+
+### Fix
+
+- **module_manager**: load modules on start up
 
 ### Refactor
 
@@ -575,10 +585,6 @@
 - **client**: engine -> ACAEngine
 - top-level module naming, port type
 
-### Perf
-
-- **controller:details**: cache details requests
-
 ### Refactor
 
 - **mappings:control_system_modules**: minor rewrite to use collection apis
@@ -591,3 +597,7 @@
 - **compilation**: compilation as a class method
 - **models**: use separated engine-models library
 - Engine -> ACAEngine
+
+### Perf
+
+- **controller:details**: cache details requests
