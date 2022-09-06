@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 4.10.1
+    version: 5.3.11
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -15,11 +15,11 @@ shards:
 
   ameba:
     git: https://github.com/crystal-ameba/ameba.git
-    version: 1.0.1
+    version: 1.1.0
 
   backtracer:
     git: https://github.com/sija/backtracer.cr.git
-    version: 1.2.1
+    version: 1.2.2
 
   bindata:
     git: https://github.com/spider-gazelle/bindata.git
@@ -97,6 +97,10 @@ shards:
     git: https://github.com/crystal-community/hardware.git
     version: 0.5.2
 
+  hot_topic:
+    git: https://github.com/jgaskins/hot_topic.git
+    version: 0.1.0+git.commit.c4577d949221d535f29162343bf503b578308954
+
   hound-dog:
     git: https://github.com/place-labs/hound-dog.git
     version: 2.9.0
@@ -112,6 +116,10 @@ shards:
   json-merge-patch:
     git: https://github.com/caspiano/json-merge-patch.git
     version: 0.1.1
+
+  json-schema:
+    git: https://github.com/spider-gazelle/json-schema.git
+    version: 1.2.1
 
   jwt:
     git: https://github.com/crystal-community/jwt.git
@@ -179,7 +187,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.4.5
+    version: 6.4.12
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git

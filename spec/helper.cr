@@ -1,7 +1,8 @@
 require "uuid"
 require "placeos-core-client"
 
-require "../lib/action-controller/spec/curl_context"
+# Helper methods for testing controllers
+require "action-controller/spec_helper"
 
 # Application config
 require "../src/config"

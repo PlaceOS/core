@@ -2,6 +2,8 @@ require "../helper"
 
 module PlaceOS::Core::Api
   describe Status, tags: "api" do
+    client = AC::SpecHelper.client
+
     namespace = Status::NAMESPACE[0]
     json_headers = HTTP::Headers{
       "Content-Type" => "application/json",
@@ -15,13 +17,10 @@ module PlaceOS::Core::Api
 
         binary = Compiler.executable_name(driver.file_name, driver.commit, driver.id.as(String))
         io = IO::Memory.new
-        ctx = context("GET", namespace, json_headers)
-        ctx.response.output = io
-        Status.new(ctx).index
+        response = client.get(namespace, headers: json_headers)
+        response.status_code.should eq 200
 
-        ctx.response.status_code.should eq 200
-
-        status = Core::Client::CoreStatus.from_json(ctx.response.output.to_s)
+        status = Core::Client::CoreStatus.from_json(response.body)
 
         status.compiled_drivers.should contain binary
         status.available_repositories.should contain repo.folder_name
