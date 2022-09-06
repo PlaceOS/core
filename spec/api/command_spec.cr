@@ -19,23 +19,21 @@ module PlaceOS::Core::Api
       "Content-Type" => "application/json",
     }
 
+    after_each { Command.mock_module_manager = nil }
+
     describe "command/:module_id/execute" do
       it "executes a command on a running module" do
         _, _, mod, resource_manager = create_resources
         mod_id = mod.id.as(String)
         module_manager = module_manager_mock
         module_manager.load_module(mod)
+        Command.mock_module_manager = module_manager
 
         route = File.join(namespace, mod_id, "execute")
-        command_controller = Command.spec_instance(HTTP::Request.new("POST", route, headers: json_headers, body: EXEC_PAYLOAD))
-        command_controller.module_manager = module_manager
-        ctx = command_controller.context
+        response = client.post(route, headers: json_headers, body: EXEC_PAYLOAD)
+        response.status_code.should eq 200
 
-        command_controller.execute
-        ctx.response.status_code.should eq 200
-
-        result = ctx.response.output.to_s rescue nil
-
+        result = response.body rescue nil
         result.should eq %("you can delete this file")
       ensure
         resource_manager.try &.stop
@@ -52,6 +50,7 @@ module PlaceOS::Core::Api
 
         # Load module
         module_manager.load_module(mod)
+        Command.mock_module_manager = module_manager
 
         # Create Command controller context
         route = File.join(namespace, mod_id, "debugger")
