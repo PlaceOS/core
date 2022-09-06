@@ -27,11 +27,13 @@ module PlaceOS::Core::Api
         module_manager.load_module(mod)
 
         route = File.join(namespace, mod_id, "execute")
+        command_controller = Command.spec_instance(HTTP::Request.new("POST", route, headers: json_headers, body: EXEC_PAYLOAD))
+        ctx = command_controller.context
 
-        response = client.post(route, headers: json_headers, body: EXEC_PAYLOAD)
-        response.status_code.should eq 200
+        command_controller.execute
+        ctx.response.status_code.should eq 200
 
-        result = response.body rescue nil
+        result = ctx.response.output.to_s rescue nil
 
         result.should eq %("you can delete this file")
       ensure
