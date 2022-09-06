@@ -28,6 +28,7 @@ module PlaceOS::Core::Api
 
         route = File.join(namespace, mod_id, "execute")
         command_controller = Command.spec_instance(HTTP::Request.new("POST", route, headers: json_headers, body: EXEC_PAYLOAD))
+        command_controller.module_manager = module_manager
         ctx = command_controller.context
 
         command_controller.execute

@@ -5,7 +5,7 @@ module PlaceOS::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
-    getter module_manager : ModuleManager { ModuleManager.instance }
+    property module_manager : ModuleManager { ModuleManager.instance }
 
     # Loads if not already loaded
     # If the module is already running, it will be updated to latest settings.
@@ -70,14 +70,6 @@ module PlaceOS::Core::Api
 
     def initialize(@context, @action_name = :index, @__head_request__ = false)
       super(@context, @action_name, @__head_request__)
-    end
-
-    def initialize(
-      context : HTTP::Server::Context,
-      action_name = :index,
-      @module_manager : ModuleManager = ModuleManager.instance
-    )
-      super(context, action_name)
     end
   end
 end
