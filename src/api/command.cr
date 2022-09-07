@@ -5,79 +5,72 @@ module PlaceOS::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
-    getter module_manager : ModuleManager { ModuleManager.instance }
+    property module_manager : ModuleManager { ModuleManager.instance }
 
     # Loads if not already loaded
     # If the module is already running, it will be updated to latest settings.
-    post "/:module_id/load", :load do
-      mod = Model::Module.find(params["module_id"])
-      head :not_found if mod.nil?
-
+    @[AC::Route::POST("/:module_id/load")]
+    def load(
+      @[AC::Param::Info(description: "the module id we want to load", example: "mod-1234")]
+      module_id : String
+    ) : Nil
+      mod = Model::Module.find(module_id)
+      raise Error::NotFound.new("module #{module_id} not found in database") unless mod
       module_manager.load_module(mod)
-
-      head :ok
     end
 
     # Executes a command against a module
-    post "/:module_id/execute", :execute do
-      module_id = params["module_id"]
-      user_id = params["user_id"]?.presence
-
+    @[AC::Route::POST("/:module_id/execute")]
+    def execute(
+      @[AC::Param::Info(description: "the module id we want to send an execute request to", example: "mod-1234")]
+      module_id : String,
+      @[AC::Param::Info(description: "the user context for the execution", example: "user-1234")]
+      user_id : String? = nil
+    ) : Nil
       unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
         Log.info { {module_id: module_id, message: "module not loaded"} }
-        head :not_found
+        raise Error::NotFound.new("module #{module_id} not loaded")
       end
 
+      # NOTE:: we don't use the AC body helper for performance reasons.
+      # we're just proxying the JSON to the driver without parsing it
       body = request.body.try &.gets_to_end
       if body.nil?
-        Log.info { "no request body" }
-        head :not_acceptable
+        message = "no request body provided"
+        Log.info { message }
+        raise Error::NotAcceptable.new(message)
       end
 
-      begin
-        execute_output = module_manager.process_manager(module_id) do |manager|
-          manager.execute(module_id, body, user_id: user_id)
-        end
+      execute_output = module_manager.process_manager(module_id) do |manager|
+        manager.execute(module_id, body, user_id: user_id)
+      end
 
-        response.content_type = "application/json"
-        if execute_output
-          response.headers[RESPONSE_CODE_HEADER] = execute_output[1].to_s
-          render text: execute_output[0]
-        else
-          render text: ""
-        end
-      rescue error : PlaceOS::Driver::RemoteException
-        Log.error(exception: error) { "execute errored" }
-        response.headers[RESPONSE_CODE_HEADER] = error.code.to_s
-        render :non_authoritative_information, json: {
-          message:   error.message,
-          backtrace: error.backtrace?,
-        }
+      # NOTE:: we are not using the typical response processing
+      # as we don't need to deserialise
+      response.content_type = "application/json"
+      if execute_output
+        response.headers[RESPONSE_CODE_HEADER] = execute_output[1].to_s
+        render text: execute_output[0]
+      else
+        render text: ""
       end
     end
 
     # For now a one-to-one debug session to websocket should be fine as it's not
     # a common operation and limited to system administrators
-    ws "/:module_id/debugger", :module_debugger do |socket|
-      module_id = params["module_id"]
-
+    @[AC::Route::WebSocket("/:module_id/debugger")]
+    def module_debugger(socket,
+      @[AC::Param::Info(description: "the module we want to debug", example: "mod-1234")]
+      module_id : String
+    ) : Nil
       # Forward debug messages to the websocket
       module_manager.process_manager(module_id, &.attach_debugger(module_id, socket))
     end
 
-    # Overriding initializers for dependency injection
-    ###########################################################################
-
-    def initialize(@context, @action_name = :index, @__head_request__ = false)
-      super(@context, @action_name, @__head_request__)
-    end
-
-    def initialize(
-      context : HTTP::Server::Context,
-      action_name = :index,
-      @module_manager : ModuleManager = ModuleManager.instance
-    )
-      super(context, action_name)
+    @[AC::Route::Exception(PlaceOS::Driver::RemoteException, status_code: HTTP::Status::NON_AUTHORITATIVE_INFORMATION)]
+    def remote_exception(error) : CommonError
+      Log.error(exception: error) { "execute errored" }
+      CommonError.new(error)
     end
   end
 end

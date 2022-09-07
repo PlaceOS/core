@@ -1,0 +1,962 @@
+---
+openapi: 3.0.3
+info:
+  description: Internal core API. Handles driver management and comms
+  title: core
+  version: 4.4.3
+paths:
+  /api/core/v1/chaos/terminate:
+    post:
+      summary: Terminate a process by executable path
+      tags:
+      - Chaos
+      operationId: PlaceOS::Core::Api::Chaos#terminate
+      parameters:
+      - name: path
+        in: query
+        description: the driver executable name
+        example: drivers_place_meet_c54390a
+        required: true
+        schema:
+          type: string
+      - name: edge_id
+        in: query
+        description: optionally provide the edge id the driver is running on
+        example: edge-12345
+        required: false
+        schema:
+          type: string
+          nullable: true
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/command/{module_id}/load:
+    post:
+      summary: Loads if not already loaded
+      description: 'Loads if not already loaded
+
+        If the module is already running, it will be updated to latest settings.'
+      tags:
+      - Command
+      operationId: PlaceOS::Core::Api::Command#load
+      parameters:
+      - name: module_id
+        in: path
+        description: the module id we want to load
+        example: mod-1234
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        203:
+          description: Non-Authoritative Information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+  /api/core/v1/command/{module_id}/execute:
+    post:
+      summary: Executes a command against a module
+      tags:
+      - Command
+      operationId: PlaceOS::Core::Api::Command#execute
+      parameters:
+      - name: module_id
+        in: path
+        description: the module id we want to send an execute request to
+        example: mod-1234
+        required: true
+        schema:
+          type: string
+      - name: user_id
+        in: query
+        description: the user context for the execution
+        example: user-1234
+        required: false
+        schema:
+          type: string
+          nullable: true
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        203:
+          description: Non-Authoritative Information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+  /api/core/v1/command/{module_id}/debugger:
+    get:
+      summary: For now a one-to-one debug session to websocket should be fine as it's
+        not
+      description: 'For now a one-to-one debug session to websocket should be fine
+        as it''s not
+
+        a common operation and limited to system administrators'
+      tags:
+      - Command
+      operationId: PlaceOS::Core::Api::Command#module_debugger
+      parameters:
+      - name: module_id
+        in: path
+        description: the module we want to debug
+        example: mod-1234
+        required: true
+        schema:
+          type: string
+      responses:
+        101:
+          description: Switching Protocols
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        203:
+          description: Non-Authoritative Information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+  /api/core/v1/drivers:
+    get:
+      summary: The drivers available
+      tags:
+      - Drivers
+      operationId: PlaceOS::Core::Api::Drivers#index
+      parameters:
+      - name: repository
+        in: query
+        description: the repository folder name
+        example: drivers
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/String'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/drivers/{file_name}:
+    get:
+      summary: Returns the list of commits for a particular driver
+      tags:
+      - Drivers
+      operationId: PlaceOS::Core::Api::Drivers#show
+      parameters:
+      - name: file_name
+        in: path
+        description: the name of the file in the repository
+        example: drivers/place/meet.cr
+        required: true
+        schema:
+          type: string
+      - name: repository
+        in: query
+        description: the repository folder name
+        example: drivers
+        required: true
+        schema:
+          type: string
+      - name: branch
+        in: query
+        description: the branch we want the commits from
+        example: main
+        required: false
+        schema:
+          type: string
+      - name: count
+        in: query
+        description: the number of commits we want to return
+        example: "50"
+        required: false
+        schema:
+          type: integer
+          format: Int32
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlaceOS__Compiler__Git__Commit'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/drivers/{file_name}/compiled:
+    get:
+      summary: Boolean check whether driver is compiled
+      tags:
+      - Drivers
+      operationId: PlaceOS::Core::Api::Drivers#compiled
+      parameters:
+      - name: file_name
+        in: path
+        description: the name of the file in the repository
+        example: drivers/place/meet.cr
+        required: true
+        schema:
+          type: string
+      - name: commit
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: tag
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bool'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/drivers/{file_name}/details:
+    get:
+      summary: Returns the details of a driver
+      tags:
+      - Drivers
+      operationId: PlaceOS::Core::Api::Drivers#details
+      parameters:
+      - name: file_name
+        in: path
+        description: the name of the file in the repository
+        example: drivers/place/meet.cr
+        required: true
+        schema:
+          type: string
+      - name: repository
+        in: query
+        description: the repository folder name
+        example: drivers
+        required: true
+        schema:
+          type: string
+      - name: commit
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/drivers/{repository}/branches:
+    get:
+      summary: Returns an array of branches for a repository
+      tags:
+      - Drivers
+      operationId: PlaceOS::Core::Api::Drivers#branches
+      parameters:
+      - name: repository
+        in: path
+        description: the repository folder name
+        example: drivers
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/String'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/edge/control:
+    get:
+      summary: websocket handling edge connections
+      tags:
+      - Edge
+      operationId: PlaceOS::Core::Api::Edge#edge_control
+      parameters:
+      - name: edge_id
+        in: query
+        description: the edge this device is handling
+        example: edge-1234
+        required: true
+        schema:
+          type: string
+      responses:
+        101:
+          description: Switching Protocols
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1:
+    get:
+      summary: route for checking the health of the service
+      tags:
+      - Root
+      operationId: PlaceOS::Core::Api::Root#healthcheck
+      parameters: []
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        503:
+          description: Service Unavailable
+  /api/core/v1/version:
+    get:
+      summary: returns the build details of the service
+      tags:
+      - Root
+      operationId: PlaceOS::Core::Api::Root#version
+      parameters: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Model__Version'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        503:
+          description: Service Unavailable
+  /api/core/v1/ready:
+    get:
+      summary: has the service finished loading
+      tags:
+      - Root
+      operationId: PlaceOS::Core::Api::Root#ready
+      parameters: []
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        503:
+          description: Service Unavailable
+  /api/core/v1/status:
+    get:
+      summary: General statistics related to the process
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status#statistics
+      parameters: []
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/driver:
+    get:
+      summary: details related to a process (+ anything else we can think of)
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status#driver
+      parameters:
+      - name: path
+        in: query
+        description: the path of the compiled driver
+        example: /path/to/compiled_driver
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/load:
+    get:
+      summary: details about the overall machine load
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status#load
+      parameters: []
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/loaded:
+    get:
+      summary: Returns the lists of modules drivers have loaded for this core, and
+        managed edges
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status#loaded
+      parameters: []
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+components:
+  schemas:
+    String:
+      type: string
+    PlaceOS__Compiler__Git__Commit:
+      type: object
+      properties:
+        commit:
+          type: string
+        date:
+          type: string
+        author:
+          type: string
+        subject:
+          type: string
+      required:
+      - commit
+      - date
+      - author
+      - subject
+    Bool:
+      type: boolean
+    PlaceOS__Model__Version:
+      type: object
+      properties:
+        service:
+          type: string
+        commit:
+          type: string
+        version:
+          type: string
+        build_time:
+          type: string
+        platform_version:
+          type: string
+      required:
+      - service
+      - commit
+      - version
+      - build_time
+      - platform_version
+    PlaceOS__Core__Api__Application__CommonError:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        backtrace:
+          type: array
+          items:
+            type: string
+          nullable: true
+    PlaceOS__Core__Api__Application__ContentError:
+      type: object
+      properties:
+        error:
+          type: string
+        accepts:
+          type: array
+          items:
+            type: string
+          nullable: true
+      required:
+      - error
+      description: Provides details on available data formats
+    PlaceOS__Core__Api__Application__ParameterError:
+      type: object
+      properties:
+        error:
+          type: string
+        parameter:
+          type: string
+          nullable: true
+        restriction:
+          type: string
+          nullable: true
+      required:
+      - error
+      description: Provides details on which parameter is missing or invalid

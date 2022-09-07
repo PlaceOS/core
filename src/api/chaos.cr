@@ -9,31 +9,15 @@ module PlaceOS::Core::Api
     getter module_manager : ModuleManager { ModuleManager.instance }
 
     # Terminate a process by executable path
-    post "/terminate", :terminate do
-      driver_key = params["path"]
-      edge_id = params["edge_id"]?.presence
-
-      head :not_found unless manager = module_manager.process_manager(driver_key, edge_id)
-
+    @[AC::Route::POST("/terminate")]
+    def terminate(
+      @[AC::Param::Info(name: path, description: "the driver executable name", example: "drivers_place_meet_c54390a")]
+      driver_key : String,
+      @[AC::Param::Info(description: "optionally provide the edge id the driver is running on", example: "edge-12345")]
+      edge_id : String? = nil
+    ) : Nil
+      raise Error::NotFound.new("no process manager found for #{driver_key}") unless manager = module_manager.process_manager(driver_key, edge_id)
       manager.kill(driver_key)
-
-      head :ok
-    end
-
-    # Overriding initializers for dependency injection
-    ###########################################################################
-
-    def initialize(@context, @action_name = :index, @__head_request__ = false)
-      super(@context, @action_name, @__head_request__)
-    end
-
-    # Override initializer for specs
-    def initialize(
-      context : HTTP::Server::Context,
-      action_name = :index,
-      @module_manager : ModuleManager = ModuleManager.instance
-    )
-      super(context, action_name)
     end
   end
 end

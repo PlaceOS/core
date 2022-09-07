@@ -11,7 +11,7 @@ targets:
 dependencies:
   action-controller:
     github: spider-gazelle/action-controller
-    version: ~> 4.1
+    version: ~> 5.3
 
   clustering:
     github: place-labs/clustering
@@ -85,6 +85,9 @@ dependencies:
 
   tasker:
     github: spider-gazelle/tasker
+
+  auto_initialize:
+    github: kostya/auto_initialize
 
 development_dependencies:
   ameba:

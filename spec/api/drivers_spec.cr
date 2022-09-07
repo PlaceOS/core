@@ -2,6 +2,8 @@ require "../helper"
 
 module PlaceOS::Core::Api
   describe Drivers, tags: "api" do
+    client = AC::SpecHelper.client
+
     namespace = Drivers::NAMESPACE[0]
     json_headers = HTTP::Headers{
       "Content-Type" => "application/json",
@@ -12,17 +14,15 @@ module PlaceOS::Core::Api
         repo, _, _, resource_manager = create_resources
 
         path = "#{namespace}?repository=#{repo.folder_name}"
-        ctx = context("GET", path, json_headers)
-        ctx.response.output = IO::Memory.new
-        Drivers.new(ctx, :index).index
+        response = client.get(path, headers: json_headers)
 
         result = begin
-          Array(String).from_json(ctx.response.output.to_s)
+          Array(String).from_json(response.body)
         rescue
           nil
         end
 
-        ctx.response.status_code.should eq 200
+        response.status_code.should eq 200
         result.should_not be_nil
         result.not_nil!.sort.should eq [
           "drivers/place/dispatch_example.cr",
@@ -49,13 +49,10 @@ module PlaceOS::Core::Api
         }
 
         path = File.join(namespace, uri, "/compiled?#{params}")
-        ctx = context("GET", path, json_headers)
-        ctx.route_params = {"file_name" => uri}
-        ctx.response.output = IO::Memory.new
-        Drivers.new(ctx, :compiled).compiled
+        response = client.get(path, headers: json_headers)
 
-        ctx.response.status_code.should eq 200
-        Bool.from_json(ctx.response.output.to_s).should be_true
+        response.status_code.should eq 200
+        Bool.from_json(response.body).should be_true
       ensure
         resource_manager.try &.stop
       end
@@ -65,26 +62,18 @@ module PlaceOS::Core::Api
       it "404s if the repository has not been cloned" do
         directory = "doesnotexist"
         path = File.join(namespace, directory, "branches")
-        ctx = context("GET", path, json_headers)
-        ctx.route_params = {"repository" => directory}
-        ctx.response.output = IO::Memory.new
-
-        Drivers.new(ctx, :branches).branches
-
-        ctx.response.status_code.should eq 404
+        response = client.get(path, headers: json_headers)
+        response.status_code.should eq 404
       end
 
       it "lists the branches on a cloned repository" do
         repo, _, _, resource_manager = create_resources
         directory = repo.folder_name
         path = File.join(namespace, directory, "branches")
-        ctx = context("GET", path, json_headers)
-        ctx.route_params = {"repository" => directory}
-        ctx.response.output = IO::Memory.new
-        Drivers.new(ctx, :branches).branches
+        response = client.get(path, headers: json_headers)
 
-        ctx.response.status_code.should eq 200
-        branches = Array(String).from_json(ctx.response.output.to_s)
+        response.status_code.should eq 200
+        branches = Array(String).from_json(response.body)
         branches.should_not be_empty
         branches.should contain("master")
       ensure
@@ -98,15 +87,12 @@ module PlaceOS::Core::Api
         uri = URI.encode_www_form(SPEC_DRIVER)
 
         path = File.join(namespace, uri, "?repository=#{repo.folder_name}")
-        ctx = context("GET", path, json_headers)
-        ctx.route_params = {"file_name" => uri}
-        ctx.response.output = IO::Memory.new
-        Drivers.new(ctx, :index).show
+        response = client.get(path, headers: json_headers)
 
-        ctx.response.status_code.should eq 200
+        response.status_code.should eq 200
 
         expected = Compiler::Git.commits(URI.decode(uri), repo.folder_name, Compiler.repository_dir, 50)
-        result = Array(Compiler::Git::Commit).from_json(ctx.response.output.to_s)
+        result = Array(Compiler::Git::Commit).from_json(response.body)
         result.should eq expected
       ensure
         resource_manager.try &.stop

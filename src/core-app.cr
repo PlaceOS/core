@@ -1,4 +1,5 @@
 require "option_parser"
+require "./constants"
 
 # Server defaults
 port = 3000
@@ -43,6 +44,15 @@ OptionParser.parse(ARGV.dup) do |parser|
       error.inspect_with_backtrace(STDOUT)
       exit 2
     end
+  end
+
+  parser.on("-d", "--docs", "Outputs OpenAPI documentation for this service") do
+    puts ActionController::OpenAPI.generate_open_api_docs(
+      title: PlaceOS::Core::APP_NAME,
+      version: PlaceOS::Core::VERSION,
+      description: "Internal core API. Handles driver management and comms"
+    ).to_yaml
+    exit 0
   end
 
   parser.on("-h", "--help", "Show this help") do

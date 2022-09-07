@@ -7,39 +7,50 @@ module PlaceOS::Core::Api
   class Drivers < Application
     base "/api/core/v1/drivers/"
 
-    id_param :file_name
-
-    # The drivers available, returns Array(String)
-    def index
-      repository = params["repository"]
-      render json: Compiler::Helper.drivers(repository, Compiler.repository_dir)
+    # The drivers available
+    @[AC::Route::GET("/")]
+    def index(
+      @[AC::Param::Info(description: "the repository folder name", example: "drivers")]
+      repository : String
+    ) : Array(String)
+      Compiler::Helper.drivers(repository, Compiler.repository_dir)
     end
 
     # Returns the list of commits for a particular driver
-    def show
-      driver_file = URI.decode(params["file_name"])
-      branch = params["branch"]?.presence || "master"
-      repository = params["repository"]
-      count = (params["count"]? || 50).to_i
-
-      render json: Compiler::Git.commits(driver_file, repository, Compiler.repository_dir, count, branch)
+    @[AC::Route::GET("/:file_name")]
+    def show(
+      @[AC::Param::Info(description: "the repository folder name", example: "drivers")]
+      repository : String,
+      @[AC::Param::Info(name: "file_name", description: "the name of the file in the repository", example: "drivers/place/meet.cr")]
+      driver_file : String,
+      @[AC::Param::Info(description: "the branch we want the commits from", example: "main")]
+      branch : String = "master",
+      @[AC::Param::Info(description: "the number of commits we want to return", example: "50")]
+      count : Int32 = 50,
+    ) : Array(PlaceOS::Compiler::Git::Commit)
+      Compiler::Git.commits(driver_file, repository, Compiler.repository_dir, count, branch)
     end
 
     # Boolean check whether driver is compiled
-    get "/:file_name/compiled", :compiled do
-      driver_file = URI.decode(params["file_name"])
-      commit = params["commit"]
-      tag = params["tag"]
-
-      render json: Compiler::Helper.compiled?(driver_file, commit, tag)
+    @[AC::Route::GET("/:file_name/compiled")]
+    def compiled(
+      @[AC::Param::Info(name: "file_name", description: "the name of the file in the repository", example: "drivers/place/meet.cr")]
+      driver_file : String,
+      commit : String,
+      tag : String
+    ) : Bool
+      Compiler::Helper.compiled?(driver_file, commit, tag)
     end
 
     # Returns the details of a driver
-    get "/:file_name/details", :details do
-      driver_file = URI.decode(params["file_name"])
-      commit = params["commit"]
-      repository = params["repository"]
-
+    @[AC::Route::GET("/:file_name/details")]
+    def details(
+      @[AC::Param::Info(description: "the repository folder name", example: "drivers")]
+      repository : String,
+      @[AC::Param::Info(name: "file_name", description: "the name of the file in the repository", example: "drivers/place/meet.cr")]
+      driver_file : String,
+      commit : String,
+    ) : Nil
       Log.context.set(driver: driver_file, repository: repository, commit: commit)
 
       cached = Api::Drivers.cached_details?(driver_file, repository, commit)
@@ -64,6 +75,7 @@ module PlaceOS::Core::Api
       # check driver compiled
       unless compile_result.success?
         Log.error { "failed to compile" }
+        # NOTE:: not using response helpers for performance
         render :internal_server_error, json: compile_result
       end
 
@@ -100,17 +112,20 @@ module PlaceOS::Core::Api
         Log.warn(exception: exception) { "failed to cache driver details" }
       end
 
+      # NOTE:: no need to serialise / deserialise the results, hence not using the helpers
       response.headers["Content-Type"] = "application/json"
       render text: execute_output
     end
 
     # Returns an array of branches for a repository
-    get "/:repository/branches", :branches do
-      repository = params["repository"]
+    @[AC::Route::GET("/:repository/branches")]
+    def branches(
+      @[AC::Param::Info(description: "the repository folder name", example: "drivers")]
+      repository : String,
+    ) : Array(String)
       branches = self.class.branches?(repository)
-      head :not_found if branches.nil?
-
-      render json: branches
+      raise Error::NotFound.new("repository not found: #{repository}") if branches.nil?
+      branches
     end
 
     def self.branches?(folder_name : String) : Array(String)?
