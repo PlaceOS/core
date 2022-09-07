@@ -1,3 +1,9 @@
+## v4.5.0 (2022-09-07)
+
+### Feat
+
+- update action controller and support ARM64 ([#232](https://github.com/PlaceOS/core/pull/232))
+
 ## v4.4.3 (2022-08-15)
 
 ### Fix
