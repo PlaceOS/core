@@ -5,7 +5,6 @@ module PlaceOS::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
-    class_property mock_module_manager : ModuleManager? = nil
     property module_manager : ModuleManager { ModuleManager.instance }
 
     # Loads if not already loaded

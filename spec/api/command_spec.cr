@@ -13,6 +13,7 @@ module PlaceOS::Core::Api
 
   # allow injecting mock manager during testing
   class Command
+    class_property mock_module_manager : ModuleManager? = nil
     property module_manager : ModuleManager { @@mock_module_manager || ModuleManager.instance }
   end
 
