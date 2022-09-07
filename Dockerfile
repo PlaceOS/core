@@ -72,7 +72,7 @@ COPY ./src /app/src
 ENV UNAME_AT_COMPILE_TIME=true
 RUN PLACE_VERSION=$PLACE_VERSION \
     PLACE_COMMIT=$PLACE_COMMIT \
-    shards build $TARGET \
+    shards build "${TARGET}" \
       --error-trace \
       --production \
       --release \
