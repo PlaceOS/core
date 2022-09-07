@@ -13,12 +13,16 @@ module PlaceOS::Core::Api
     # Health Check
     ###############################################################################################
 
-    def index
-      head Healthcheck.healthcheck? ? HTTP::Status::OK : HTTP::Status::INTERNAL_SERVER_ERROR
+    # route for checking the health of the service
+    @[AC::Route::GET("/")]
+    def healthcheck : Nil
+      raise "healthcheck failed" unless Healthcheck.healthcheck?
     end
 
-    get "/version", :version do
-      render :ok, json: PlaceOS::Model::Version.new(
+    # returns the build details of the service
+    @[AC::Route::GET("/version")]
+    def version : PlaceOS::Model::Version
+      PlaceOS::Model::Version.new(
         version: VERSION,
         build_time: BUILD_TIME,
         commit: BUILD_COMMIT,
@@ -29,14 +33,25 @@ module PlaceOS::Core::Api
     # Readiness Check
     ###############################################################################################
 
-    get("/ready") do
-      head self.class.ready? ? HTTP::Status::OK : HTTP::Status::SERVICE_UNAVAILABLE
+    # has the service finished loading
+    @[AC::Route::GET("/ready")]
+    def ready : Nil
+      raise Error::NotReady.new("startup has not completed") unless self.class.ready?
     end
 
     def self.ready?
       resource_manager.started?.tap do |ready|
         Log.warn { "startup has not completed" } unless ready
       end
+    end
+
+    class Error < Exception
+      class NotReady < Error
+      end
+    end
+
+    @[AC::Route::Exception(Error::NotReady, status_code: HTTP::Status::SERVICE_UNAVAILABLE)]
+    def not_ready_error(_error) : Nil
     end
   end
 end

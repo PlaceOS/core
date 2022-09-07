@@ -11,6 +11,11 @@ module PlaceOS::Core::Api
     used_for_place_testing: [] of String,
   }.to_json
 
+  # allow injecting mock manager during testing
+  class Command
+    property module_manager : ModuleManager { @@mock_module_manager || ModuleManager.instance }
+  end
+
   describe Command, tags: "api" do
     client = AC::SpecHelper.client
 

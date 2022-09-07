@@ -1,39 +1,20 @@
 # One of `core` | `edge`
 ARG TARGET=core
-ARG CRYSTAL_VERSION=1.4.1
-
-FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine as build
-
-ARG TARGET
-ARG PLACE_COMMIT="DEV"
-ARG PLACE_VERSION="DEV"
-
+ARG CRYSTAL_VERSION=1.5.0
+FROM alpine:3.16 as build
 WORKDIR /app
 
-RUN apk add \
-  --update \
-  --no-cache \
-  --repository=http://dl-cdn.alpinelinux.org/alpine/v3.15/main \
-    'git' \
-    'expat'
+# Set the commit via a build arg
+ARG PLACE_COMMIT="DEV"
+# Set the platform version via a build arg
+ARG PLACE_VERSION="DEV"
 
-# Install the latest version of LibSSH2, ping
-RUN apk add --update --no-cache \
-    'apk-tools>=2.10.8-r0' \
-    ca-certificates \
-    'expat>=2.2.10-r1' \
-    iputils \
-    'libcurl>=7.79.1-r0' \
-    libssh2-static \
-    yaml-static
-
-# Add trusted CAs for communicating with external services
-RUN update-ca-certificates
-
-# Create a non-privileged user
+# Create a non-privileged user, defaults are appuser:10001
 ARG IMAGE_UID="10001"
 ENV UID=$IMAGE_UID
 ENV USER=appuser
+
+# See https://stackoverflow.com/a/55757473/12429735
 RUN adduser \
     --disabled-password \
     --gecos "" \
@@ -43,14 +24,49 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
-# Install deps
-COPY shard.yml /app
-COPY shard.override.yml /app
-COPY shard.lock /app
-RUN shards install --production --ignore-crystal-version
+# Add trusted CAs for communicating with external services
+RUN apk add --no-cache \
+        ca-certificates \
+        curl \
+    && \
+    update-ca-certificates
 
-# Add source last for efficient caching
-COPY src /app/src
+# Add crystal lang
+# can look up packages here: https://pkgs.alpinelinux.org/packages?name=crystal
+RUN apk add \
+  --update \
+  --no-cache \
+  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
+  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community \
+    crystal \
+    shards \
+    yaml-dev \
+    yaml-static \
+    libxml2-dev \
+    openssl-dev \
+    openssl-libs-static \
+    zlib-dev \
+    zlib-static \
+    tzdata
+
+# Install the latest version of LibSSH2, ping
+RUN apk add --update --no-cache \
+    'apk-tools>=2.10.8-r0' \
+    'expat>=2.2.10-r1' \
+    iputils \
+    'libcurl>=7.79.1-r0' \
+    libssh2-static \
+    git
+
+# Install shards for caching
+COPY shard.yml shard.yml
+COPY shard.override.yml shard.override.yml
+COPY shard.lock shard.lock
+
+RUN shards install --production --ignore-crystal-version --skip-postinstall --skip-executables
+
+# Add src
+COPY ./src /app/src
 
 # Build the required target
 RUN UNAME_AT_COMPILE_TIME=true \
@@ -69,24 +85,22 @@ RUN chown appuser -R /app
 ###############################################################################
 
 FROM scratch as minimal
-
 WORKDIR /
+ENV PATH=$PATH:/
+
+# Copy the user information over
+COPY --from=build /etc/passwd /etc/passwd
+COPY --from=build /etc/group /etc/group
 
 # These are required for communicating with external services
 COPY --from=build /etc/hosts /etc/hosts
 
 # These provide certificate chain validation where communicating with external services over TLS
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 # This is required for Timezone support
 COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
-
-# Copy the user information over
-COPY --from=build /etc/passwd /etc/passwd
-COPY --from=build /etc/group /etc/group
-
-# These provide certificate chain validation where communicating with external services over TLS
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 # Service binary
 COPY --from=build /app/bin /bin
@@ -96,7 +110,6 @@ USER appuser:appuser
 ###############################################################################
 
 FROM minimal as edge
-
 CMD ["/bin/edge"]
 
 ###############################################################################

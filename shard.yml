@@ -86,6 +86,9 @@ dependencies:
   tasker:
     github: spider-gazelle/tasker
 
+  auto_initialize:
+    github: kostya/auto_initialize
+
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba

@@ -3,7 +3,9 @@ require "secrets-env"
 module PlaceOS::Core
   APP_NAME     = "core"
   API_VERSION  = "v1"
-  VERSION      = {{ `shards version "#{__DIR__}"`.chomp.stringify.downcase }}
+  {% begin %}
+    VERSION = {{ `shards version "#{__DIR__}"`.chomp.stringify.downcase }}
+  {% end %}
   BUILD_TIME   = {{ system("date -u").chomp.stringify }}
   BUILD_COMMIT = {{ env("PLACE_COMMIT") || "DEV" }}
 

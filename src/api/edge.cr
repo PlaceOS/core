@@ -8,8 +8,12 @@ module PlaceOS::Core::Api
 
     getter module_manager : ModuleManager { ModuleManager.instance }
 
-    ws "/control" do |socket|
-      edge_id = params["edge_id"]
+    # websocket handling edge connections
+    @[AC::Route::WebSocket("/control")]
+    def edge_control(socket,
+      @[AC::Param::Info(description: "the edge this device is handling", example: "edge-1234")]
+      edge_id : String
+    ) : Nil
       module_manager.manage_edge(edge_id, socket)
     end
   end
