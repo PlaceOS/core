@@ -69,14 +69,16 @@ RUN shards install --production --ignore-crystal-version --skip-postinstall --sk
 COPY ./src /app/src
 
 # Build the required target
-RUN UNAME_AT_COMPILE_TIME=true \
-    PLACE_VERSION=$PLACE_VERSION \
+ENV UNAME_AT_COMPILE_TIME=true
+RUN PLACE_VERSION=$PLACE_VERSION \
     PLACE_COMMIT=$PLACE_COMMIT \
     shards build $TARGET \
       --error-trace \
       --production \
       --release \
       --static
+
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # Create binary directories
 RUN mkdir -p repositories bin/drivers
