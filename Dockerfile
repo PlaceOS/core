@@ -70,9 +70,9 @@ COPY ./src /app/src
 
 # Build the required target
 RUN UNAME_AT_COMPILE_TIME=true \
-    PLACE_VERSION=${PLACE_VERSION} \
-    PLACE_COMMIT=${PLACE_COMMIT} \
-    shards build ${TARGET} \
+    PLACE_VERSION=$PLACE_VERSION \
+    PLACE_COMMIT=$PLACE_COMMIT \
+    shards build $TARGET \
       --error-trace \
       --production \
       --release \

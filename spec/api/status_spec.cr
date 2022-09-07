@@ -16,7 +16,6 @@ module PlaceOS::Core::Api
         driver.reload!
 
         binary = Compiler.executable_name(driver.file_name, driver.commit, driver.id.as(String))
-        io = IO::Memory.new
         response = client.get(namespace, headers: json_headers)
         response.status_code.should eq 200
 
