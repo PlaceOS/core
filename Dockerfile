@@ -1,6 +1,6 @@
 # One of `core` | `edge`
 ARG TARGET=core
-ARG CRYSTAL_VERSION=1.5.0
+ARG CRYSTAL_VERSION=1.5
 FROM alpine:3.16 as build
 WORKDIR /app
 
@@ -25,11 +25,20 @@ RUN adduser \
     "${USER}"
 
 # Add trusted CAs for communicating with external services
-RUN apk add --no-cache \
-        ca-certificates \
-        curl \
-    && \
-    update-ca-certificates
+RUN apk add \
+  --update \
+  --no-cache \
+    ca-certificates \
+    yaml-dev \
+    yaml-static \
+    libxml2-dev \
+    openssl-dev \
+    openssl-libs-static \
+    zlib-dev \
+    zlib-static \
+    tzdata
+
+RUN update-ca-certificates
 
 # Add crystal lang
 # can look up packages here: https://pkgs.alpinelinux.org/packages?name=crystal
@@ -39,15 +48,7 @@ RUN apk add \
   --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
   --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community \
     crystal \
-    shards \
-    yaml-dev \
-    yaml-static \
-    libxml2-dev \
-    openssl-dev \
-    openssl-libs-static \
-    zlib-dev \
-    zlib-static \
-    tzdata
+    shards
 
 # Install the latest version of LibSSH2, ping
 RUN apk add --update --no-cache \
@@ -77,10 +78,17 @@ RUN PLACE_VERSION=$PLACE_VERSION \
     shards build $TARGET \
       --error-trace \
       --production \
-      --release \
-      --static
+      --release
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
+# Extract binary dependencies
+RUN for binary in /app/bin/*; do \
+        ldd "$binary" | \
+        tr -s '[:blank:]' '\n' | \
+        grep '^/' | \
+        xargs -I % sh -c 'mkdir -p $(dirname deps%); cp % deps%;'; \
+    done
 
 # Create binary directories
 RUN mkdir -p repositories bin/drivers
@@ -90,7 +98,7 @@ RUN chown appuser -R /app
 
 FROM scratch as minimal
 WORKDIR /
-ENV PATH=$PATH:/
+ENV PATH=$PATH:/bin
 
 # Copy the user information over
 COPY --from=build /etc/passwd /etc/passwd
@@ -106,7 +114,8 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 # This is required for Timezone support
 COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
 
-# Service binary
+# Copy the app into place
+COPY --from=build /app/deps /bin
 COPY --from=build /app/bin /bin
 
 USER appuser:appuser
@@ -123,6 +132,8 @@ CMD ["/bin/edge"]
 # external service, this can base from `minimal` instead for cleaner images.
 FROM build as core
 
+# Copy the app into place
+COPY --from=build /app/deps /bin
 COPY --from=build /app/bin /bin
 
 WORKDIR /app
@@ -131,7 +142,7 @@ USER appuser:appuser
 
 EXPOSE 3000
 VOLUME ["/app/repositories/", "/app/bin/drivers/"]
-HEALTHCHECK CMD /bin/core --curl http://localhost:3000/api/core/v1
+HEALTHCHECK CMD ["/bin/core", "--curl", "http://localhost:3000/api/core/v1"]
 CMD ["/bin/core", "-b", "0.0.0.0", "-p", "3000"]
 
 ###############################################################################
