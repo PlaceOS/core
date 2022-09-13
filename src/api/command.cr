@@ -59,7 +59,8 @@ module PlaceOS::Core::Api
     # For now a one-to-one debug session to websocket should be fine as it's not
     # a common operation and limited to system administrators
     @[AC::Route::WebSocket("/:module_id/debugger")]
-    def module_debugger(socket,
+    def module_debugger(
+      socket,
       @[AC::Param::Info(description: "the module we want to debug", example: "mod-1234")]
       module_id : String
     ) : Nil

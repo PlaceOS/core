@@ -26,7 +26,7 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(description: "the branch we want the commits from", example: "main")]
       branch : String = "master",
       @[AC::Param::Info(description: "the number of commits we want to return", example: "50")]
-      count : Int32 = 50,
+      count : Int32 = 50
     ) : Array(PlaceOS::Compiler::Git::Commit)
       Compiler::Git.commits(driver_file, repository, Compiler.repository_dir, count, branch)
     end
@@ -49,7 +49,7 @@ module PlaceOS::Core::Api
       repository : String,
       @[AC::Param::Info(name: "file_name", description: "the name of the file in the repository", example: "drivers/place/meet.cr")]
       driver_file : String,
-      commit : String,
+      commit : String
     ) : Nil
       Log.context.set(driver: driver_file, repository: repository, commit: commit)
 
@@ -121,7 +121,7 @@ module PlaceOS::Core::Api
     @[AC::Route::GET("/:repository/branches")]
     def branches(
       @[AC::Param::Info(description: "the repository folder name", example: "drivers")]
-      repository : String,
+      repository : String
     ) : Array(String)
       branches = self.class.branches?(repository)
       raise Error::NotFound.new("repository not found: #{repository}") if branches.nil?

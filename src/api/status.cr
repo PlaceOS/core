@@ -37,13 +37,13 @@ module PlaceOS::Core::Api
     @[AC::Route::GET("/")]
     def statistics
       Statistics.new(
-        available_repositories:   PlaceOS::Compiler::Helper.repositories,
+        available_repositories: PlaceOS::Compiler::Helper.repositories,
         unavailable_repositories: resource_manager.cloning.errors,
-        compiled_drivers:         PlaceOS::Compiler::Helper.compiled_drivers,
-        unavailable_drivers:      resource_manager.compilation.errors,
-        run_count:                RunCount.new(
+        compiled_drivers: PlaceOS::Compiler::Helper.compiled_drivers,
+        unavailable_drivers: resource_manager.compilation.errors,
+        run_count: RunCount.new(
           local: module_manager.local_processes.run_count,
-          edge:  module_manager.edge_processes.run_count,
+          edge: module_manager.edge_processes.run_count,
         ),
       )
     end
@@ -64,7 +64,7 @@ module PlaceOS::Core::Api
     )
       DriverStatus.new(
         local: module_manager.local_processes.driver_status(driver_path),
-        edge:  module_manager.edge_processes.driver_status(driver_path),
+        edge: module_manager.edge_processes.driver_status(driver_path),
       )
     end
 
@@ -81,7 +81,7 @@ module PlaceOS::Core::Api
     def load
       MachineLoad.new(
         local: module_manager.local_processes.system_status,
-        edge:  module_manager.edge_processes.system_status,
+        edge: module_manager.edge_processes.system_status,
       )
     end
 
@@ -98,7 +98,7 @@ module PlaceOS::Core::Api
     def loaded
       LoadedModules.new(
         local: module_manager.local_processes.loaded_modules,
-        edge:  module_manager.edge_processes.loaded_modules,
+        edge: module_manager.edge_processes.loaded_modules,
       )
     end
   end
