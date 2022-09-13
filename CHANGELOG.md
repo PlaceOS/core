@@ -1,3 +1,9 @@
+## v4.6.1 (2022-09-13)
+
+### Fix
+
+- **edge/transport**: reconnect on graceful api disconnect ([#234](https://github.com/PlaceOS/core/pull/234))
+
 ## v4.6.0 (2022-09-08)
 
 ### Feat
