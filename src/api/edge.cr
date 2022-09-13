@@ -10,7 +10,8 @@ module PlaceOS::Core::Api
 
     # websocket handling edge connections
     @[AC::Route::WebSocket("/control")]
-    def edge_control(socket,
+    def edge_control(
+      socket,
       @[AC::Param::Info(description: "the edge this device is handling", example: "edge-1234")]
       edge_id : String
     ) : Nil

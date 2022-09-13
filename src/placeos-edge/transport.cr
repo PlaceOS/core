@@ -60,6 +60,7 @@ module PlaceOS::Edge
         }) do
         socket = initial || HTTP::WebSocket.new(uri)
         run_socket(socket.as(HTTP::WebSocket)).run
+        raise "rest api disconnected" unless close_channel.closed?
       end
     rescue error
       disconnect
