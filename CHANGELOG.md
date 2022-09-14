@@ -1,3 +1,9 @@
+## v4.6.2 (2022-09-14)
+
+### Fix
+
+- **Dockerfile**: ensure exec_from included in release
+
 ## v4.6.1 (2022-09-13)
 
 ### Fix
