@@ -1,3 +1,9 @@
+## v4.6.3 (2022-09-14)
+
+### Fix
+
+- **Dockerfile**: requires make
+
 ## v4.6.2 (2022-09-14)
 
 ### Fix
