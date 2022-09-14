@@ -7,6 +7,8 @@ targets:
     main: src/core-app.cr
   edge:
     main: src/edge-app.cr
+  exec_from:
+    main: lib/exec_from/src/app.cr
 
 dependencies:
   action-controller:
