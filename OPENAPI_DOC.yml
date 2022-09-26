@@ -3,7 +3,7 @@ openapi: 3.0.3
 info:
   description: Internal core API. Handles driver management and comms
   title: core
-  version: 4.4.3
+  version: 4.6.3
 paths:
   /api/core/v1/chaos/terminate:
     post:
@@ -723,6 +723,10 @@ paths:
       responses:
         200:
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Status__Statistics'
         404:
           description: Not Found
           content:
@@ -770,6 +774,10 @@ paths:
       responses:
         200:
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Status__DriverStatus'
         404:
           description: Not Found
           content:
@@ -810,6 +818,10 @@ paths:
       responses:
         200:
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Status__MachineLoad'
         404:
           description: Not Found
           content:
@@ -851,6 +863,10 @@ paths:
       responses:
         200:
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Status__LoadedModules'
         404:
           description: Not Found
           content:
@@ -922,6 +938,248 @@ components:
       - version
       - build_time
       - platform_version
+    PlaceOS__Core__Api__Status__Statistics:
+      type: object
+      properties:
+        available_repositories:
+          type: array
+          items:
+            type: string
+        unavailable_repositories:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
+            required:
+            - name
+            - reason
+        compiled_drivers:
+          type: array
+          items:
+            type: string
+        unavailable_drivers:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
+            required:
+            - name
+            - reason
+        run_count:
+          type: object
+          properties:
+            local:
+              type: object
+              properties:
+                drivers:
+                  type: integer
+                  format: Int32
+                modules:
+                  type: integer
+                  format: Int32
+              required:
+              - drivers
+              - modules
+            edge:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  drivers:
+                    type: integer
+                    format: Int32
+                  modules:
+                    type: integer
+                    format: Int32
+                required:
+                - drivers
+                - modules
+          required:
+          - local
+          - edge
+      required:
+      - available_repositories
+      - unavailable_repositories
+      - compiled_drivers
+      - unavailable_drivers
+      - run_count
+    PlaceOS__Core__Api__Status__DriverStatus:
+      type: object
+      properties:
+        local:
+          type: object
+          properties:
+            running:
+              type: boolean
+            module_instances:
+              type: integer
+              format: Int32
+            last_exit_code:
+              type: integer
+              format: Int32
+            launch_count:
+              type: integer
+              format: Int32
+            launch_time:
+              type: integer
+              format: Int64
+            percentage_cpu:
+              type: number
+              format: Float64
+              nullable: true
+            memory_total:
+              type: integer
+              format: Int64
+              nullable: true
+            memory_usage:
+              type: integer
+              format: Int64
+              nullable: true
+          required:
+          - running
+          - module_instances
+          - last_exit_code
+          - launch_count
+          - launch_time
+          nullable: true
+        edge:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              running:
+                type: boolean
+              module_instances:
+                type: integer
+                format: Int32
+              last_exit_code:
+                type: integer
+                format: Int32
+              launch_count:
+                type: integer
+                format: Int32
+              launch_time:
+                type: integer
+                format: Int64
+              percentage_cpu:
+                type: number
+                format: Float64
+                nullable: true
+              memory_total:
+                type: integer
+                format: Int64
+                nullable: true
+              memory_usage:
+                type: integer
+                format: Int64
+                nullable: true
+            required:
+            - running
+            - module_instances
+            - last_exit_code
+            - launch_count
+            - launch_time
+            nullable: true
+      required:
+      - edge
+    PlaceOS__Core__Api__Status__MachineLoad:
+      type: object
+      properties:
+        local:
+          type: object
+          properties:
+            hostname:
+              type: string
+            cpu_count:
+              type: integer
+              format: Int64
+            core_cpu:
+              type: number
+              format: Float64
+            total_cpu:
+              type: number
+              format: Float64
+            memory_total:
+              type: integer
+              format: Int32
+            memory_usage:
+              type: integer
+              format: Int32
+            core_memory:
+              type: integer
+              format: Int32
+          required:
+          - hostname
+          - cpu_count
+          - core_cpu
+          - total_cpu
+          - memory_total
+          - memory_usage
+          - core_memory
+        edge:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              hostname:
+                type: string
+              cpu_count:
+                type: integer
+                format: Int64
+              core_cpu:
+                type: number
+                format: Float64
+              total_cpu:
+                type: number
+                format: Float64
+              memory_total:
+                type: integer
+                format: Int32
+              memory_usage:
+                type: integer
+                format: Int32
+              core_memory:
+                type: integer
+                format: Int32
+            required:
+            - hostname
+            - cpu_count
+            - core_cpu
+            - total_cpu
+            - memory_total
+            - memory_usage
+            - core_memory
+      required:
+      - local
+      - edge
+    PlaceOS__Core__Api__Status__LoadedModules:
+      type: object
+      properties:
+        local:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        edge:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: array
+              items:
+                type: string
+      required:
+      - local
+      - edge
     PlaceOS__Core__Api__Application__CommonError:
       type: object
       properties:
