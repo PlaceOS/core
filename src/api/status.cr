@@ -35,7 +35,7 @@ module PlaceOS::Core::Api
 
     # General statistics related to the process
     @[AC::Route::GET("/")]
-    def statistics
+    def statistics : Statistics
       Statistics.new(
         available_repositories: PlaceOS::Compiler::Helper.repositories,
         unavailable_repositories: resource_manager.cloning.errors,
@@ -61,7 +61,7 @@ module PlaceOS::Core::Api
     def driver(
       @[AC::Param::Info(name: "path", description: "the path of the compiled driver", example: "/path/to/compiled_driver")]
       driver_path : String
-    )
+    ) : DriverStatus
       DriverStatus.new(
         local: module_manager.local_processes.driver_status(driver_path),
         edge: module_manager.edge_processes.driver_status(driver_path),
@@ -78,7 +78,7 @@ module PlaceOS::Core::Api
 
     # details about the overall machine load
     @[AC::Route::GET("/load")]
-    def load
+    def load : MachineLoad
       MachineLoad.new(
         local: module_manager.local_processes.system_status,
         edge: module_manager.edge_processes.system_status,
@@ -95,7 +95,7 @@ module PlaceOS::Core::Api
 
     # Returns the lists of modules drivers have loaded for this core, and managed edges
     @[AC::Route::GET("/loaded")]
-    def loaded
+    def loaded : LoadedModules
       LoadedModules.new(
         local: module_manager.local_processes.loaded_modules,
         edge: module_manager.edge_processes.loaded_modules,
