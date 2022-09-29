@@ -3,6 +3,8 @@ require "http"
 require "./error"
 require "./protocol"
 
+require "simple_retry"
+
 module PlaceOS::Edge
   # WebSocket Transport
   class Transport
@@ -49,16 +51,19 @@ module PlaceOS::Edge
       raise error
     end
 
-    def connect(uri : URI, initial_socket : HTTP::WebSocket?)
-      initial = initial_socket
-      Retriable.retry(
-        max_interval: 5.seconds,
-        on_retry: ->(error : Exception, _i : Int32, _e : Time::Span, _p : Time::Span) {
+    def connect(uri : URI, socket : HTTP::WebSocket?)
+      SimpleRetry.try_to(
+        base_interval: 500.milliseconds,
+        max_interval: 5.seconds
+      ) do |run_count, error|
+        if error
+          last_error = error.not_nil!
           Log.warn { {error: error.to_s, message: "reconnecting"} }
           on_disconnect.try(&.call(error)) if error.is_a? IO::Error
-          initial = nil
-        }) do
-        socket = initial || HTTP::WebSocket.new(uri)
+          socket = nil
+        end
+
+        socket = socket || HTTP::WebSocket.new(uri)
         run_socket(socket.as(HTTP::WebSocket)).run
         raise "rest api disconnected" unless close_channel.closed?
       end
