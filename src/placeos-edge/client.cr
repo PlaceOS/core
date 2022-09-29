@@ -1,4 +1,4 @@
-require "retriable"
+require "simple_retry"
 require "rwlock"
 require "uri"
 
@@ -171,7 +171,7 @@ module PlaceOS::Edge
     end
 
     def handshake
-      Retriable.retry(max_interval: 5.seconds) do
+      SimpleRetry.try_to(base_interval: 500.milliseconds, max_interval: 5.seconds) do
         begin
           response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
           unless response
@@ -244,7 +244,7 @@ module PlaceOS::Edge
       return true if File.exists?(path(key))
 
       binary = begin
-        Retriable.retry(max_attempts: 5, base_interval: 5.seconds) do
+        SimpleRetry.try_to(max_attempts: 5, base_interval: 5.seconds) do
           result = fetch_binary(key)
           raise "retry" if result.nil?
           result
