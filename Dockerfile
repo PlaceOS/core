@@ -4,6 +4,7 @@ ARG CRYSTAL_VERSION=1.5
 FROM alpine:3.16 as build
 WORKDIR /app
 
+ARG TARGET
 # Set the commit via a build arg
 ARG PLACE_COMMIT="DEV"
 # Set the platform version via a build arg
