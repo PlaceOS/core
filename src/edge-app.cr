@@ -1,5 +1,8 @@
 require "option_parser"
 
+# fixes issues with static builds on crystal 1.5.x
+require "placeos-driver/core_ext"
+
 require "./placeos-edge/config"
 require "./placeos-edge/client"
 

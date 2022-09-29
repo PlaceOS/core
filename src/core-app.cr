@@ -1,6 +1,9 @@
 require "option_parser"
 require "./constants"
 
+# fixes issues with static builds on crystal 1.5.x
+require "placeos-driver/core_ext"
+
 # Server defaults
 port = 3000
 host = "127.0.0.1"
