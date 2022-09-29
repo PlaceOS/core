@@ -1,3 +1,9 @@
+## v4.6.4 (2022-09-29)
+
+### Fix
+
+- **edge/transport**: ensure reconnect is not missed ([#237](https://github.com/PlaceOS/core/pull/237))
+
 ## v4.6.3 (2022-09-14)
 
 ### Fix
