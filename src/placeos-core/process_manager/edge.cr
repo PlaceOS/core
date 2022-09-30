@@ -51,7 +51,17 @@ module PlaceOS::Core
           )
         end
       when Protocol::Message::Register
-        send_response(sequence_id, register(modules: request.modules, drivers: request.drivers))
+        register_response, to_start = register(modules: request.modules, drivers: request.drivers)
+        send_response(sequence_id, register_response)
+
+        to_start.each do |(module_id, payload)|
+          unless start(module_id, payload)
+            Log.error { {
+              message:   "failed to start module on edge #{edge_id}",
+              module_id: module_id,
+            } }
+          end
+        end
       when Protocol::Message::SettingsAction
         boolean_response(sequence_id, request) do
           on_setting(
@@ -114,23 +124,39 @@ module PlaceOS::Core
     protected def register(drivers : Set(String), modules : Set(String))
       allocated_drivers = Set(String).new
       allocated_modules = Set(Module).new
+      edge_modules = {} of String => PlaceOS::Model::Module
+
       PlaceOS::Model::Module.on_edge(edge_id).each do |mod|
         driver = mod.driver.not_nil!
+        mod_id = mod.id.as(String)
+        edge_modules[mod_id] = mod
         driver_key = Compiler::Helper.driver_binary_name(driver_file: driver.file_name, commit: driver.commit, id: driver.id)
-        allocated_modules << {key: driver_key, module_id: mod.id.as(String)}
+        allocated_modules << {key: driver_key, module_id: mod_id}
         allocated_drivers << driver_key
       end
 
       add_modules = allocated_modules.reject { |mod| modules.includes?(mod[:module_id]) }
       remove_modules = (modules - allocated_modules.map(&.[:module_id])).to_a
 
-      Protocol::Message::RegisterResponse.new(
-        success: true,
-        add_drivers: (allocated_drivers - drivers).to_a,
-        remove_drivers: (drivers - allocated_drivers).to_a,
-        add_modules: add_modules,
-        remove_modules: remove_modules,
-      )
+      # After registering the modules we need to start them
+      should_start = [] of Tuple(String, String)
+      add_modules.each do |module_details|
+        module_id = module_details[:module_id]
+        mod = edge_modules[module_id]
+        next unless mod.running
+        should_start << {module_id, ModuleManager.start_payload(mod)}
+      end
+
+      {
+        Protocol::Message::RegisterResponse.new(
+          success: true,
+          add_drivers: (allocated_drivers - drivers).to_a,
+          remove_drivers: (drivers - allocated_drivers).to_a,
+          add_modules: add_modules,
+          remove_modules: remove_modules,
+        ),
+        should_start,
+      }
     end
 
     # Callbacks
