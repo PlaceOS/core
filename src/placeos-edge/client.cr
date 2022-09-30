@@ -30,6 +30,8 @@ module PlaceOS::Edge
 
     private getter close_channel = Channel(Nil).new
 
+    @handshake_mutex : Mutex = Mutex.new
+
     def host
       uri.to_s.gsub(uri.request_target, "")
     end
@@ -98,6 +100,9 @@ module PlaceOS::Edge
 
     def handle_request(sequence_id : UInt64, request : Protocol::Server::Request)
       Log.debug { {sequence_id: sequence_id.to_s, type: request.type.to_s, message: "received request"} }
+
+      # ensure handshake processing is complete before we execute requests
+      @handshake_mutex.synchronize { }
 
       case request
       in Protocol::Message::Debug
@@ -173,24 +178,26 @@ module PlaceOS::Edge
     def handshake
       SimpleRetry.try_to(base_interval: 500.milliseconds, max_interval: 5.seconds) do
         begin
-          response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
-          unless response
-            Log.warn { "failed to register to core" }
-            raise "handshake failed"
-          end
+          @handshake_mutex.synchronize do
+            response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
+            unless response
+              Log.warn { "failed to register to core" }
+              raise "handshake failed"
+            end
 
-          response.remove_modules.each do |mod|
-            unload(mod)
-          end
+            response.remove_modules.each do |mod|
+              unload(mod)
+            end
 
-          response.remove_drivers.each do |driver|
-            remove_binary(driver)
-          end
+            response.remove_drivers.each do |driver|
+              remove_binary(driver)
+            end
 
-          load_binaries(response.add_drivers)
+            load_binaries(response.add_drivers)
 
-          response.add_modules.each do |mod|
-            load(mod[:module_id], mod[:key])
+            response.add_modules.each do |mod|
+              load(mod[:module_id], mod[:key])
+            end
           end
         rescue error
           Log.error(exception: error) { "during handshake" }
