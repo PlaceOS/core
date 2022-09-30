@@ -1,3 +1,9 @@
+## v4.6.5 (2022-09-30)
+
+### Fix
+
+- **manager/edge**: start modules after registration ([#238](https://github.com/PlaceOS/core/pull/238))
+
 ## v4.6.4 (2022-09-29)
 
 ### Fix
