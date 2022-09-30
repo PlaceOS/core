@@ -55,9 +55,8 @@ module PlaceOS::Edge
       SimpleRetry.try_to(
         base_interval: 500.milliseconds,
         max_interval: 5.seconds
-      ) do |run_count, error|
+      ) do |_run_count, error|
         if error
-          last_error = error.not_nil!
           Log.warn { {error: error.to_s, message: "reconnecting"} }
           on_disconnect.try(&.call(error)) if error.is_a? IO::Error
           socket = nil
