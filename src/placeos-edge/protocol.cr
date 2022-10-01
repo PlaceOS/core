@@ -390,6 +390,7 @@ module PlaceOS::Edge::Protocol
       getter remove_drivers : Array(String)
       getter add_modules : Array(Module)
       getter remove_modules : Array(String)
+      getter running_modules : Array(Tuple(String, String))
 
       alias Module = NamedTuple(key: String, module_id: String)
 
@@ -398,7 +399,8 @@ module PlaceOS::Edge::Protocol
         @add_drivers = [] of String,
         @remove_drivers = [] of String,
         @add_modules = [] of Module,
-        @remove_modules = [] of String
+        @remove_modules = [] of String,
+        @running_modules = [] of Tuple(String, String)
       )
       end
     end
