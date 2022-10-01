@@ -1,3 +1,9 @@
+## v4.7.0 (2022-10-01)
+
+### Feat
+
+- **edge/protocol**: start modules as part of the handshake ([#240](https://github.com/PlaceOS/core/pull/240))
+
 ## v4.6.5 (2022-09-30)
 
 ### Fix
