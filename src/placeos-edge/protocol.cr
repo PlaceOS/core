@@ -125,6 +125,7 @@ module PlaceOS::Edge::Protocol
         ProxyRedis # Success
         FetchBinary
         SettingsAction # Success
+        HandshakeComplete
 
         # Response
         Success
@@ -283,6 +284,11 @@ module PlaceOS::Edge::Protocol
       getter key : String
 
       def initialize(@key)
+      end
+    end
+
+    struct HandshakeComplete < Client::Request
+      def initialize
       end
     end
 

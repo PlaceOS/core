@@ -17,6 +17,8 @@ module PlaceOS::Core
 
     getter redis : Redis::Client { Redis::Client.boot(REDIS_URL) }
 
+    @should_start : Array(Tuple(String, String)) = [] of Tuple(String, String)
+
     def initialize(@edge_id : String, socket : HTTP::WebSocket, @redis : Redis? = nil)
       @transport = Transport.new do |(sequence_id, request)|
         if request.is_a?(Protocol::Client::Request)
@@ -51,10 +53,10 @@ module PlaceOS::Core
           )
         end
       when Protocol::Message::Register
-        register_response, to_start = register(modules: request.modules, drivers: request.drivers)
+        register_response = register(modules: request.modules, drivers: request.drivers)
         send_response(sequence_id, register_response)
-
-        to_start.each do |(module_id, payload)|
+      when Protocol::Message::HandshakeComplete
+        @should_start.each do |(module_id, payload)|
           unless start(module_id, payload)
             Log.error { {
               message:   "failed to start module on edge #{edge_id}",
@@ -62,6 +64,7 @@ module PlaceOS::Core
             } }
           end
         end
+        @should_start = [] of Tuple(String, String)
       when Protocol::Message::SettingsAction
         boolean_response(sequence_id, request) do
           on_setting(
@@ -146,17 +149,15 @@ module PlaceOS::Core
         next unless mod.running
         should_start << {module_id, ModuleManager.start_payload(mod)}
       end
+      @should_start = should_start
 
-      {
-        Protocol::Message::RegisterResponse.new(
-          success: true,
-          add_drivers: (allocated_drivers - drivers).to_a,
-          remove_drivers: (drivers - allocated_drivers).to_a,
-          add_modules: add_modules,
-          remove_modules: remove_modules,
-        ),
-        should_start,
-      }
+      Protocol::Message::RegisterResponse.new(
+        success: true,
+        add_drivers: (allocated_drivers - drivers).to_a,
+        remove_drivers: (drivers - allocated_drivers).to_a,
+        add_modules: add_modules,
+        remove_modules: remove_modules,
+      )
     end
 
     # Callbacks
