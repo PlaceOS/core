@@ -1,7 +1,6 @@
 # One of `core` | `edge`
 ARG TARGET=core
-ARG CRYSTAL_VERSION=1.5
-FROM alpine:3.16 as build
+FROM placeos/crystal:latest as build
 WORKDIR /app
 
 ARG TARGET
@@ -25,41 +24,13 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
-# Add trusted CAs for communicating with external services
+# Install additional libs required for drivers
 RUN apk add \
   --update \
   --no-cache \
-    ca-certificates \
-    yaml-dev \
-    yaml-static \
-    libxml2-dev \
-    openssl-dev \
-    openssl-libs-static \
-    zlib-dev \
-    zlib-static \
-    make \
-    tzdata
-
-RUN update-ca-certificates
-
-# Add crystal lang
-# can look up packages here: https://pkgs.alpinelinux.org/packages?name=crystal
-RUN apk add \
-  --update \
-  --no-cache \
-  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community \
-    crystal \
-    shards
-
-# Install the latest version of LibSSH2, ping
-RUN apk add --update --no-cache \
     'apk-tools>=2.10.8-r0' \
     'expat>=2.2.10-r1' \
-    iputils \
-    'libcurl>=7.79.1-r0' \
-    libssh2-static \
-    git
+    'libcurl>=7.79.1-r0'
 
 # Install shards for caching
 COPY shard.yml shard.yml

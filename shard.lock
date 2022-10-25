@@ -7,15 +7,11 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 5.4.0
+    version: 5.4.3
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
-    version: 4.2.2
-
-  ameba:
-    git: https://github.com/crystal-ameba/ameba.git
-    version: 1.1.0
+    version: 4.2.3
 
   auto_initialize:
     git: https://github.com/kostya/auto_initialize.git
@@ -147,7 +143,7 @@ shards:
 
   neuroplastic:
     git: https://github.com/spider-gazelle/neuroplastic.git
-    version: 1.12.0
+    version: 1.12.1
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
@@ -191,15 +187,15 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.4.14
+    version: 6.4.16
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.11.2
+    version: 0.11.3
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 8.12.0
+    version: 8.12.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git

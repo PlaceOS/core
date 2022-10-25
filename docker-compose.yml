@@ -20,13 +20,13 @@ x-rethinkdb-client-env: &rethinkdb-client-env
 
 services:
   test: # Module coordinator
-    image: placeos/service-spec-runner:${CRYSTAL_VERSION:-1.4.1}
+    image: placeos/service-spec-runner:latest
     volumes:
       - ${PWD}/bin:/app/bin
       - ${PWD}/coverage:/app/coverage
       - ${PWD}/lib:/app/lib
       - ${PWD}/shard.lock:/app/shard.lock
-      - ${PWD}/shard.yml:/app/shard.yml
+      - ${PWD}/shard.yml:/app/shard.yml.input
       - ${PWD}/shard.override.yml:/app/shard.override.yml
       - ${PWD}/spec:/app/spec
       - ${PWD}/src:/app/src
