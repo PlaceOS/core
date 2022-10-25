@@ -24,14 +24,13 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
-# Install additional libs required for core
+# Install additional libs required for drivers
 RUN apk add \
   --update \
   --no-cache \
     'apk-tools>=2.10.8-r0' \
     'expat>=2.2.10-r1' \
-    'libcurl>=7.79.1-r0' \
-    make
+    'libcurl>=7.79.1-r0'
 
 # Install shards for caching
 COPY shard.yml shard.yml

@@ -13,10 +13,6 @@ shards:
     git: https://github.com/spider-gazelle/active-model.git
     version: 4.2.3
 
-  ameba:
-    git: https://github.com/crystal-ameba/ameba.git
-    version: 1.2.0
-
   auto_initialize:
     git: https://github.com/kostya/auto_initialize.git
     version: 0.1.0
