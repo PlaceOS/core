@@ -3,8 +3,8 @@ dependencies:
     github: spider-gazelle/pars
 
   opentelemetry-instrumentation:
-    github: wyhaines/opentelemetry-instrumentation.cr
-    branch: main
+    github: stakach/opentelemetry-instrumentation.cr
+    branch: patch-1
 
   opentelemetry-sdk:
     github: wyhaines/opentelemetry-sdk.cr
