@@ -56,8 +56,7 @@ RUN PLACE_VERSION=$PLACE_VERSION \
     shards build $TARGET \
       --error-trace \
       --production \
-      --release \
-      --static
+      --release
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
