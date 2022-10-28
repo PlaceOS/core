@@ -13,6 +13,10 @@ shards:
     git: https://github.com/spider-gazelle/active-model.git
     version: 4.2.3
 
+  ameba:
+    git: https://github.com/crystal-ameba/ameba.git
+    version: 1.2.0
+
   auto_initialize:
     git: https://github.com/kostya/auto_initialize.git
     version: 0.1.0
@@ -162,8 +166,8 @@ shards:
     version: 0.5.0
 
   opentelemetry-instrumentation: # Overridden
-    git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.5.0+git.commit.7d83b9a53c9540fbc159f06eeed5d4bdad5c4377
+    git: https://github.com/stakach/opentelemetry-instrumentation.cr.git
+    version: 0.5.0+git.commit.8dc0a4ed085ab8f928b3681990676d818ea9db6d
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
@@ -195,7 +199,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 8.12.1
+    version: 8.12.2
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git

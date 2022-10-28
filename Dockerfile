@@ -1,6 +1,7 @@
 # One of `core` | `edge`
 ARG TARGET=core
-FROM placeos/crystal:latest as build
+
+FROM alpine:latest as build
 WORKDIR /app
 
 ARG TARGET
@@ -8,6 +9,53 @@ ARG TARGET
 ARG PLACE_COMMIT="DEV"
 # Set the platform version via a build arg
 ARG PLACE_VERSION="DEV"
+
+# Add dependencies commonly required for building crystal applications
+# hadolint ignore=DL3018
+RUN apk add \
+  --update \
+  --no-cache \
+    gcc \
+    make \
+    autoconf \
+    automake \
+    libtool \
+    patch \
+    ca-certificates \
+    yaml-dev \
+    yaml-static \
+    git \
+    bash \
+    iputils \
+    libelf \
+    gmp-dev \
+    libevent-dev \
+    libevent-static \
+    libxml2-dev \
+    musl-dev \
+    openssl-dev \
+    openssl-libs-static \
+    pcre-dev \
+    zlib-dev \
+    zlib-static \
+    lz4-dev \
+    lz4-static \
+    libssh2-static \
+    tzdata \
+    curl
+
+RUN apk add \
+  --update \
+  --no-cache \
+  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
+  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community \
+    crystal \
+    shards
+
+RUN update-ca-certificates
+
+# These provide certificate chain validation where communicating with external services over TLS
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 # Create a non-privileged user, defaults are appuser:10001
 ARG IMAGE_UID="10001"
@@ -56,10 +104,17 @@ RUN PLACE_VERSION=$PLACE_VERSION \
     shards build $TARGET \
       --error-trace \
       --production \
-      --release \
-      --static
+      --release
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
+# Extract binary dependencies
+RUN for binary in /app/bin/*; do \
+        ldd "$binary" | \
+        tr -s '[:blank:]' '\n' | \
+        grep '^/' | \
+        xargs -I % sh -c 'mkdir -p $(dirname deps%); cp % deps%;'; \
+    done
 
 # Create binary directories
 RUN mkdir -p repositories bin/drivers
@@ -86,6 +141,7 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
 
 # Copy the app into place
+COPY --from=build /app/deps /bin
 COPY --from=build /app/bin /bin
 
 USER appuser:appuser
@@ -103,6 +159,7 @@ CMD ["/bin/edge"]
 FROM build as core
 
 # Copy the app into place
+COPY --from=build /app/deps /bin
 COPY --from=build /app/bin /bin
 
 WORKDIR /app
