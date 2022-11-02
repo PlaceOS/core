@@ -8,7 +8,7 @@ jobs:
     uses: PlaceOS/.github/.github/workflows/dockerfile-style.yml@main
 
   test:
-    name: "${{ !matrix.stable && '🚧 ' || ''}}crystal: ${{ matrix.crystal }}, subset: ${{ matrix.subset }}, MT: ${{ matrix.MT }}"
+    name: "${{ !matrix.crystal.stable && '🚧 ' || ''}}crystal: ${{ matrix.crystal.tag }}, subset: ${{ matrix.subset }}, MT: ${{ matrix.MT }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -19,13 +19,15 @@ jobs:
           - processes
           - resource
         crystal:
-          - latest
+          - tag: latest
+            stable: true
+          - tag: unstable
+            stable: false
         MT: [false]
-        stable: [true]
-    continue-on-error: ${{ !matrix.stable }}
+    continue-on-error: ${{ !matrix.crystal.stable }}
     steps:
       - uses: actions/checkout@v3
       - name: Test ${{ matrix.subset }}
         run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tag ${{ matrix.subset }} --order random
         env:
-          CRYSTAL_VERSION: ${{ matrix.crystal }}
+          CRYSTAL_VERSION: ${{ matrix.crystal.tag }}
