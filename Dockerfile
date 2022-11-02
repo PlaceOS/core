@@ -1,7 +1,8 @@
 # One of `core` | `edge`
 ARG TARGET=core
+ARG CRYSTAL_VERSION=latest
 
-FROM alpine:latest as build
+FROM placeos/crystal:$CRYSTAL_VERSION as build
 WORKDIR /app
 
 ARG TARGET
@@ -9,53 +10,6 @@ ARG TARGET
 ARG PLACE_COMMIT="DEV"
 # Set the platform version via a build arg
 ARG PLACE_VERSION="DEV"
-
-# Add dependencies commonly required for building crystal applications
-# hadolint ignore=DL3018
-RUN apk add \
-  --update \
-  --no-cache \
-    gcc \
-    make \
-    autoconf \
-    automake \
-    libtool \
-    patch \
-    ca-certificates \
-    yaml-dev \
-    yaml-static \
-    git \
-    bash \
-    iputils \
-    libelf \
-    gmp-dev \
-    libevent-dev \
-    libevent-static \
-    libxml2-dev \
-    musl-dev \
-    openssl-dev \
-    openssl-libs-static \
-    pcre-dev \
-    zlib-dev \
-    zlib-static \
-    lz4-dev \
-    lz4-static \
-    libssh2-static \
-    tzdata \
-    curl
-
-RUN apk add \
-  --update \
-  --no-cache \
-  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community \
-    crystal \
-    shards
-
-RUN update-ca-certificates
-
-# These provide certificate chain validation where communicating with external services over TLS
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 # Create a non-privileged user, defaults are appuser:10001
 ARG IMAGE_UID="10001"
@@ -149,6 +103,7 @@ USER appuser:appuser
 ###############################################################################
 
 FROM minimal as edge
+ENTRYPOINT ["/bin/edge"]
 CMD ["/bin/edge"]
 
 ###############################################################################
@@ -168,6 +123,7 @@ USER appuser:appuser
 
 EXPOSE 3000
 VOLUME ["/app/repositories/", "/app/bin/drivers/"]
+ENTRYPOINT ["/bin/core"]
 HEALTHCHECK CMD ["/bin/core", "--curl", "http://localhost:3000/api/core/v1"]
 CMD ["/bin/core", "-b", "0.0.0.0", "-p", "3000"]
 
