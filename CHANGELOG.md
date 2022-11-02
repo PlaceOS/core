@@ -1,3 +1,9 @@
+## v4.7.1 (2022-11-02)
+
+### Fix
+
+- **Dockerfile**: use `placeos/crystal` base images
+
 ## v4.7.0 (2022-10-01)
 
 ### Feat
