@@ -58,17 +58,10 @@ RUN PLACE_VERSION=$PLACE_VERSION \
     shards build $TARGET \
       --error-trace \
       --production \
-      --release
+      --release \
+      --static
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
-
-# Extract binary dependencies
-RUN for binary in /app/bin/*; do \
-        ldd "$binary" | \
-        tr -s '[:blank:]' '\n' | \
-        grep '^/' | \
-        xargs -I % sh -c 'mkdir -p $(dirname deps%); cp % deps%;'; \
-    done
 
 # Create binary directories
 RUN mkdir -p repositories bin/drivers
@@ -95,7 +88,6 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
 
 # Copy the app into place
-COPY --from=build /app/deps /bin
 COPY --from=build /app/bin /bin
 
 USER appuser:appuser
@@ -114,7 +106,6 @@ CMD ["/bin/edge"]
 FROM build as core
 
 # Copy the app into place
-COPY --from=build /app/deps /bin
 COPY --from=build /app/bin /bin
 
 WORKDIR /app
