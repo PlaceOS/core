@@ -166,7 +166,7 @@ module PlaceOS::Edge
       in Protocol::Message::Stop
         boolean_command(sequence_id, request) do
           @loading_mutex.synchronize do
-            @pending_start.delete(module_id)
+            @pending_start.delete(request.module_id)
             stop(request.module_id)
           end
         end
@@ -175,9 +175,9 @@ module PlaceOS::Edge
       in Protocol::Message::Unload
         boolean_command(sequence_id, request) do
           @loading_mutex.synchronize do
-            @pending_start.delete(module_id)
-            if driver_key = driver_key_for?(module_id)
-              @loading_modules[driver_key]?.try &.delete(module_id)
+            @pending_start.delete(request.module_id)
+            if driver_key = driver_key_for?(request.module_id)
+              @loading_modules[driver_key]?.try &.delete(request.module_id)
             end
             unload(request.module_id)
           end
