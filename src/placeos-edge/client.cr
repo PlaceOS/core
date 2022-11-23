@@ -394,7 +394,7 @@ module PlaceOS::Edge
             select
             when wait_load.receive?
               @loading_mutex.synchronize do
-                unless File.exists?(path(key))
+                unless File.exists?(path(driver_key))
                   Log.info { "module load aborted: #{module_id}" }
                   return
                 end
