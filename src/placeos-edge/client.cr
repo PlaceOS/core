@@ -158,6 +158,9 @@ module PlaceOS::Edge
         end
       in Protocol::Message::Load
         boolean_command(sequence_id, request) do
+          @loading_mutex.synchronize do
+            File.delete(path(request.driver_key)) if !protocol_manager_by_driver?(request.driver_key) && File.exists?(path(request.driver_key))
+          end
           load(request.module_id, request.driver_key)
         end
       in Protocol::Message::LoadedModules
@@ -250,6 +253,7 @@ module PlaceOS::Edge
     # Kicks off downloading all the binaries
     def load_binaries(binaries : Array(String))
       promises = binaries.map do |driver_key|
+        File.delete(path(key)) if File.exists?(path(key))
         Promise.defer do
           if wait_load = load_binary(driver_key)
             select
@@ -305,7 +309,7 @@ module PlaceOS::Edge
           perform_load = false
           loaded_channel = loading
         else
-          File.delete(path(key)) if File.exists?(path(key))
+          return if File.exists?(path(key))
           @loading_driver_keys[key] = loaded_channel
         end
       end
@@ -357,8 +361,8 @@ module PlaceOS::Edge
 
     def add_binary(key : String, binary : IO)
       path = path(key)
+      File.delete(path) if File.exists?(path)
       Log.debug { {path: path, message: "writing binary"} }
-      File.delete(path(key)) if File.exists?(path(key))
 
       # Default permissions + execute for owner
       File.open(path, mode: "w+", perm: File::Permissions.new(0o744)) do |file|
