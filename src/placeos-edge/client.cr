@@ -296,7 +296,7 @@ module PlaceOS::Edge
           perform_load = false
           loaded_channel = loading
         else
-          return if File.exists?(path(key))
+          File.delete(path(key)) if File.exists?(path(key))
           @loading_driver_keys[key] = loaded_channel
         end
       end
@@ -338,7 +338,7 @@ module PlaceOS::Edge
       end
     rescue error
       Log.error(exception: error) { "error during download attempt" }
-      spawn { attempt_download(loaded_channel, key) }
+      spawn { attempt_download(loaded_channel, key) } unless loaded_channel.closed?
     end
 
     def fetch_binary(key : String) : IO?
@@ -395,7 +395,7 @@ module PlaceOS::Edge
             when wait_load.receive?
               @loading_mutex.synchronize do
                 unless File.exists?(path(driver_key))
-                  Log.info { "module load aborted: #{module_id}" }
+                  Log.info { "module load aborted" }
                   return
                 end
               end
@@ -404,7 +404,7 @@ module PlaceOS::Edge
                 # ensure we are still loading this
                 if @loading_driver_keys[driver_key]?
                   @loading_modules[driver_key] << module_id
-                  Log.info { "queuing module load: #{module_id}" }
+                  Log.info { "queuing module load" }
                   return
                 end
               end
@@ -429,9 +429,9 @@ module PlaceOS::Edge
           set_driver_protocol_manager(driver_key, manager)
         end
 
-        Log.info { "module loaded: #{module_id}" }
+        Log.info { "module loaded" }
       else
-        Log.info { "module already loaded: #{module_id}" }
+        Log.info { "module already loaded" }
       end
     end
 
