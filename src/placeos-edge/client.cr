@@ -177,7 +177,13 @@ module PlaceOS::Edge
           @loading_mutex.synchronize do
             @pending_start.delete(request.module_id)
             if driver_key = driver_key_for?(request.module_id)
-              @loading_modules[driver_key]?.try &.delete(request.module_id)
+              if modules = @loading_modules[driver_key]?
+                modules.delete(request.module_id)
+                if modules.empty? && (channel = @loading_driver_keys.delete(driver_key))
+                  # abort downloading of driver
+                  channel.close
+                end
+              end
             end
             unload(request.module_id)
           end
@@ -387,6 +393,12 @@ module PlaceOS::Edge
           if wait_load = load_binary(driver_key)
             select
             when wait_load.receive?
+              @loading_mutex.synchronize do
+                unless File.exists?(path(key))
+                  Log.info { "module load aborted: #{module_id}" }
+                  return
+                end
+              end
             when timeout(20.seconds)
               @loading_mutex.synchronize do
                 # ensure we are still loading this
