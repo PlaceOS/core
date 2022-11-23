@@ -28,7 +28,7 @@ module PlaceOS::Edge
 
     def initialize(
       sequence_id : UInt64 = 0,
-      @on_disconnect : (Exception ->)? = nil,
+      @on_disconnect : (IO::Error | HTTP::WebSocket::CloseCode ->)? = nil,
       &@on_request : {UInt64, ::PlaceOS::Edge::Protocol::Request} ->
     )
       @sequence_atomic = Atomic(UInt64).new(sequence_id)

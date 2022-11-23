@@ -254,7 +254,7 @@ module PlaceOS::Edge
     # Kicks off downloading all the binaries
     def load_binaries(binaries : Array(String))
       promises = binaries.map do |driver_key|
-        File.delete(path(key)) if File.exists?(path(key))
+        File.delete(path(driver_key)) if File.exists?(path(driver_key))
         Promise.defer do
           if wait_load = load_binary(driver_key)
             select
