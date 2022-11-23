@@ -238,6 +238,8 @@ module PlaceOS::Edge
           response.running_modules.each do |(module_id, payload)|
             queue_start(module_id, payload)
           end
+
+          Log.info { "handshake success, edge registered" }
         rescue error
           Log.error(exception: error) { "during handshake" }
           raise error
