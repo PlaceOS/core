@@ -71,7 +71,16 @@ module PlaceOS::Edge
     def connect(initial_socket : HTTP::WebSocket? = nil)
       Log.info { "connecting to #{host}" }
 
-      @transport = Transport.new do |(sequence_id, request)|
+      @transport = Transport.new(on_disconnect: Proc.new(Exception, Nil) {
+        Log.debug { "core connection lost. Cleaning up pending operations" }
+
+        @loading_mutex.synchronize do
+          @loading_driver_keys.each { |_driver_key, channel| channel.close }
+          @loading_driver_keys = {} of String => Channel(Nil)
+          @loading_modules = Hash(String, Array(String)).new { |hash, key| hash[key] = [] of String }
+          @pending_start = {} of String => String
+        end
+      }) do |(sequence_id, request)|
         if request.is_a?(Protocol::Server::Request)
           handle_request(sequence_id, request)
         else

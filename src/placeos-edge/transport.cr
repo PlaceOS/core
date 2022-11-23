@@ -63,6 +63,7 @@ module PlaceOS::Edge
         end
 
         socket = socket || HTTP::WebSocket.new(uri)
+        Log.debug { "core connection established" }
         run_socket(socket.as(HTTP::WebSocket)).run
         raise "rest api disconnected" unless close_channel.closed?
       end
@@ -76,7 +77,12 @@ module PlaceOS::Edge
     def ping(interval : Time::Span = 10.seconds)
       until close_channel.closed?
         socket_lock.synchronize do
-          socket?.try(&.ping) rescue nil
+          begin
+            Log.debug { "keepalive ping sent" }
+            socket?.try(&.ping)
+          rescue
+            Log.debug { "keepalive ping failed" }
+          end
         end
         sleep(interval)
       end
