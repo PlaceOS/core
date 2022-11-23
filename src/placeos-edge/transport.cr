@@ -81,7 +81,6 @@ module PlaceOS::Edge
       until close_channel.closed?
         socket_lock.synchronize do
           begin
-            Log.debug { "keepalive ping sent" }
             socket?.try(&.ping)
           rescue
             Log.debug { "keepalive ping failed" }
