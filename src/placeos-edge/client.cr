@@ -71,17 +71,23 @@ module PlaceOS::Edge
     def connect(initial_socket : HTTP::WebSocket? = nil)
       Log.info { "connecting to #{host}" }
 
-      @transport = Transport.new(on_disconnect: ->(_error : HTTP::WebSocket::CloseCode | IO::Error) {
-        Log.debug { "core connection lost. Cleaning up pending operations" }
+      @transport = Transport.new(
+        on_disconnect: ->(_error : HTTP::WebSocket::CloseCode | IO::Error) {
+          Log.debug { "core connection lost. Cleaning up pending operations" }
 
-        @loading_mutex.synchronize do
-          @loading_driver_keys.each { |_driver_key, channel| channel.close }
-          @loading_driver_keys = {} of String => Channel(Nil)
-          @loading_modules = Hash(String, Array(String)).new { |hash, key| hash[key] = [] of String }
-          @pending_start = {} of String => String
-        end
-        nil
-      }) do |(sequence_id, request)|
+          @loading_mutex.synchronize do
+            @loading_driver_keys.each { |_driver_key, channel| channel.close }
+            @loading_driver_keys = {} of String => Channel(Nil)
+            @loading_modules = Hash(String, Array(String)).new { |hash, key| hash[key] = [] of String }
+            @pending_start = {} of String => String
+          end
+          nil
+        },
+        on_connect: ->{
+          handshake unless skip_handshake?
+          nil
+        }
+      ) do |(sequence_id, request)|
         if request.is_a?(Protocol::Server::Request)
           handle_request(sequence_id, request)
         else
@@ -98,8 +104,6 @@ module PlaceOS::Edge
 
       # Send ping frames
       spawn(same_thread: true) { transport.ping if ping? }
-
-      handshake unless skip_handshake?
 
       yield
 

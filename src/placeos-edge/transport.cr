@@ -23,12 +23,14 @@ module PlaceOS::Edge
 
     private getter on_request : {UInt64, ::PlaceOS::Edge::Protocol::Request} ->
     private getter on_disconnect : (IO::Error | HTTP::WebSocket::CloseCode ->)?
+    private getter on_connect : Proc(Nil)?
 
     private getter sequence_atomic : Atomic(UInt64)
 
     def initialize(
       sequence_id : UInt64 = 0,
       @on_disconnect : (IO::Error | HTTP::WebSocket::CloseCode ->)? = nil,
+      @on_connect : Proc(Nil)? = nil,
       &@on_request : {UInt64, ::PlaceOS::Edge::Protocol::Request} ->
     )
       @sequence_atomic = Atomic(UInt64).new(sequence_id)
@@ -64,6 +66,7 @@ module PlaceOS::Edge
 
         socket = socket || HTTP::WebSocket.new(uri)
         Log.debug { "core connection established" }
+        on_connect.try &.call
         run_socket(socket.as(HTTP::WebSocket)).run
         raise "rest api disconnected" unless close_channel.closed?
       end
