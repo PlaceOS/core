@@ -187,6 +187,13 @@ module PlaceOS::Edge::Protocol
       end
     end
 
+    struct RemoveDriver < Server::Request
+      getter driver_key : String
+
+      def initialize(@driver_key, @user_id = nil)
+      end
+    end
+
     struct Debug < Server::Request
       getter module_id : String
 

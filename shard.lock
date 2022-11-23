@@ -15,7 +15,7 @@ shards:
 
   ameba:
     git: https://github.com/crystal-ameba/ameba.git
-    version: 1.2.0
+    version: 1.3.1
 
   auto_initialize:
     git: https://github.com/kostya/auto_initialize.git
@@ -27,7 +27,7 @@ shards:
 
   bindata:
     git: https://github.com/spider-gazelle/bindata.git
-    version: 1.11.0
+    version: 1.11.1
 
   clustering:
     git: https://github.com/place-labs/clustering.git
@@ -47,7 +47,7 @@ shards:
 
   crunits:
     git: https://github.com/spider-gazelle/crunits.git
-    version: 1.1.0
+    version: 1.1.1
 
   csuuid:
     git: https://github.com/wyhaines/csuuid.cr.git
@@ -147,7 +147,7 @@ shards:
 
   neuroplastic:
     git: https://github.com/spider-gazelle/neuroplastic.git
-    version: 1.12.1
+    version: 1.12.2
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
@@ -191,7 +191,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.4.16
+    version: 6.6.0
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git

@@ -30,6 +30,16 @@ module PlaceOS::Edge
 
     private getter close_channel = Channel(Nil).new
 
+    # structures for tracking what has been loaded and what has been requested
+    # this allows us do some of these things out of order when they become available
+    @loading_mutex = Mutex.new(:reentrant)
+    # driver_key => downloaded signal
+    @loading_driver_keys = {} of String => Channel(Nil)
+    # driver_key => [mod_ids]
+    @loading_modules = Hash(String, Array(String)).new { |hash, key| hash[key] = [] of String }
+    # module_id => payload
+    @pending_start = {} of String => String
+
     def host
       uri.to_s.gsub(uri.request_target, "")
     end
@@ -151,17 +161,26 @@ module PlaceOS::Edge
         send_response(sequence_id, run_count_message)
       in Protocol::Message::Start
         boolean_command(sequence_id, request) do
-          start(request.module_id, request.payload)
+          queue_start(request.module_id, request.payload)
         end
       in Protocol::Message::Stop
         boolean_command(sequence_id, request) do
-          stop(request.module_id)
+          @loading_mutex.synchronize do
+            @pending_start.delete(module_id)
+            stop(request.module_id)
+          end
         end
       in Protocol::Message::SystemStatus
         send_response(sequence_id, Protocol::Message::SystemStatusResponse.new(system_status))
       in Protocol::Message::Unload
         boolean_command(sequence_id, request) do
-          unload(request.module_id)
+          @loading_mutex.synchronize do
+            @pending_start.delete(module_id)
+            if driver_key = driver_key_for?(module_id)
+              @loading_modules[driver_key]?.try &.delete(module_id)
+            end
+            unload(request.module_id)
+          end
         end
       in Protocol::Message::Body
         Log.warn { {message: "unexpected message in handle request", type: request.type.to_s} }
@@ -194,7 +213,7 @@ module PlaceOS::Edge
           end
 
           response.running_modules.each do |(module_id, payload)|
-            start(module_id, payload)
+            queue_start(module_id, payload)
           end
         rescue error
           Log.error(exception: error) { "during handshake" }
@@ -203,10 +222,27 @@ module PlaceOS::Edge
       end
     end
 
+    def queue_start(module_id : String, payload : String)
+      @loading_mutex.synchronize do
+        if protocol_manager_by_module?(module_id)
+          start(module_id, payload)
+        else
+          @pending_start[module_id] = payload
+        end
+      end
+    end
+
+    # Kicks off downloading all the binaries
     def load_binaries(binaries : Array(String))
       promises = binaries.map do |driver_key|
         Promise.defer do
-          load_binary(driver_key)
+          if wait_load = load_binary(driver_key)
+            select
+            when wait_load.receive?
+            when timeout(90.seconds)
+              Log.error { "timeout loading #{driver_key}" }
+            end
+          end
         end
       end
 
@@ -243,24 +279,60 @@ module PlaceOS::Edge
 
     # Load binary, first checking if present locally then fetch from core
     #
-    def load_binary(key : String) : Bool
-      Log.debug { {key: key, message: "loading binary"} }
-      return true if File.exists?(path(key))
+    def load_binary(key : String) : Channel(Nil)?
+      perform_load = true
+      loaded_channel = Channel(Nil).new
 
-      binary = begin
-        SimpleRetry.try_to(max_attempts: 5, base_interval: 5.seconds) do
-          result = fetch_binary(key)
-          raise "retry" if result.nil?
-          result
+      @loading_mutex.synchronize do
+        Log.debug { {key: key, message: "loading binary"} }
+
+        if loading = @loading_driver_keys[key]?
+          perform_load = false
+          loaded_channel = loading
+        else
+          return if File.exists?(path(key))
+          @loading_driver_keys[key] = loaded_channel
         end
-      rescue e
-        Log.error(exception: e) { "while fetching binary" } unless e.message == "retry"
-        nil
       end
 
-      add_binary(key, binary) unless binary.nil?
+      return loaded_channel unless perform_load
+      spawn { attempt_download(loaded_channel, key) }
 
-      !binary.nil?
+      loaded_channel
+    end
+
+    def attempt_download(loaded_channel, key)
+      binary = SimpleRetry.try_to(base_interval: 5.seconds, max_interval: 30.seconds) do
+        result = fetch_binary(key) unless loaded_channel.closed?
+        raise "retry" if result.nil? && !loaded_channel.closed? && @loading_driver_keys[key]? == loaded_channel
+        result
+      end
+
+      @loading_mutex.synchronize do
+        if !loaded_channel.closed?
+          # write the executable
+          if binary
+            add_binary(key, binary)
+          end
+
+          # signal that we're ready to run
+          loaded_channel.close
+          @loading_driver_keys.delete(key)
+
+          # load any requests that have come in the mean time
+          if pending = @loading_modules.delete(key)
+            pending.each do |module_id|
+              load(module_id, key)
+              if payload = @pending_start.delete(module_id)
+                start(module_id, payload)
+              end
+            end
+          end
+        end
+      end
+    rescue error
+      Log.error(exception: error) { "error during download attempt" }
+      spawn { attempt_download(loaded_channel, key) }
     end
 
     def fetch_binary(key : String) : IO?
@@ -271,7 +343,7 @@ module PlaceOS::Edge
     def add_binary(key : String, binary : IO)
       path = path(key)
       Log.debug { {path: path, message: "writing binary"} }
-      return true if File.exists?(path(key))
+      File.delete(path(key)) if File.exists?(path(key))
 
       # Default permissions + execute for owner
       File.open(path, mode: "w+", perm: File::Permissions.new(0o744)) do |file|
@@ -280,7 +352,16 @@ module PlaceOS::Edge
     end
 
     def remove_binary(key : String)
-      File.delete(path(key))
+      @loading_mutex.synchronize do
+        # clean up any pending operations
+        if loading = @loading_driver_keys.delete(key)
+          loading.close
+        end
+        if pending = @loading_modules.delete(key)
+          pending.each { |module_id| @pending_start.delete(module_id) }
+        end
+        File.delete(path(key))
+      end
       true
     rescue
       false
@@ -303,9 +384,19 @@ module PlaceOS::Edge
           # Use the existing driver protocol manager
           set_module_protocol_manager(module_id, existing_driver_manager)
         else
-          unless load_binary(driver_key)
-            Log.error { "failed to load binary for module" }
-            return
+          if wait_load = load_binary(driver_key)
+            select
+            when wait_load.receive?
+            when timeout(20.seconds)
+              @loading_mutex.synchronize do
+                # ensure we are still loading this
+                if @loading_driver_keys[driver_key]?
+                  @loading_modules[driver_key] << module_id
+                  Log.info { "queuing module load: #{module_id}" }
+                  return
+                end
+              end
+            end
           end
 
           # Create a new protocol manager
@@ -326,9 +417,9 @@ module PlaceOS::Edge
           set_driver_protocol_manager(driver_key, manager)
         end
 
-        Log.info { "module loaded" }
+        Log.info { "module loaded: #{module_id}" }
       else
-        Log.info { "module already loaded" }
+        Log.info { "module already loaded: #{module_id}" }
       end
     end
 
