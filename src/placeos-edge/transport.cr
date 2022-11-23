@@ -66,7 +66,7 @@ module PlaceOS::Edge
 
         socket = socket || HTTP::WebSocket.new(uri)
         Log.debug { "core connection established" }
-        on_connect.try &.call
+        spawn { on_connect.try &.call } if on_connect
         run_socket(socket.as(HTTP::WebSocket)).run
         raise "rest api disconnected" unless close_channel.closed?
       end
