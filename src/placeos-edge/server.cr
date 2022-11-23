@@ -27,7 +27,7 @@ module PlaceOS::Edge
       Log.info { {edge_id: edge_id, message: "managing edge"} }
       socket.on_close do
         edges_lock.write do
-          edges.delete(edge_id)
+          edges.delete(edge_id) if edges[edge_id]? == socket
         end
       end
 
