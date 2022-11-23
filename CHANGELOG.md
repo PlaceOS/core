@@ -1,3 +1,9 @@
+## v4.8.0 (2022-11-23)
+
+### Feat
+
+- **edge**: improve driver launch reliability ([#247](https://github.com/PlaceOS/core/pull/247))
+
 ## v4.7.1 (2022-11-02)
 
 ### Fix
