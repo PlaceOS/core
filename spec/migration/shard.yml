@@ -1,0 +1,16 @@
+name: placeos-models-migration
+version: 0.9.9
+crystal: ~> 1.4
+license: MIT
+
+
+targets:
+  migration:
+    main: src/migration.cr
+
+dependencies:
+  micrate:
+    github: amberframework/micrate
+    version: "0.12.0"
+  pg:
+    github: will/crystal-pg

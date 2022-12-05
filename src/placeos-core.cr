@@ -50,7 +50,7 @@ module PlaceOS::Core
   # Wait for the upstream services to be ready
   # - etcd
   # - redis
-  # - rethinkdb
+  # - postgres
   def self.wait_for_resources
     Retriable.retry(
       max_elapsed_time: 1.minutes,

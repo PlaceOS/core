@@ -44,7 +44,6 @@ module PlaceOS::Core::Mappings
         cs.save!
 
         borked = Model::Generator.module(logic_driver, cs)
-        borked._new_flag = true
         borked.id = Mock.failing_id
         borked.custom_name = "logic"
         borked.save!
@@ -120,7 +119,6 @@ module PlaceOS::Core::Mappings
         ControlSystemModules.update_logic_modules(cs, mock_manager).should eq 1
 
         fails = Model::Generator.module(driver, cs)
-        fails._new_flag = true
         fails.id = Mock.failing_id
         fails.save!
 

@@ -66,6 +66,14 @@ end
 
 require "./config"
 
+# Configure the database connection. First check if PG_DATABASE_URL environment variable
+# is set. If not, assume database configuration are set via individual environment variables
+if pg_url = ENV["PG_DATABASE_URL"]?
+  PgORM::Database.parse(pg_url)
+else
+  PgORM::Database.configure { |_| }
+end
+
 # Load the routes
 PlaceOS::Core::Log.info { "launching #{PlaceOS::Core::APP_NAME} v#{PlaceOS::Core::VERSION} (#{PlaceOS::Core::BUILD_COMMIT} @ #{PlaceOS::Core::BUILD_TIME})" }
 
@@ -85,7 +93,7 @@ Signal::INT.trap &terminate
 # Docker containers use the term signal
 Signal::TERM.trap &terminate
 
-# Wait for etcd, redis, and rethinkdb to be ready
+# Wait for etcd, redis, and postgres to be ready
 PlaceOS::Core.wait_for_resources
 
 spawn(same_thread: true) do

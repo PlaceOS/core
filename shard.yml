@@ -74,9 +74,8 @@ dependencies:
     github: place-labs/responsible
     version: ~> 1.2
 
-  rethinkdb-orm:
-    github: spider-gazelle/rethinkdb-orm
-    version: ">= 6.0.1"
+  pg-orm:
+    github: spider-gazelle/pg-orm
 
   rwlock:
     github: spider-gazelle/readers-writer
