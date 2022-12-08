@@ -36,7 +36,9 @@ module PlaceOS::Core::Api
     def compiled(
       @[AC::Param::Info(name: "file_name", description: "the name of the file in the repository", example: "drivers/place/meet.cr")]
       driver_file : String,
+      @[AC::Param::Info(description: "the commit hash of the driver to check is compiled", example: "e901494")]
       commit : String,
+      @[AC::Param::Info(description: "the driver database id", example: "driver-GFEaAlJB5")]
       tag : String
     ) : Bool
       Compiler::Helper.compiled?(driver_file, commit, tag)
@@ -49,7 +51,10 @@ module PlaceOS::Core::Api
       repository : String,
       @[AC::Param::Info(name: "file_name", description: "the name of the file in the repository", example: "drivers/place/meet.cr")]
       driver_file : String,
-      commit : String
+      @[AC::Param::Info(description: "the commit hash of the driver to be built", example: "e901494")]
+      commit : String,
+      @[AC::Param::Info(description: "the branch of the repository", example: "main")]
+      branch : String = "master"
     ) : Nil
       Log.context.set(driver: driver_file, repository: repository, commit: commit)
 
@@ -69,7 +74,8 @@ module PlaceOS::Core::Api
         driver_file,
         repository,
         commit,
-        id: uuid
+        id: uuid,
+        branch: branch
       )
 
       # check driver compiled
