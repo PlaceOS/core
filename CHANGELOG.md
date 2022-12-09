@@ -1,4 +1,8 @@
-## Unreleased
+## v4.8.1 (2022-12-09)
+
+### Fix
+
+- **api/drivers**: allow branch selection ([#249](https://github.com/PlaceOS/core/pull/249))
 
 ## v4.8.0 (2022-11-23)
 
