@@ -89,7 +89,8 @@ module PlaceOS
         driver.file_name,
         repository.folder_name,
         commit,
-        id: driver_id
+        id: driver_id,
+        branch: repository.branch
       )
 
       unless result.success?
