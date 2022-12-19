@@ -1,3 +1,9 @@
+## v4.8.2 (2022-12-19)
+
+### Fix
+
+- **process_manager/local**: add edge node awareness ([#250](https://github.com/PlaceOS/core/pull/250))
+
 ## v4.8.1 (2022-12-09)
 
 ### Fix
