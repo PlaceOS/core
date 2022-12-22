@@ -91,16 +91,20 @@ module PlaceOS::Core
     end
 
     def on_exec(request : Request, response_callback : Request ->)
-      core_uri = which_core(request.id)
-
-      request = if core_uri == discovery.uri
-                  # If the module maps to this node
+      module_manager = ModuleManager.instance
+      module_id = request.id
+      request = if module_manager.process_manager(module_id, &.module_loaded?(module_id))
                   local_execute(request)
                 else
-                  # Otherwise, dial core node responsible for the module
-                  remote_execute(core_uri, request)
+                  core_uri = which_core(module_id)
+                  if core_uri == discovery.uri
+                    # If the module maps to this node
+                    local_execute(request)
+                  else
+                    # Otherwise, dial core node responsible for the module
+                    remote_execute(core_uri, request)
+                  end
                 end
-
       response_callback.call(request)
     rescue error
       request.set_error(error)
