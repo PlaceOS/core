@@ -1,3 +1,9 @@
+## v4.8.3 (2022-12-23)
+
+### Fix
+
+- **edge/transport**: possible reconnection issue ([#251](https://github.com/PlaceOS/core/pull/251))
+
 ## v4.8.2 (2022-12-19)
 
 ### Fix
