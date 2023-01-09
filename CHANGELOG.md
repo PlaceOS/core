@@ -1,3 +1,9 @@
+## v4.8.4 (2023-01-09)
+
+### Fix
+
+- **edge/transport**: restart service after a period of downtime ([#253](https://github.com/PlaceOS/core/pull/253))
+
 ## v4.8.3 (2022-12-23)
 
 ### Fix
