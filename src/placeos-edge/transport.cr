@@ -24,6 +24,7 @@ module PlaceOS::Edge
     private getter on_connect : Proc(Nil)?
 
     private getter sequence_atomic : Atomic(UInt64)
+    private getter ping_failures : Int32 = 0
 
     def initialize(
       sequence_id : UInt64 = 0,
@@ -80,8 +81,17 @@ module PlaceOS::Edge
         socket_lock.synchronize do
           begin
             socket?.try(&.ping)
+            @ping_failures = 0
           rescue
-            Log.debug { "keepalive ping failed" }
+            @ping_failures += 1
+            Log.debug { "keepalive ping failed #{@ping_failures} times" }
+
+            # if we've been disconnect for ~5min then we restart the service
+            if @ping_failures > 30
+              Log.fatal { "connection failure, restarting..." }
+              sleep(interval)
+              exit(2)
+            end
           end
         end
         sleep(interval)
