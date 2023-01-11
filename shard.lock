@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 5.4.3
+    version: 5.5.3
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -159,7 +159,7 @@ shards:
 
   openssl_ext:
     git: https://github.com/spider-gazelle/openssl_ext.git
-    version: 2.2.0
+    version: 2.2.1
 
   opentelemetry-api:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
@@ -187,11 +187,11 @@ shards:
 
   pg-orm:
     git: https://github.com/spider-gazelle/pg-orm.git
-    version: 1.0.0+git.commit.1ba70d1ae9d6e40a9ab1973590ccb1a1b0c3a661
+    version: 1.0.0+git.commit.b41ca0102a48022218e6ad5136486215e8fec11d
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
-    version: 4.9.2
+    version: 4.9.3
 
   placeos-core-client:
     git: https://github.com/placeos/core-client.git
@@ -199,15 +199,15 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.6.0
+    version: 6.7.0
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
-    version: 0.11.3
+    version: 0.11.4
 
   placeos-models: # Overridden
     git: https://github.com/placeos/models.git
-    version: 8.12.2+git.commit.2cf292da74682d0d126ca2e4b721876a10a8a1a7
+    version: 8.13.1+git.commit.b5da29fc6ef21caaca7078963b08e60ee861c5c5
 
   placeos-resource: # Overridden
     git: https://github.com/place-labs/resource.git
@@ -223,7 +223,7 @@ shards:
 
   protobuf:
     git: https://github.com/jeromegn/protobuf.cr.git
-    version: 2.2.3
+    version: 2.3.0
 
   redis:
     git: https://github.com/stefanwille/crystal-redis.git
