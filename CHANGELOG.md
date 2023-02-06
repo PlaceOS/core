@@ -1,3 +1,9 @@
+## v4.9.0 (2023-02-06)
+
+### Feat
+
+- improve cluster stabilisation under adverse conditions ([#254](https://github.com/PlaceOS/core/pull/254))
+
 ## v4.8.4 (2023-01-09)
 
 ### Fix
