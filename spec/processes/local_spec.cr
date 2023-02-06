@@ -1,7 +1,7 @@
 require "../helper"
 
 module PlaceOS::Core::ProcessManager
-  def self.with_driver
+  def self.with_driver(&)
     _working_directory, repository, driver, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
     Cloning.clone_and_install(repository)
     result = Compiler.build_driver(driver.file_name, repository.folder_name, driver.commit, id: driver.id)

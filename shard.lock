@@ -7,11 +7,15 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 5.5.3
+    version: 5.5.4
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
     version: 4.2.3
+
+  ameba:
+    git: https://github.com/crystal-ameba/ameba.git
+    version: 1.4.0
 
   auto_initialize:
     git: https://github.com/kostya/auto_initialize.git
@@ -199,7 +203,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.7.0
+    version: 6.7.2
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -284,4 +288,3 @@ shards:
   ulid:
     git: https://github.com/place-labs/ulid.git
     version: 0.1.2
-

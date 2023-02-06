@@ -291,7 +291,7 @@ module PlaceOS::Core
       response.try &.status
     end
 
-    protected def boolean_response(sequence_id, request)
+    protected def boolean_response(sequence_id, request, &)
       success = begin
         result = yield
         result.is_a?(Bool) ? result : true

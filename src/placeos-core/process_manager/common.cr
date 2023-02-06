@@ -212,7 +212,7 @@ module PlaceOS::Core::ProcessManager::Common
   # Mapping from driver path to protocol manager
   @driver_protocol_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
 
-  protected def with_module_managers(&block)
+  protected def with_module_managers(&)
     protocol_manager_lock.synchronize do
       yield @module_protocol_managers
     end

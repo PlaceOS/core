@@ -36,7 +36,7 @@ module PlaceOS::Core
       @cloning = cloning || Cloning.new(testing: testing)
     end
 
-    def start
+    def start(&)
       start_lock.synchronize {
         return if started?
 
