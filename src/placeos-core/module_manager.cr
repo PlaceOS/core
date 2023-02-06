@@ -321,10 +321,12 @@ module PlaceOS::Core
         rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
 
         success_count, fail_count = 0_i64, 0_i64
-        waiting = Array(Promise::DeferredPromise(Nil)).new(STABILIZE_BATCH_SIZE)
+        timeout_period = 5.seconds
+        waiting = Hash(String?, Promise::DeferredPromise(Nil)).new
+
         Model::Module.all.in_groups_of(STABILIZE_BATCH_SIZE, reuse: true) do |modules|
           modules.each.reject(Nil).each do |mod|
-            waiting << Promise.defer(same_thread: true) do
+            waiting[mod.id] = Promise.defer(same_thread: true, timeout: timeout_period) do
               begin
                 load_module(mod, rendezvous_hash)
                 success_count += 1
@@ -334,7 +336,15 @@ module PlaceOS::Core
               end
               nil
             end
-            Promise.all(waiting).get
+
+            waiting.each do |mod_id, promise|
+              begin
+                promise.get
+              rescue error
+                fail_count += 1
+                Log.error(exception: error) { "load timeout during stabilization: #{mod_id}" }
+              end
+            end
             waiting.clear
           end
         end

@@ -68,7 +68,7 @@ module PlaceOS::Edge
     # Initialize the WebSocket API
     #
     # Optionally accepts a block called after connection has been established.
-    def connect(initial_socket : HTTP::WebSocket? = nil)
+    def connect(initial_socket : HTTP::WebSocket? = nil, &)
       Log.info { "connecting to #{host}" }
 
       @transport = Transport.new(
@@ -406,7 +406,7 @@ module PlaceOS::Edge
       Log.context.set(module_id: module_id, driver_key: driver_key)
 
       if !protocol_manager_by_module?(module_id)
-        if (existing_driver_manager = protocol_manager_by_driver?(driver_key))
+        if existing_driver_manager = protocol_manager_by_driver?(driver_key)
           # Use the existing driver protocol manager
           set_module_protocol_manager(module_id, existing_driver_manager)
         else
@@ -521,7 +521,7 @@ module PlaceOS::Edge
 
     # Bundles up the result of a command into a `Success` response
     #
-    protected def boolean_command(sequence_id, request)
+    protected def boolean_command(sequence_id, request, &)
       success = begin
         result = yield
         result.is_a?(Bool) ? result : true

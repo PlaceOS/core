@@ -25,7 +25,7 @@ module PlaceOS::Core
           return true
         end
 
-        if (existing_driver_manager = protocol_manager_by_driver?(driver_key))
+        if existing_driver_manager = protocol_manager_by_driver?(driver_key)
           Log.debug { "using existing protocol manager" }
           set_module_protocol_manager(module_id, existing_driver_manager)
         else
@@ -144,6 +144,7 @@ module PlaceOS::Core
         request.code ||= 500
       end
 
+      request.cmd = :result
       request
     end
 
@@ -170,6 +171,7 @@ module PlaceOS::Core
         end
       end
 
+      request.cmd = :result
       request
     end
 

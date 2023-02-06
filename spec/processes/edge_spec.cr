@@ -24,9 +24,9 @@ module PlaceOS::Core::ProcessManager
     {client, edge_manager}
   end
 
-  def self.with_edge
+  def self.with_edge(&)
     with_driver do |mod, driver_path, _driver|
-      if (existing_edge_id = mod.edge_id)
+      if existing_edge_id = mod.edge_id
         mod.running = false
         mod.save!
         edge = Model::Edge.find!(existing_edge_id)
