@@ -1,3 +1,9 @@
+## v4.9.1 (2023-02-22)
+
+### Fix
+
+- **process_manager**: don't lock managers when querying ([#256](https://github.com/PlaceOS/core/pull/256))
+
 ## v4.9.0 (2023-02-06)
 
 ### Feat
