@@ -170,15 +170,19 @@ module PlaceOS::Core::ProcessManager::Common
   # Map reduce the querying of what modules are loaded on running drivers
   #
   def loaded_modules : Hash(String, Array(String))
-    protocol_manager_lock.synchronize do
-      Promise.all(@driver_protocol_managers.map { |driver_key, manager|
-        Promise.defer do
-          info = manager.info
-          Log.trace { {info: manager.info.to_json, driver: driver_key} }
-          {driver_key, info}
-        end
-      }).then(&.to_h).get
-    end
+    managers = protocol_manager_lock.synchronize { @driver_protocol_managers.dup }
+    timeout = 4.seconds
+
+    Promise.all(managers.map { |driver_key, manager|
+      Promise.defer(timeout: timeout) {
+        info = manager.info
+        Log.trace { {info: manager.info.to_json, driver: driver_key} }
+        {driver_key, info}
+      }.catch { |error|
+        Log.error(exception: error) { {info: "failed to obtain running modules on driver", driver: driver_key} }
+        {driver_key, ["query failed: #{error.message}"]}
+      }
+    }).then(&.to_h).get
   end
 
   # Protocol Managers
@@ -235,8 +239,8 @@ module PlaceOS::Core::ProcessManager::Common
   end
 
   protected def set_module_protocol_manager(module_id, manager : Driver::Protocol::Management?)
+    Log.trace { {message: "#{manager.nil? ? "removing" : "setting"} module process manager", module_id: module_id} }
     protocol_manager_lock.synchronize do
-      Log.trace { {message: "#{manager.nil? ? "removing" : "setting"} module process manager", module_id: module_id} }
       if manager.nil?
         @module_protocol_managers.delete(module_id)
       else
@@ -248,8 +252,8 @@ module PlaceOS::Core::ProcessManager::Common
 
   protected def set_driver_protocol_manager(driver_key, manager : Driver::Protocol::Management?)
     driver_key = ProcessManager.path_to_key(driver_key)
+    Log.trace { {message: "#{manager.nil? ? "removing" : "setting"} driver process manager", driver_key: driver_key} }
     protocol_manager_lock.synchronize do
-      Log.trace { {message: "#{manager.nil? ? "removing" : "setting"} driver process manager", driver_key: driver_key} }
       if manager.nil?
         @driver_protocol_managers.delete(driver_key)
       else
