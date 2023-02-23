@@ -1,3 +1,9 @@
+## v4.9.2 (2023-02-23)
+
+### Fix
+
+- **process_manager/common**: prevent potential for deadlock ([#257](https://github.com/PlaceOS/core/pull/257))
+
 ## v4.9.1 (2023-02-22)
 
 ### Fix
