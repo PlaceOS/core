@@ -30,6 +30,6 @@ module PlaceOS::Core
   class_getter? production : Bool = PROD
 
   # Used in `ModuleManager`
-  PROCESS_CHECK_PERIOD  = (ENV["PLACE_CORE_PROCESS_CHECK_PERIOD"]?.try(&.to_i?) || 45).seconds
-  PROCESS_COMMS_TIMEOUT = (ENV["PLACE_CORE_PROCESS_COMMS_TIMEOUT"]?.try(&.to_i?) || 20).seconds
+  PROCESS_CHECK_PERIOD  = (ENV["PLACE_CORE_PROCESS_CHECK_PERIOD"]?.try(&.to_i?) || 80).seconds
+  PROCESS_COMMS_TIMEOUT = (ENV["PLACE_CORE_PROCESS_COMMS_TIMEOUT"]?.try(&.to_i?) || 40).seconds
 end
