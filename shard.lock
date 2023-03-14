@@ -7,15 +7,15 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 5.5.4
+    version: 5.6.2
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
-    version: 4.2.3
+    version: 4.3.0
 
   ameba:
     git: https://github.com/crystal-ameba/ameba.git
-    version: 1.4.0
+    version: 1.4.2
 
   auto_initialize:
     git: https://github.com/kostya/auto_initialize.git
@@ -135,7 +135,7 @@ shards:
 
   lucky_router:
     git: https://github.com/luckyframework/lucky_router.git
-    version: 0.5.1
+    version: 0.5.2
 
   murmur3:
     git: https://github.com/aca-labs/murmur3.git
@@ -159,7 +159,7 @@ shards:
 
   openssl_ext:
     git: https://github.com/spider-gazelle/openssl_ext.git
-    version: 2.2.1
+    version: 2.3.0
 
   opentelemetry-api:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
@@ -191,7 +191,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.7.2
+    version: 6.7.4
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -199,7 +199,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 8.13.1
+    version: 8.13.4
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -207,7 +207,7 @@ shards:
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
-    version: 0.2.4
+    version: 0.3.0
 
   promise:
     git: https://github.com/spider-gazelle/promise.git
@@ -219,7 +219,7 @@ shards:
 
   redis:
     git: https://github.com/stefanwille/crystal-redis.git
-    version: 2.8.3
+    version: 2.9.0
 
   redis-cluster:
     git: https://github.com/caspiano/redis-cluster.cr.git
