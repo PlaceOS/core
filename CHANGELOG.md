@@ -1,3 +1,9 @@
+## v4.9.3 (2023-03-14)
+
+### Fix
+
+- **process_check**: ensure consistent state after recovery ([#259](https://github.com/PlaceOS/core/pull/259))
+
 ## v4.9.2 (2023-02-23)
 
 ### Fix
