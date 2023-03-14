@@ -217,8 +217,11 @@ module PlaceOS::Core::ProcessManager::Common
   @driver_protocol_managers : Hash(String, Driver::Protocol::Management) = {} of String => Driver::Protocol::Management
 
   protected def with_module_managers(&)
-    managers = protocol_manager_lock.synchronize { @module_protocol_managers.dup }
-    yield managers
+    protocol_manager_lock.synchronize { yield @module_protocol_managers }
+  end
+
+  protected def get_module_managers
+    protocol_manager_lock.synchronize { @module_protocol_managers.dup }
   end
 
   protected def protocol_manager_by_module?(module_id) : Driver::Protocol::Management?
