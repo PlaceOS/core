@@ -11,7 +11,7 @@ shards:
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
-    version: 4.2.3
+    version: 4.3.0
 
   ameba:
     git: https://github.com/crystal-ameba/ameba.git
@@ -139,7 +139,7 @@ shards:
 
   lucky_router:
     git: https://github.com/luckyframework/lucky_router.git
-    version: 0.5.1
+    version: 0.5.2
 
   murmur3:
     git: https://github.com/aca-labs/murmur3.git
@@ -203,7 +203,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.7.3
+    version: 6.7.4
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -231,7 +231,7 @@ shards:
 
   redis:
     git: https://github.com/stefanwille/crystal-redis.git
-    version: 2.8.3
+    version: 2.9.0
 
   redis-cluster:
     git: https://github.com/caspiano/redis-cluster.cr.git
@@ -288,4 +288,3 @@ shards:
   ulid:
     git: https://github.com/place-labs/ulid.git
     version: 0.1.2
-
