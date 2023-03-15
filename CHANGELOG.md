@@ -1,3 +1,9 @@
+## v4.9.4 (2023-03-15)
+
+### Fix
+
+- **process_check**: resolve possible hang condition
+
 ## v4.9.3 (2023-03-14)
 
 ### Fix
