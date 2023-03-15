@@ -1,4 +1,56 @@
-## Unreleased
+## v4.9.4 (2023-03-15)
+
+### Fix
+
+- **process_check**: resolve possible hang condition
+
+## v4.9.3 (2023-03-14)
+
+### Fix
+
+- **process_check**: ensure consistent state after recovery ([#259](https://github.com/PlaceOS/core/pull/259))
+
+## v4.9.2 (2023-02-23)
+
+### Fix
+
+- **process_manager/common**: prevent potential for deadlock ([#257](https://github.com/PlaceOS/core/pull/257))
+
+## v4.9.1 (2023-02-22)
+
+### Fix
+
+- **process_manager**: don't lock managers when querying ([#256](https://github.com/PlaceOS/core/pull/256))
+
+## v4.9.0 (2023-02-06)
+
+### Feat
+
+- improve cluster stabilisation under adverse conditions ([#254](https://github.com/PlaceOS/core/pull/254))
+
+## v4.8.4 (2023-01-09)
+
+### Fix
+
+- **edge/transport**: restart service after a period of downtime ([#253](https://github.com/PlaceOS/core/pull/253))
+
+## v4.8.3 (2022-12-23)
+
+### Fix
+
+- **edge/transport**: possible reconnection issue ([#251](https://github.com/PlaceOS/core/pull/251))
+
+## v4.8.2 (2022-12-19)
+
+### Fix
+
+- **process_manager/local**: add edge node awareness ([#250](https://github.com/PlaceOS/core/pull/250))
+
+## v4.8.1 (2022-12-09)
+
+### Fix
+
+- **api/drivers**: allow branch selection ([#249](https://github.com/PlaceOS/core/pull/249))
 
 ## v4.8.0 (2022-11-23)
 

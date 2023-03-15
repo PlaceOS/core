@@ -13,8 +13,6 @@ module PlaceOS::Edge
     private getter! socket : HTTP::WebSocket
     private getter socket_lock : Mutex = Mutex.new
 
-    private getter connection_errors = Channel(Exception).new
-
     private getter socket_channel = Channel(Protocol::Container).new
     private getter close_channel : Channel(Nil) = Channel(Nil).new
 
@@ -26,6 +24,7 @@ module PlaceOS::Edge
     private getter on_connect : Proc(Nil)?
 
     private getter sequence_atomic : Atomic(UInt64)
+    private getter ping_failures : Int32 = 0
 
     def initialize(
       sequence_id : UInt64 = 0,
@@ -82,8 +81,17 @@ module PlaceOS::Edge
         socket_lock.synchronize do
           begin
             socket?.try(&.ping)
+            @ping_failures = 0
           rescue
-            Log.debug { "keepalive ping failed" }
+            @ping_failures += 1
+            Log.debug { "keepalive ping failed #{@ping_failures} times" }
+
+            # if we've been disconnect for ~5min then we restart the service
+            if @ping_failures > 30
+              Log.fatal { "connection failure, restarting..." }
+              sleep(interval)
+              exit(2)
+            end
           end
         end
         sleep(interval)
@@ -91,11 +99,11 @@ module PlaceOS::Edge
     end
 
     def disconnect
-      response_lock.synchronize do
-        responses.each_value(&.close)
-      end
-      socket_channel.close
       close_channel.close
+      socket_channel.close
+      response_lock.synchronize do
+        responses.each_value(&.close) rescue nil
+      end
     end
 
     protected def run_socket(socket : HTTP::WebSocket)
@@ -113,10 +121,14 @@ module PlaceOS::Edge
     # Serialize messages down the websocket
     #
     protected def write_websocket
+      # start processing messages
       while message = socket_channel.receive?
         return if message.nil?
         begin
-          until !closed? || close_channel.closed?
+          # sleep until we are ready to send messages
+          # the transport can reconnect gracefully
+          while closed?
+            return if close_channel.closed?
             sleep 0.1
           end
 
@@ -131,7 +143,7 @@ module PlaceOS::Edge
             end
           end
         rescue e
-          connection_errors.send(e)
+          Log.warn { {error: e.to_s, message: "write_websocket failed"} }
         end
       end
     end

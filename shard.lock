@@ -211,7 +211,7 @@ shards:
 
   placeos-models: # Overridden
     git: https://github.com/placeos/models.git
-    version: 8.13.2+git.commit.5ad66f17f998c499c3dbc943f04d8450946f225b
+    version: 8.13.4
 
   placeos-resource: # Overridden
     git: https://github.com/place-labs/resource.git

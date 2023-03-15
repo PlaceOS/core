@@ -91,16 +91,20 @@ module PlaceOS::Core
     end
 
     def on_exec(request : Request, response_callback : Request ->)
-      core_uri = which_core(request.id)
-
-      request = if core_uri == discovery.uri
-                  # If the module maps to this node
+      module_manager = ModuleManager.instance
+      module_id = request.id
+      request = if module_manager.process_manager(module_id, &.module_loaded?(module_id))
                   local_execute(request)
                 else
-                  # Otherwise, dial core node responsible for the module
-                  remote_execute(core_uri, request)
+                  core_uri = which_core(module_id)
+                  if core_uri == discovery.uri
+                    # If the module maps to this node
+                    local_execute(request)
+                  else
+                    # Otherwise, dial core node responsible for the module
+                    remote_execute(core_uri, request)
+                  end
                 end
-
       response_callback.call(request)
     rescue error
       request.set_error(error)
@@ -111,12 +115,13 @@ module PlaceOS::Core
       remote_module_id = request.id
 
       # Build remote core request
-      # TODO: Use `PlaceOS/core-client` for forwarding execute requests
-      core_uri.path = "/api/core/v1/command/#{remote_module_id}/execute"
+      user_id = request.user_id
+      params = user_id ? "?user_id=#{user_id}" : nil
+      core_uri.path = "/api/core/v1/command/#{remote_module_id}/execute#{params}"
       response = HTTP::Client.post(
         core_uri,
         headers: HTTP::Headers{"X-Request-ID" => "int-#{request.reply}-#{remote_module_id}-#{Time.utc.to_unix_ms}"},
-        body: request.payload.not_nil!,
+        body: request.payload.as(String),
       )
 
       request.code = response.headers[RESPONSE_CODE_HEADER]?.try(&.to_i) || 500
@@ -144,23 +149,26 @@ module PlaceOS::Core
     end
 
     protected def local_execute(request)
-      remote_module_id = request.id
+      module_id = request.id
 
-      if manager = protocol_manager_by_module?(remote_module_id)
-        begin
-          # responds with a JSON string
-          response = manager.execute(remote_module_id, request.payload.not_nil!)
-          request.code = response[1]
-          request.payload = response[0]
-        rescue exception
-          if exception.message.try(&.includes?("module #{remote_module_id} not running on this host"))
-            raise no_module_error(remote_module_id)
-          else
-            raise exception
-          end
+      module_manager = ModuleManager.instance
+      unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
+        Log.info { {module_id: module_id, message: "module not loaded"} }
+        raise no_module_error(module_id)
+      end
+
+      begin
+        response = module_manager.process_manager(module_id) { |manager|
+          manager.execute(module_id, request.payload.as(String), user_id: request.user_id)
+        } || {"".as(String?), 500}
+        request.code = response[1]
+        request.payload = response[0]
+      rescue exception
+        if exception.message.try(&.includes?("module #{module_id} not running on this host"))
+          raise no_module_error(module_id)
+        else
+          raise exception
         end
-      else
-        raise no_module_error(remote_module_id)
       end
 
       request.cmd = :result
@@ -189,7 +197,8 @@ module PlaceOS::Core
     # Used in `on_exec` for locating the remote module
     #
     def which_core(module_id : String) : URI
-      node = discovery.find?(module_id)
+      edge_id = Model::Module.find!(module_id).edge_id if Model::Module.has_edge_hint?(module_id)
+      node = edge_id ? discovery.find?(edge_id) : discovery.find?(module_id)
       raise Error.new("No registered core instances") if node.nil?
       node[:uri]
     end
