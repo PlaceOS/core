@@ -1,0 +1,4 @@
+Lint/NotNil:
+  Enabled: false
+Style/QueryBoolMethods:
+  Enabled: false

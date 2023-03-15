@@ -17,10 +17,7 @@ module PlaceOS::Core
       return Resource::Result::Skipped unless driver.module_name_changed?
 
       # Update the `module_name` field across all associated modules
-      Model::Module.table_query &.get_all([driver.id.not_nil!], index: :driver_id).update do
-        {"name" => driver.module_name}
-      end
-
+      Model::Module.where(driver_id: driver.id.not_nil!).update_all(name: driver.module_name)
       Resource::Result::Success
     end
   end

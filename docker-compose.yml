@@ -13,10 +13,12 @@ x-etcd-client-env: &etcd-client-env
 x-redis-client-env: &redis-client-env
   REDIS_URL: ${REDIS_URL:-redis://redis:6379}
 
-x-rethinkdb-client-env: &rethinkdb-client-env
-  RETHINKDB_HOST: ${RETHINKDB_HOST:-rethink}
-  RETHINKDB_PORT: ${RETHINKDB_PORT:-28015}
-  RETHINKDB_DB: ${RETHINKDB_DB:-place_development}
+x-postgresdb-client-env: &postgresdb-client-env
+  PG_HOST: ${PG_HOST:-postgres}
+  PG_PORT: ${PG_PORT:-5432}
+  PG_DB: ${PG_DB:-place_development}
+  PG_USER: ${PG_USER:-postgres}
+  PG_PASSWORD: ${PG_PASSWORD:-password}
 
 services:
   test: # Module coordinator
@@ -33,7 +35,8 @@ services:
     depends_on:
       - etcd
       - redis
-      - rethink
+      - postgres
+      - migrator
     security_opt:
       - seccomp:unconfined
     environment:
@@ -42,7 +45,7 @@ services:
       # Service Hosts
       << : *etcd-client-env
       << : *redis-client-env
-      << : *rethinkdb-client-env
+      << : *postgresdb-client-env
       # Environment
       << : *deployment-env
 
@@ -51,14 +54,43 @@ services:
     restart: always
     hostname: redis
 
-  rethink:
-    image: rethinkdb:${RETHINKDB_VERSION:-2.4}
-    restart: always
-    hostname: rethink
-
   etcd:
-    image: bitnami/etcd:${ETCD_VERSION:-3.5.1}
+    image: quay.io/coreos/etcd:${ETCD_VERSION:-v3.5.4}
     restart: always
     hostname: etcd
     environment:
       ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_NAME: "etcd"
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd:2380"
+      ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+      ETCD_INITIAL_CLUSTER_TOKEN: "etcd-cluster"
+      ETCD_INITIAL_CLUSTER=etcd: "http://etcd:2380"
+      ETCD_INITIAL_CLUSTER_STATE: "new"
+      TZ: $TZ
+
+  postgres:
+    hostname: postgres
+    image: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: place_development
+    ports:
+      - 5432:5432
+  migrator:
+    build:
+      context: ${PWD}/spec/migration
+    container_name: migrator
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GITHUB_ACTION: ${GITHUB_ACTION:-}
+      PG_DATABASE_URL: ${PG_DATABASE_URL:-postgresql://postgres:password@postgres:5432/place_development}

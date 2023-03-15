@@ -73,6 +73,10 @@ shards:
     git: https://github.com/place-labs/crystal-etcd.git
     version: 1.2.5
 
+  eventbus:
+    git: https://github.com/spider-gazelle/eventbus.git
+    version: 0.9.9+git.commit.086b2ba92475b88e8481b0387eb56c735cbfd7bd
+
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
     version: 0.3.0
@@ -181,6 +185,14 @@ shards:
     git: https://github.com/wyhaines/parsedate.cr.git
     version: 0.1.2
 
+  pg:
+    git: https://github.com/will/crystal-pg.git
+    version: 0.26.0
+
+  pg-orm:
+    git: https://github.com/spider-gazelle/pg-orm.git
+    version: 1.0.0+git.commit.2bbafec9579f175880281279d33168360176540c
+
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
     version: 4.9.3
@@ -197,13 +209,13 @@ shards:
     git: https://github.com/place-labs/log-backend.git
     version: 0.11.4
 
-  placeos-models:
+  placeos-models: # Overridden
     git: https://github.com/placeos/models.git
     version: 8.13.4
 
-  placeos-resource:
+  placeos-resource: # Overridden
     git: https://github.com/place-labs/resource.git
-    version: 2.5.4
+    version: 2.5.4+git.commit.165b87a8318fbde63a27b505b147e5d57ba9ece7
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
@@ -232,14 +244,6 @@ shards:
   responsible:
     git: https://github.com/place-labs/responsible.git
     version: 1.2.3
-
-  rethinkdb:
-    git: https://github.com/kingsleyh/crystal-rethinkdb.git
-    version: 0.3.1
-
-  rethinkdb-orm:
-    git: https://github.com/spider-gazelle/rethinkdb-orm.git
-    version: 6.0.4
 
   retriable:
     git: https://github.com/sija/retriable.cr.git
@@ -284,4 +288,3 @@ shards:
   ulid:
     git: https://github.com/place-labs/ulid.git
     version: 0.1.2
-

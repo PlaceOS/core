@@ -67,6 +67,7 @@ around_suite ->{
   HoundDog::Service.clear_namespace
 }
 
+PgORM::Database.configure { |_| }
 Spec.before_suite do
   # Set the working directory before specs
   set_temporary_working_directory(path: ".")
@@ -141,7 +142,7 @@ def setup(fresh : Bool = false, temporary : Bool = true, role : PlaceOS::Model::
       module_name: driver_module_name,
       file_name: driver_file_name,
     )
-    driver._new_flag = true
+
     driver.id = PRIVATE_DRIVER_ID
     driver.repository = repository
     driver.save!
