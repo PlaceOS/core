@@ -34,7 +34,7 @@ module PlaceOS::Core
     #   See the note in the method below on where to hook this in.
     #
     protected def process_check : Nil
-      Log.debug { "checking for dead driver processes" }
+      Log.debug { "[liveness] checking for dead driver processes" }
 
       checks = Channel({State, {Driver::Protocol::Management, Array(String)}}).new
       module_manager_map = local_processes.get_module_managers
@@ -58,7 +58,10 @@ module PlaceOS::Core
 
             State::Running
           rescue error : Tasker::Timeout
-            Log.warn(exception: error) { "unresponsive process manager for #{module_ids.join(", ")}" }
+            Log.warn(exception: error) { "[liveness] unresponsive process manager for #{module_ids.join(", ")}" }
+            State::Unresponsive
+          rescue error
+            Log.warn(exception: error) { "[liveness] error checking process manager for #{module_ids.join(", ")}" }
             State::Unresponsive
           end
 
@@ -83,7 +86,7 @@ module PlaceOS::Core
         # Kill the process manager's IO, unblocking any fibers waiting on a response
         protocol_manager.@io.try(&.close) rescue nil
 
-        Log.warn { {message: "restarting unresponsive driver", state: state.to_s, driver_path: protocol_manager.@driver_path} }
+        Log.warn { {message: "[liveness] restarting unresponsive driver", state: state.to_s, driver_path: protocol_manager.@driver_path} }
 
         # Determine if any new modules have been loaded onto the driver that needs to be restarted
         local_processes.with_module_managers do |module_managers|
@@ -105,7 +108,7 @@ module PlaceOS::Core
         # This will allow this module to be included in `PlaceOS::Edge::Client`.
         # To do so, one will need to create the module manager (currently done by the `load_module` below (which is in `PlaceOS::Core::ModuleManager`))
         Model::Module.find_all(module_ids).each do |mod|
-          Log.debug { "reloading #{mod.id} after restarting unresponsive driver" }
+          Log.debug { "[liveness] reloading #{mod.id} after restarting unresponsive driver" }
           load_module(mod)
         end
       end
