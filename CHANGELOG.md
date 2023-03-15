@@ -1,3 +1,9 @@
+## v4.9.5 (2023-03-15)
+
+### Refactor
+
+- migrate to postgres ([#248](https://github.com/PlaceOS/core/pull/248))
+
 ## v4.9.4 (2023-03-15)
 
 ### Fix
