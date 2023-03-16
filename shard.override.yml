@@ -9,11 +9,3 @@ dependencies:
   opentelemetry-sdk:
     github: wyhaines/opentelemetry-sdk.cr
     branch: main
-
-  placeos-models:
-    github: placeos/models
-    branch: refactor/pg-migration
-
-  placeos-resource:
-    github: place-labs/resource
-    branch: refactor/pg-migration

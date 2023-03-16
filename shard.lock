@@ -209,13 +209,13 @@ shards:
     git: https://github.com/place-labs/log-backend.git
     version: 0.11.4
 
-  placeos-models: # Overridden
+  placeos-models:
     git: https://github.com/placeos/models.git
-    version: 8.13.4
+    version: 9.0.0
 
-  placeos-resource: # Overridden
+  placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 2.5.4+git.commit.165b87a8318fbde63a27b505b147e5d57ba9ece7
+    version: 3.0.0
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
@@ -288,3 +288,4 @@ shards:
   ulid:
     git: https://github.com/place-labs/ulid.git
     version: 0.1.2
+

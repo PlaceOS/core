@@ -56,11 +56,11 @@ dependencies:
 
   placeos-models:
     github: placeos/models
-    version: ~> 8.1
+    version: ~> 9.0
 
   placeos-resource:
     github: place-labs/resource
-    version: ~> 2.2
+    version: ~> 3.0
 
   promise:
     github: spider-gazelle/promise
