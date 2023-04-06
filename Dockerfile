@@ -46,8 +46,7 @@ COPY ./src /app/src
 
 RUN shards build exec_from \
       --error-trace \
-      --production \
-      --release
+      --production
 
 # Build the required target
 ENV UNAME_AT_COMPILE_TIME=true
@@ -58,7 +57,6 @@ RUN PLACE_VERSION=$PLACE_VERSION \
     shards build $TARGET \
       --error-trace \
       --production \
-      --release \
       --static
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
