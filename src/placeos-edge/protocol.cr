@@ -145,13 +145,16 @@ module PlaceOS::Edge::Protocol
         end
       end
 
-      {% begin %}
+      macro finished
         use_json_discriminator "type", {
         {% for response in Type.constants.map { |t| ({t.underscore, t}) } %}
-          {{ response[0].stringify }} => {{ response[1].id }},
+          {% the_type = parse_type("PlaceOS::Edge::Protocol::Message::#{response[1].id}").resolve %}
+          {% unless the_type.abstract? %}
+            {{ response[0].stringify }} => {{ response[1].id }},
+          {% end %}
         {% end %}
         }
-      {% end %}
+      end
 
       macro inherited
       {% unless @type.abstract? %}
@@ -317,7 +320,11 @@ module PlaceOS::Edge::Protocol
     ###############################################################################################
 
     abstract struct ResponseBody < ::PlaceOS::Edge::Protocol::Message::Body
-      getter success : Bool = true
+      macro inherited
+        {% unless @type.abstract? %}
+          getter success : Bool = true
+        {% end %}
+      end
     end
 
     abstract struct ::PlaceOS::Edge::Protocol::Client::Response < ::PlaceOS::Edge::Protocol::Message::ResponseBody
