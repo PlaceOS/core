@@ -1,3 +1,9 @@
+## v4.10.0 (2023-05-04)
+
+### Feat
+
+- **edge/protocol**: add support for crystal 1.8 ([#260](https://github.com/PlaceOS/core/pull/260))
+
 ## v4.9.5 (2023-03-15)
 
 ### Refactor
@@ -686,8 +692,8 @@
 - wip, tracing a segfault
 - **constants**: improved version extraction
 - **cloning**: should be using folder name
-- remove exec_from target, correct setting of logger
 - **Docker**: requires libssh2-dev
+- remove exec_from target, correct setting of logger
 - **resource**: loop processing of resources, catch errors in fibers
 - **spec:module_manager**: correct signature for ModuleManager
 - **resource manager**: startup logging format
