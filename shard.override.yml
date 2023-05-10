@@ -9,3 +9,7 @@ dependencies:
   opentelemetry-sdk:
     github: wyhaines/opentelemetry-sdk.cr
     branch: main
+
+  ulid:
+    github: place-labs/ulid
+    branch: master
