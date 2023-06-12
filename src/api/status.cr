@@ -1,6 +1,4 @@
 require "hardware"
-require "auto_initialize"
-require "placeos-compiler/helper"
 
 require "../placeos-core/module_manager"
 require "../placeos-core/resource_manager"
@@ -13,34 +11,23 @@ module PlaceOS::Core::Api
     getter module_manager : ModuleManager { ModuleManager.instance }
     getter resource_manager : ResourceManager { ResourceManager.instance }
 
-    struct RunCount
-      include JSON::Serializable
-      include AutoInitialize
+    record(RunCount, local : PlaceOS::Core::ProcessManager::Count,
+      edge : Hash(String, PlaceOS::Core::ProcessManager::Count)) { include JSON::Serializable }
 
-      getter local : PlaceOS::Core::ProcessManager::Count
-      getter edge : Hash(String, PlaceOS::Core::ProcessManager::Count)
-    end
-
-    struct Statistics
-      include JSON::Serializable
-      include AutoInitialize
-
-      getter available_repositories : Array(String)
-      getter unavailable_repositories : Array(PlaceOS::Resource::Error)
-      getter compiled_drivers : Array(String)
-      getter unavailable_drivers : Array(PlaceOS::Resource::Error)
-
-      getter run_count : RunCount
-    end
+    record(Statistics, available_repositories : Array(String),
+      unavailable_repositories : Array(PlaceOS::Resource::Error),
+      compiled_drivers : Array(String),
+      unavailable_drivers : Array(PlaceOS::Resource::Error),
+      run_count : RunCount) { include JSON::Serializable }
 
     # General statistics related to the process
     @[AC::Route::GET("/")]
     def statistics : Statistics
       Statistics.new(
-        available_repositories: PlaceOS::Compiler::Helper.repositories,
-        unavailable_repositories: resource_manager.cloning.errors,
-        compiled_drivers: PlaceOS::Compiler::Helper.compiled_drivers,
-        unavailable_drivers: resource_manager.compilation.errors,
+        available_repositories: [] of String,                     # PlaceOS::Compiler::Helper.repositories,
+        unavailable_repositories: [] of PlaceOS::Resource::Error, # resource_manager.cloning.errors,
+        compiled_drivers: module_manager.store.compiled_drivers,  # PlaceOS::Compiler::Helper.compiled_drivers,
+        unavailable_drivers: resource_manager.driver_builder.errors,
         run_count: RunCount.new(
           local: module_manager.local_processes.run_count,
           edge: module_manager.edge_processes.run_count,
@@ -48,13 +35,8 @@ module PlaceOS::Core::Api
       )
     end
 
-    struct DriverStatus
-      include JSON::Serializable
-      include AutoInitialize
-
-      getter local : PlaceOS::Core::ProcessManager::DriverStatus?
-      getter edge : Hash(String, PlaceOS::Core::ProcessManager::DriverStatus?)
-    end
+    record(DriverStatus, local : PlaceOS::Core::ProcessManager::DriverStatus?,
+      edge : Hash(String, PlaceOS::Core::ProcessManager::DriverStatus?)) { include JSON::Serializable }
 
     # details related to a process (+ anything else we can think of)
     @[AC::Route::GET("/driver")]
@@ -68,13 +50,8 @@ module PlaceOS::Core::Api
       )
     end
 
-    struct MachineLoad
-      include JSON::Serializable
-      include AutoInitialize
-
-      getter local : PlaceOS::Core::ProcessManager::SystemStatus
-      getter edge : Hash(String, PlaceOS::Core::ProcessManager::SystemStatus)
-    end
+    record(MachineLoad, local : PlaceOS::Core::ProcessManager::SystemStatus,
+      edge : Hash(String, PlaceOS::Core::ProcessManager::SystemStatus)) { include JSON::Serializable }
 
     # details about the overall machine load
     @[AC::Route::GET("/load")]
@@ -85,13 +62,8 @@ module PlaceOS::Core::Api
       )
     end
 
-    struct LoadedModules
-      include JSON::Serializable
-      include AutoInitialize
-
-      getter local : Hash(String, Array(String))
-      getter edge : Hash(String, Hash(String, Array(String)))
-    end
+    record(LoadedModules, local : Hash(String, Array(String)),
+      edge : Hash(String, Hash(String, Array(String)))) { include JSON::Serializable }
 
     # Returns the lists of modules drivers have loaded for this core, and managed edges
     @[AC::Route::GET("/loaded")]

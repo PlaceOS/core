@@ -1,5 +1,6 @@
-require "./cloning"
-require "./compilation"
+# require "./cloning"
+# require "./compilation"
+require "./driver_manager"
 require "./mappings/control_system_modules"
 require "./mappings/module_names"
 require "./mappings/driver_module_names"
@@ -8,8 +9,9 @@ require "./mappings/driver_module_names"
 #
 module PlaceOS::Core
   class ResourceManager
-    getter cloning : Cloning
-    getter compilation : Compilation
+    # getter cloning : Cloning
+    # getter compilation : Compilation
+    getter driver_builder : DriverResource
     getter control_system_modules : Mappings::ControlSystemModules
     getter module_names : Mappings::ModuleNames
     getter driver_module_names : Mappings::DriverModuleNames
@@ -25,26 +27,21 @@ module PlaceOS::Core
     end
 
     def initialize(
-      cloning : Cloning? = nil,
-      @compilation : Compilation = Compilation.new,
+      @driver_builder : DriverResource = DriverResource.new,
       @control_system_modules : Mappings::ControlSystemModules = Mappings::ControlSystemModules.new,
       @module_names : Mappings::ModuleNames = Mappings::ModuleNames.new,
       @settings_updates : SettingsUpdate = SettingsUpdate.new,
       @driver_module_names : Mappings::DriverModuleNames = Mappings::DriverModuleNames.new,
       testing : Bool = false
     )
-      @cloning = cloning || Cloning.new(testing: testing)
     end
 
     def start(&)
       start_lock.synchronize {
         return if started?
 
-        Log.info { "cloning Repositories" }
-        cloning.start
-
-        Log.info { "compiling Drivers" }
-        compilation.start
+        Log.info { "Startubg Driver change feed listener" }
+        driver_builder.start
 
         # Run the on-load processes
         yield
@@ -69,8 +66,7 @@ module PlaceOS::Core
       return unless started?
 
       @started = false
-      cloning.stop
-      compilation.stop
+      driver_builder.stop
       control_system_modules.stop
       module_names.stop
       settings_updates.stop

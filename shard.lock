@@ -17,10 +17,6 @@ shards:
     git: https://github.com/crystal-ameba/ameba.git
     version: 1.4.3
 
-  auto_initialize:
-    git: https://github.com/kostya/auto_initialize.git
-    version: 0.1.0
-
   backtracer:
     git: https://github.com/sija/backtracer.cr.git
     version: 1.2.2
@@ -51,7 +47,7 @@ shards:
 
   csuuid:
     git: https://github.com/wyhaines/csuuid.cr.git
-    version: 1.0.0+git.commit.812ee5e1252b27ee2895ec7897094cde3e4a5dc2
+    version: 1.0.0+git.commit.41710010d5b8be818b1ca7b84ef412348e1912bd
 
   db:
     git: https://github.com/crystal-lang/crystal-db.git
@@ -85,10 +81,6 @@ shards:
     git: https://github.com/crystal-loot/exception_page.git
     version: 0.3.0
 
-  exec_from:
-    git: https://github.com/place-labs/exec_from.git
-    version: 2.0.0
-
   faker:
     git: https://github.com/askn/faker.git
     version: 0.8.0
@@ -115,7 +107,7 @@ shards:
 
   hot_topic:
     git: https://github.com/jgaskins/hot_topic.git
-    version: 0.1.0+git.commit.c4577d949221d535f29162343bf503b578308954
+    version: 0.1.0+git.commit.3c901e77b6e000930398738260a2944b6f5785dc
 
   hound-dog:
     git: https://github.com/place-labs/hound-dog.git
@@ -163,7 +155,7 @@ shards:
 
   office365:
     git: https://github.com/placeos/office365.git
-    version: 1.19.0
+    version: 1.20.1
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
@@ -211,11 +203,7 @@ shards:
 
   place_calendar:
     git: https://github.com/placeos/calendar.git
-    version: 4.17.2
-
-  placeos-compiler:
-    git: https://github.com/placeos/compiler.git
-    version: 4.9.3
+    version: 4.18.0
 
   placeos-core-client:
     git: https://github.com/placeos/core-client.git
@@ -231,7 +219,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.8.0
+    version: 9.10.2
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git

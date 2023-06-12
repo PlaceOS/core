@@ -1,9 +1,6 @@
 require "hardware"
 require "hound-dog"
 
-# For looking up binary directory
-require "placeos-compiler/compiler"
-
 require "../process_manager"
 require "./common"
 
@@ -13,8 +10,10 @@ module PlaceOS::Core
     include Common
 
     private getter discovery : HoundDog::Discovery
+    private getter store : DriverStore
 
     def initialize(@discovery : HoundDog::Discovery)
+      @store = DriverStore.new
     end
 
     def load(module_id : String, driver_key : String)
@@ -76,7 +75,7 @@ module PlaceOS::Core
     end
 
     private def driver_path(driver_key : String) : Path
-      Path.new(Compiler.binary_dir, ProcessManager.path_to_key(driver_key))
+      store.path(ProcessManager.path_to_key(driver_key))
     end
 
     # Callbacks

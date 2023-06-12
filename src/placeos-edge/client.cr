@@ -5,6 +5,7 @@ require "uri"
 require "placeos-driver/protocol/management"
 
 require "../placeos-core/process_manager/common"
+require "../placeos-core/driver_manager"
 
 require "./constants"
 require "./protocol"
@@ -17,7 +18,7 @@ module PlaceOS::Edge
     Log                = ::Log.for(self)
     WEBSOCKET_API_PATH = "/api/engine/v2/edges/control"
 
-    class_property binary_directory : String = File.join(Dir.current, "/bin/drivers")
+    protected getter store : Core::DriverStore
 
     private getter secret : String
 
@@ -40,16 +41,15 @@ module PlaceOS::Edge
     # module_id => payload
     @pending_start = {} of String => String
 
-    def host
-      uri.to_s.gsub(uri.request_target, "")
-    end
+    getter host : String { uri.to_s.gsub(uri.request_target, "") }
 
     def initialize(
       uri : URI = PLACE_URI,
       secret : String? = nil,
       @sequence_id : UInt64 = 0,
       @skip_handshake : Bool = false,
-      @ping : Bool = true
+      @ping : Bool = true,
+      @store = Core::DriverStore.new
     )
       @secret = if secret && secret.presence
                   secret
@@ -163,9 +163,9 @@ module PlaceOS::Edge
         end
       in Protocol::Message::Load
         boolean_command(sequence_id, request) do
-          @loading_mutex.synchronize do
-            File.delete(path(request.driver_key)) if !protocol_manager_by_driver?(request.driver_key) && File.exists?(path(request.driver_key))
-          end
+          # @loading_mutex.synchronize do
+          #   File.delete(path(request.driver_key)) if !protocol_manager_by_driver?(request.driver_key) && File.exists?(path(request.driver_key))
+          # end
           load(request.module_id, request.driver_key)
         end
       in Protocol::Message::LoadedModules
@@ -297,10 +297,7 @@ module PlaceOS::Edge
     # List the driver binaries present on this client
     #
     def drivers
-      Dir.mkdir_p(self.class.binary_directory) unless Dir.exists?(self.class.binary_directory)
-      Dir.children(self.class.binary_directory).reject do |file|
-        file.includes?(".") || File.directory?(file)
-      end.to_set
+      store.compiled_drivers.to_set
     end
 
     # Load binary, first checking if present locally then fetch from core
@@ -394,7 +391,7 @@ module PlaceOS::Edge
     end
 
     protected def path(key : String)
-      File.join(self.class.binary_directory, key)
+      store.path(key).to_s
     end
 
     # Modules

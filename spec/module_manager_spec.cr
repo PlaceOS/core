@@ -22,22 +22,18 @@ module PlaceOS::Core
       end
 
       it "load_module" do
-        _, repo, driver, mod = setup
+        _, driver, mod = setup
 
         module_manager = module_manager_mock
 
-        cloning = Cloning.new(testing: true)
-        compilation = Compilation.new(startup: true, module_manager: module_manager)
-
+        builder = DriverResource.new(startup: true, module_manager: module_manager)
         # Clone, compile, etcd
-        resource_manager = ResourceManager.new(cloning: cloning, compilation: compilation)
+        resource_manager = ResourceManager.new(driver_builder: builder) # (cloning: cloning, compilation: compilation)
         resource_manager.start { }
 
         mod_id = mod.id.as(String)
-        driver_id = driver.id.as(String)
 
-        driver_commit_hash = Compiler::Git.current_file_commit(driver.file_name, repo.folder_name, Compiler.repository_dir)
-        driver_path = PlaceOS::Compiler::Helper.driver_binary_path(driver.file_name, driver_commit_hash, driver_id)
+        driver_path = module_manager.store.driver_binary_path(driver.file_name, driver.commit).to_s
 
         mod.reload!
         mod.driver = mod.driver.not_nil!.reload!

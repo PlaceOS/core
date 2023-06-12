@@ -25,7 +25,7 @@ module PlaceOS::Core::ProcessManager
   end
 
   def self.with_edge(&)
-    with_driver do |mod, driver_path, _driver|
+    with_driver do |mod, driver_path, driver_key, _driver|
       if existing_edge_id = mod.edge_id
         mod.running = false
         mod.save!
@@ -41,7 +41,7 @@ module PlaceOS::Core::ProcessManager
         module: mod,
         edge: edge,
         driver_path: driver_path,
-        driver_key: ProcessManager.path_to_key(driver_path),
+        driver_key: driver_key,
       )
 
       client, process_manager = client_server(edge.id.as(String))
