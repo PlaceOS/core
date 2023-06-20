@@ -103,7 +103,7 @@ services:
       PG_DATABASE_URL: ${PG_DATABASE_URL:-postgresql://postgres:password@postgres:5432/place_development}
 
   build_service:
-    image: placeos/build_service:latest
+    image: placeos/build_service:nightly
     restart: always
     hostname: build_service
     depends_on:

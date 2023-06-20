@@ -111,7 +111,7 @@ module PlaceOS::Core
       host = URI.parse(Core.build_host)
       file_name = URI.encode_www_form(file_name)
       ConnectProxy::HTTPClient.new(host) do |client|
-        path = "#{BUILD_API_BASE}/compiled/#{file_name}/#{Core::ARCH}"
+        path = "#{BUILD_API_BASE}/#{Core::ARCH}/compiled/#{file_name}"
         params = URI::Params.encode({"branch" => branch, "commit" => commit})
         uri = "#{path}?#{params}"
         client.get(uri)
@@ -126,7 +126,7 @@ module PlaceOS::Core
       headers["X-Git-Password"] = password.not_nil! unless password.nil?
 
       ConnectProxy::HTTPClient.new(host) do |client|
-        path = "#{BUILD_API_BASE}/#{file_name}/#{Core::ARCH}"
+        path = "#{BUILD_API_BASE}/#{Core::ARCH}/#{file_name}"
         params = URI::Params.encode({"url" => url, "branch" => branch, "commit" => commit, "force" => force.to_s})
         uri = "#{path}?#{params}"
         client.post(uri, headers: headers)
