@@ -183,7 +183,7 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.5.2+git.commit.327d335104d3bafd08426a0afb3755f50bafe13f
+    version: 0.5.3+git.commit.5c0323d0046719bae4a7a325ca5ce0e7405bf803
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
