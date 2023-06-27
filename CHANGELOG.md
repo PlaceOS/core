@@ -1,3 +1,9 @@
+## v4.11.1 (2023-06-27)
+
+### Fix
+
+- **process_check**: kill unresponsive processes cleanly ([#263](https://github.com/PlaceOS/core/pull/263))
+
 ## v4.11.0 (2023-06-26)
 
 ### Feat
