@@ -80,11 +80,11 @@ module PlaceOS::Core
 
         # Ensure the process is killed
         if state.unresponsive?
-          Process.signal(Signal::KILL, protocol_manager.pid) rescue nil
+          if (pid = protocol_manager.pid) && pid != -1
+            protocol_manager.proc.try(&.terminate) rescue nil
+            Process.signal(Signal::KILL, pid) rescue nil
+          end
         end
-
-        # Kill the process manager's IO, unblocking any fibers waiting on a response
-        protocol_manager.@io.try(&.close) rescue nil
 
         Log.warn { {message: "[liveness] restarting unresponsive driver", state: state.to_s, driver_path: protocol_manager.@driver_path} }
 
