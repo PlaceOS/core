@@ -115,7 +115,7 @@ shards:
 
   ipaddress:
     git: https://github.com/sija/ipaddress.cr.git
-    version: 0.2.1
+    version: 0.2.3
 
   json-merge-patch:
     git: https://github.com/caspiano/json-merge-patch.git
@@ -191,7 +191,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.7.4
+    version: 6.9.1
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
