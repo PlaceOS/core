@@ -26,18 +26,24 @@ module PlaceOS::Core
 
     def compile(file_name : String, url : String, commit : String, branch : String, force : Bool, username : String? = nil, password : String? = nil) : Result
       Log.info { {message: "Requesting build service to compile driver", driver_file: file_name, branch: branch, repository: url} }
-      resp = BuildApi.compile(file_name, url, commit, branch, force)
-      unless resp.success?
-        Log.error { {message: resp.body, status_code: resp.status_code, driver: file_name, commit: commit, branch: branch, force: force} }
-        return Result.new(output: resp.body, name: file_name)
-      end
-      link = LinkData.from_json(resp.body)
       begin
-        driver = fetch_binary(link)
+        resp = BuildApi.compile(file_name, url, commit, branch, force)
+        unless resp.success?
+          Log.error { {message: resp.body, status_code: resp.status_code, driver: file_name, commit: commit, branch: branch, force: force} }
+          return Result.new(output: resp.body, name: file_name)
+        end
+        link = LinkData.from_json(resp.body)
+        begin
+          driver = fetch_binary(link)
+        rescue ex
+          return Result.new(output: ex.message.not_nil!, name: file_name)
+        end
+        Result.new(success: true, name: driver, path: binary_path)
       rescue ex
-        return Result.new(output: ex.message.not_nil!, name: file_name)
+        msg = ex.message || "compiled returned no exception message"
+        Log.error(exception: ex) { {message: msg, driver: file_name, commit: commit, branch: branch, force: force} }
+        Result.new(output: msg, name: file_name)
       end
-      Result.new(success: true, name: driver, path: binary_path)
     end
 
     def built?(file_name : String, commit : String, branch : String) : String?
@@ -125,12 +131,31 @@ module PlaceOS::Core
       headers["X-Git-Username"] = username.not_nil! unless username.nil?
       headers["X-Git-Password"] = password.not_nil! unless password.nil?
 
-      ConnectProxy::HTTPClient.new(host) do |client|
+      resp = ConnectProxy::HTTPClient.new(host) do |client|
         path = "#{BUILD_API_BASE}/#{Core::ARCH}/#{file_name}"
         params = URI::Params.encode({"url" => url, "branch" => branch, "commit" => commit, "force" => force.to_s})
         uri = "#{path}?#{params}"
         client.post(uri, headers: headers)
       end
+
+      raise "Build API returned #{resp.status_code} while 202 was expected. Returned error: #{resp.body}" unless resp.status_code == 202
+      link = resp.headers["Content-Location"] rescue raise "Build API returned invalid response, missing Content-Location header"
+
+      task = JSON.parse(resp.body).as_h
+      loop do
+        resp = ConnectProxy::HTTPClient.get(link)
+        raise "Returned invalid response : #{link}" unless resp.success?
+        task = JSON.parse(resp.body).as_h
+        break if task["state"] != "pending"
+        sleep 5
+      end
+      if resp.success? && task["state"] == "error"
+        raise task["message"].to_s
+      end
+      raise "Build API end-point #{link} returned invalid response code #{resp.status_code}, expected 303" unless resp.status_code == 303
+      raise "Build API end-point #{link} returned invalid state #{task["state"]}, expected 'done'" unless task["state"] == "done"
+      hdr = resp.headers["Location"] rescue raise "Build API returned compilation done, but missing Location URL"
+      ConnectProxy::HTTPClient.get(hdr)
     end
   end
 
