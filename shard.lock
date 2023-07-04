@@ -79,7 +79,7 @@ shards:
 
   eventbus:
     git: https://github.com/spider-gazelle/eventbus.git
-    version: 0.9.9+git.commit.8755e1f92deda39c13e4f8d3c5b1ec5fdded4ce9
+    version: 0.9.9+git.commit.635e95322815069ac76c9d3b32aa57433c5bb478
 
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
