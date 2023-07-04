@@ -1,3 +1,9 @@
+## v4.11.2 (2023-07-04)
+
+### Fix
+
+- **eventbus**: handle read replica race conditions
+
 ## v4.11.1 (2023-06-27)
 
 ### Fix
