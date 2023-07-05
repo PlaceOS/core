@@ -79,7 +79,7 @@ shards:
 
   eventbus:
     git: https://github.com/spider-gazelle/eventbus.git
-    version: 0.9.9+git.commit.635e95322815069ac76c9d3b32aa57433c5bb478
+    version: 0.9.9+git.commit.0e30bccef306197b558c1d697a98b6d24ab03ae8
 
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
@@ -163,7 +163,7 @@ shards:
 
   office365:
     git: https://github.com/placeos/office365.git
-    version: 1.21.2
+    version: 1.22.0
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
