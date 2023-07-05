@@ -79,7 +79,7 @@ shards:
 
   eventbus:
     git: https://github.com/spider-gazelle/eventbus.git
-    version: 0.9.9+git.commit.0e30bccef306197b558c1d697a98b6d24ab03ae8
+    version: 0.9.9+git.commit.a26f6f022eed373264e13acbf95ffc1e710df645
 
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
@@ -103,7 +103,7 @@ shards:
 
   google:
     git: https://github.com/placeos/google.git
-    version: 3.4.0
+    version: 3.5.0
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
@@ -211,7 +211,7 @@ shards:
 
   place_calendar:
     git: https://github.com/placeos/calendar.git
-    version: 4.18.3
+    version: 4.19.0
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
