@@ -1,3 +1,9 @@
+## v4.11.4 (2023-07-11)
+
+### Fix
+
+- **module_manager**: treat load as a stabilization event
+
 ## v4.11.3 (2023-07-04)
 
 ### Fix
