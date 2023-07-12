@@ -51,7 +51,7 @@ shards:
 
   db:
     git: https://github.com/crystal-lang/crystal-db.git
-    version: 0.11.0
+    version: 0.12.0
 
   debug:
     git: https://github.com/sija/debug.cr.git
@@ -75,11 +75,11 @@ shards:
 
   eventbus:
     git: https://github.com/spider-gazelle/eventbus.git
-    version: 0.9.9+git.commit.8572cf71937680e38df4652fe886e4383b20e4f1
+    version: 0.9.9+git.commit.a26f6f022eed373264e13acbf95ffc1e710df645
 
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
-    version: 0.3.0
+    version: 0.3.1
 
   faker:
     git: https://github.com/askn/faker.git
@@ -95,7 +95,7 @@ shards:
 
   google:
     git: https://github.com/placeos/google.git
-    version: 3.4.0
+    version: 3.5.0
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
@@ -155,7 +155,7 @@ shards:
 
   office365:
     git: https://github.com/placeos/office365.git
-    version: 1.20.1
+    version: 1.22.0
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
@@ -175,7 +175,7 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.5.2+git.commit.327d335104d3bafd08426a0afb3755f50bafe13f
+    version: 0.5.3+git.commit.5c0323d0046719bae4a7a325ca5ce0e7405bf803
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
@@ -195,7 +195,7 @@ shards:
 
   pg:
     git: https://github.com/will/crystal-pg.git
-    version: 0.26.0
+    version: 0.27.0
 
   pg-orm:
     git: https://github.com/spider-gazelle/pg-orm.git
@@ -203,7 +203,7 @@ shards:
 
   place_calendar:
     git: https://github.com/placeos/calendar.git
-    version: 4.18.0
+    version: 4.19.0
 
   placeos-core-client:
     git: https://github.com/placeos/core-client.git
@@ -211,7 +211,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.8.6
+    version: 6.9.1
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -219,11 +219,11 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.11.2
+    version: 9.14.2
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 3.0.1
+    version: 3.0.2
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
@@ -279,7 +279,7 @@ shards:
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
-    version: 2.0.7
+    version: 2.1.4
 
   time-ext:
     git: https://github.com/wyhaines/time-ext.cr.git

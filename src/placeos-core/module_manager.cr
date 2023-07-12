@@ -80,11 +80,13 @@ module PlaceOS::Core
       super()
     end
 
-    def start
+    def start(timeout : Time::Span = LOAD_TIMEOUT)
       start_clustering
       start_process_check
 
-      super
+      stabilize_lock.synchronize do
+        super(timeout)
+      end
 
       @started = true
       self

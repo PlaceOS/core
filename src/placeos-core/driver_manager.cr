@@ -143,7 +143,9 @@ module PlaceOS::Core
 
       task = JSON.parse(resp.body).as_h
       loop do
-        resp = ConnectProxy::HTTPClient.get(link)
+        resp = ConnectProxy::HTTPClient.new(host) do |client|
+          client.get(link)
+        end
         raise "Returned invalid response : #{link}" unless resp.success?
         task = JSON.parse(resp.body).as_h
         break if task["state"] != "pending"
@@ -155,7 +157,9 @@ module PlaceOS::Core
       raise "Build API end-point #{link} returned invalid response code #{resp.status_code}, expected 303" unless resp.status_code == 303
       raise "Build API end-point #{link} returned invalid state #{task["state"]}, expected 'done'" unless task["state"] == "done"
       hdr = resp.headers["Location"] rescue raise "Build API returned compilation done, but missing Location URL"
-      ConnectProxy::HTTPClient.get(hdr)
+      ConnectProxy::HTTPClient.new(host) do |client|
+        client.get(hdr)
+      end
     end
   end
 
