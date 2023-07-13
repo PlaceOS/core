@@ -83,7 +83,7 @@ module PlaceOS::Core
       start_clustering
       start_process_check
 
-      super
+      stabilize_lock.synchronize { super }
 
       @started = true
       self
