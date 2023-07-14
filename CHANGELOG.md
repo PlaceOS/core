@@ -1,3 +1,9 @@
+## v4.11.6 (2023-07-14)
+
+### Fix
+
+- **local**: error message may not be present
+
 ## v4.11.5 (2023-07-14)
 
 ### Fix
