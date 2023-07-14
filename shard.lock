@@ -79,7 +79,7 @@ shards:
 
   eventbus:
     git: https://github.com/spider-gazelle/eventbus.git
-    version: 0.9.9+git.commit.a26f6f022eed373264e13acbf95ffc1e710df645
+    version: 0.9.9+git.commit.ca8ef0c5e21ee15da079edd5bcea39bee7e07f26
 
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
@@ -235,7 +235,7 @@ shards:
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 3.0.2
+    version: 3.0.3
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
