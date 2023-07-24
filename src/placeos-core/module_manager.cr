@@ -326,7 +326,7 @@ module PlaceOS::Core
         timeout_period = 5.seconds
         waiting = Hash(String?, Promise::DeferredPromise(Nil)).new
 
-        Model::Module.all.in_groups_of(STABILIZE_BATCH_SIZE, reuse: true) do |modules|
+        Model::Module.order(id: :asc).all.in_groups_of(STABILIZE_BATCH_SIZE, reuse: true) do |modules|
           modules.each.reject(Nil).each do |mod|
             waiting[mod.id] = Promise.defer(same_thread: true, timeout: timeout_period) do
               begin
