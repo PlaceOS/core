@@ -1,3 +1,9 @@
+## v4.11.9 (2023-07-24)
+
+### Fix
+
+- **module_manager**: update to a lazy model loading method
+
 ## v4.11.8 (2023-07-14)
 
 ### Fix
