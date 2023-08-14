@@ -13,7 +13,7 @@ targets:
 dependencies:
   action-controller:
     github: spider-gazelle/action-controller
-    version: ~> 5.3
+    version: ~> 7.2
 
   clustering:
     github: place-labs/clustering
