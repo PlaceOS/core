@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.2.0
+    version: 7.2.1
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -67,7 +67,7 @@ shards:
 
   dtls:
     git: https://github.com/spider-gazelle/crystal-dtls.git
-    version: 0.9.0
+    version: 0.9.1
 
   email:
     git: https://github.com/arcage/crystal-email.git
@@ -231,7 +231,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.15.0
+    version: 9.17.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -287,7 +287,7 @@ shards:
 
   ssh2:
     git: https://github.com/spider-gazelle/ssh2.cr.git
-    version: 1.5.3
+    version: 1.6.0
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
