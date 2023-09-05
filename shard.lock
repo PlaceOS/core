@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.2.1
+    version: 7.2.2
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -231,7 +231,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.17.0
+    version: 9.17.3
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -267,7 +267,7 @@ shards:
 
   retriable:
     git: https://github.com/sija/retriable.cr.git
-    version: 0.2.4
+    version: 0.2.5
 
   rwlock:
     git: https://github.com/spider-gazelle/readers-writer.git
