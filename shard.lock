@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.2.2
+    version: 7.2.3
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -155,7 +155,7 @@ shards:
 
   nbchannel:
     git: https://github.com/wyhaines/nbchannel.cr.git
-    version: 0.1.0+git.commit.ea6517a837270361695244d14c4b03d84660f113
+    version: 0.1.0+git.commit.a8f5be6aa198abfa9f1893e1156640b8ea526094
 
   neuroplastic:
     git: https://github.com/spider-gazelle/neuroplastic.git
@@ -163,7 +163,7 @@ shards:
 
   office365:
     git: https://github.com/placeos/office365.git
-    version: 1.22.0
+    version: 1.23.0
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
@@ -183,7 +183,7 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.5.3+git.commit.5c0323d0046719bae4a7a325ca5ce0e7405bf803
+    version: 0.5.3+git.commit.cd3994b22d9f7a0d68752698974d3873a1b2fce2
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
@@ -231,7 +231,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.17.3
+    version: 9.20.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
