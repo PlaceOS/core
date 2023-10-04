@@ -1,3 +1,9 @@
+## v4.11.10 (2023-10-04)
+
+### Fix
+
+- **healthcheck**: usename can be null causing errors
+
 ## v4.11.9 (2023-07-24)
 
 ### Fix
