@@ -51,7 +51,7 @@ shards:
 
   csuuid:
     git: https://github.com/wyhaines/csuuid.cr.git
-    version: 1.0.0+git.commit.41710010d5b8be818b1ca7b84ef412348e1912bd
+    version: 1.0.0+git.commit.a4cf9615c6518cf27c68a1755a8c2ac4ae4fe987
 
   db:
     git: https://github.com/crystal-lang/crystal-db.git
@@ -107,7 +107,7 @@ shards:
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
-    version: 0.4.7
+    version: 0.4.8
 
   hardware:
     git: https://github.com/crystal-community/hardware.git
@@ -231,7 +231,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.20.0
+    version: 9.22.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
