@@ -84,16 +84,11 @@ module PlaceOS::Core
           Log.error { {message: "Expected content length #{link.size}, but received #{resp.headers.fetch("Content-Length", "0")}", driver_file: driver_file} }
           raise Error.new("Response size doesn't match with build service returned result")
         end
-        body_io = IO::Digest.new(IO::Memory.new(resp.body), Digest::MD5.new)
+
+        body_io = IO::Digest.new(resp.body_io? || IO::Memory.new(resp.body), Digest::MD5.new)
         File.open(filename, "wb") do |f|
           IO.copy(body_io, f)
           f.chmod(0o755)
-        end
-        md5 = body_io.final.hexstring
-        unless link.md5 == md5
-          Log.error { {message: "Invalid checksum md5 of received file. Removing driver file", driver_file: driver_file} }
-          File.delete(filename) rescue nil
-          raise Error.new("Retrieved driver checksum md5 doesn't match with build service returned result")
         end
         filename.to_s
       else
@@ -146,7 +141,7 @@ module PlaceOS::Core
         resp = ConnectProxy::HTTPClient.new(host) do |client|
           client.get(link)
         end
-        raise "Returned invalid response : #{link}" unless resp.success?
+        raise "Returned invalid response : #{link}" unless resp.success? || resp.status_code == 303
         task = JSON.parse(resp.body).as_h
         break if task["state"] != "pending"
         sleep 5
