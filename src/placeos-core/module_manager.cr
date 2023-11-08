@@ -151,7 +151,7 @@ module PlaceOS::Core
           driver_name: driver.name,
           driver_commit: driver.commit,
         ) do
-          driver_path = store.built?(driver.file_name, driver.commit, repository.branch)
+          driver_path = store.built?(driver.file_name, driver.commit, repository.branch, repository.uri)
           # Check if the driver is built
           if driver_path.nil?
             Log.error { "driver does not exist for module" }

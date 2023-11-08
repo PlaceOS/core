@@ -42,5 +42,5 @@ module PlaceOS::Core
   BUILD_HOST = ENV["BUILD_API_HOST"]? || "localhost"
   BUILD_PORT = (ENV["BUILD_API_PORT"]? || 3000).to_i
 
-  class_getter build_host = "http://#{BUILD_HOST}:#{BUILD_PORT}"
+  class_getter build_host = ENV["BUILD_URL"]? || "http://#{BUILD_HOST}:#{BUILD_PORT}"
 end

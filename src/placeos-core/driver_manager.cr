@@ -15,10 +15,11 @@ module PlaceOS::Core
       Dir.mkdir_p binary_path
     end
 
-    def compiled?(file_name : String, commit : String, branch : String) : Bool
+    def compiled?(file_name : String, commit : String, branch : String, uri : String) : Bool
+      Log.debug { {message: "Checking whether driver is compiled or not?", driver: file_name, commit: commit, branch: branch, repo: uri} }
       path = Path[binary_path, executable_name(file_name, commit)]
       return true if File.exists?(path)
-      resp = BuildApi.compiled?(file_name, commit, branch)
+      resp = BuildApi.compiled?(file_name, commit, branch, uri)
       return false unless resp.success?
       ret = fetch_binary(LinkData.from_json(resp.body)) rescue nil
       !ret.nil?
@@ -46,8 +47,16 @@ module PlaceOS::Core
       end
     end
 
-    def built?(file_name : String, commit : String, branch : String) : String?
-      return nil unless compiled?(file_name, commit, branch)
+    def metadata(file_name : String, commit : String, branch : String, uri : String)
+      resp = BuildApi.metadata(file_name, commit, branch, uri)
+      return Result.new(success: true, output: resp.body.as(String)) if resp.success?
+      Result.new(output: "Metadata not found. Server returned #{resp.status_code}")
+    rescue ex
+      return Result.new(output: ex.message.not_nil!, name: file_name)
+    end
+
+    def built?(file_name : String, commit : String, branch : String, uri : String) : String?
+      return nil unless compiled?(file_name, commit, branch, uri)
       driver_binary_path(file_name, commit).to_s
     end
 
@@ -73,7 +82,7 @@ module PlaceOS::Core
       url = URI.parse(link.url)
       driver_file = Path[url.path].basename
       filename = Path[binary_path, driver_file]
-      resp = if Core.production?
+      resp = if Core.production? || url.scheme == "https"
                ConnectProxy::HTTPClient.get(url.to_s)
              else
                uri = URI.new(path: url.path, query: url.query)
@@ -108,14 +117,29 @@ module PlaceOS::Core
   module BuildApi
     BUILD_API_BASE = "/api/build/v1"
 
-    def self.compiled?(file_name : String, commit : String, branch : String)
+    def self.metadata(file_name : String, commit : String, branch : String, uri : String)
+      host = URI.parse(Core.build_host)
+      file_name = URI.encode_www_form(file_name)
+      ConnectProxy::HTTPClient.new(host) do |client|
+        path = "#{BUILD_API_BASE}/metadata/#{file_name}"
+        params = URI::Params.encode({"url" => uri, "branch" => branch, "commit" => commit})
+        uri = "#{path}?#{params}"
+        rep = client.get(uri)
+        Log.debug { {message: "Getting driver metadata. Server respose: #{rep.status_code}", file_name: file_name, commit: commit, branch: branch} }
+        rep
+      end
+    end
+
+    def self.compiled?(file_name : String, commit : String, branch : String, uri : String)
       host = URI.parse(Core.build_host)
       file_name = URI.encode_www_form(file_name)
       ConnectProxy::HTTPClient.new(host) do |client|
         path = "#{BUILD_API_BASE}/#{Core::ARCH}/compiled/#{file_name}"
-        params = URI::Params.encode({"branch" => branch, "commit" => commit})
+        params = URI::Params.encode({"url" => uri, "branch" => branch, "commit" => commit})
         uri = "#{path}?#{params}"
-        client.get(uri)
+        rep = client.get(uri)
+        Log.debug { {message: "Checking if driver is compiled?. Server respose: #{rep.status_code}", file_name: file_name, commit: commit, branch: branch, server_rep: rep.body} }
+        rep
       end
     end
 
@@ -130,7 +154,9 @@ module PlaceOS::Core
         path = "#{BUILD_API_BASE}/#{Core::ARCH}/#{file_name}"
         params = URI::Params.encode({"url" => url, "branch" => branch, "commit" => commit, "force" => force.to_s})
         uri = "#{path}?#{params}"
-        client.post(uri, headers: headers)
+        rep = client.post(uri, headers: headers)
+        Log.debug { {message: "Build URL host : #{client.host}, URI: #{uri} . Server response: #{rep.status_code}", server_resp: rep.body} }
+        rep
       end
 
       raise "Build API returned #{resp.status_code} while 202 was expected. Returned error: #{resp.body}" unless resp.status_code == 202
@@ -139,9 +165,11 @@ module PlaceOS::Core
       task = JSON.parse(resp.body).as_h
       loop do
         resp = ConnectProxy::HTTPClient.new(host) do |client|
-          client.get(link)
+          rep = client.get(link)
+          Log.debug { {message: "Invoked request: URI: #{link} . Server response: #{rep.status_code}", server_resp: rep.body} }
+          rep
         end
-        raise "Returned invalid response : #{link}" unless resp.success? || resp.status_code == 303
+        raise "Returned invalid response : #{link}, resp: #{resp}" unless resp.success? || resp.status_code == 303
         task = JSON.parse(resp.body).as_h
         break if task["state"] != "pending"
         sleep 5
@@ -215,7 +243,7 @@ module PlaceOS::Core
         repository_name: repository.folder_name,
         commit: commit,
       ) do
-        if !force_recompile && !driver.commit_changed? && (path = store.built?(driver.file_name, commit, repository.branch))
+        if !force_recompile && !driver.commit_changed? && (path = store.built?(driver.file_name, commit, repository.branch, repository.uri))
           Log.info { "commit unchanged and driver already compiled" }
           module_manager.reload_modules(driver)
           return Core::Result.new(success: true, path: path)

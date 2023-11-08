@@ -123,7 +123,7 @@ module PlaceOS::Core
         driver = mod.driver.not_nil!
         mod_id = mod.id.as(String)
         edge_modules[mod_id] = mod
-        driver_path = store.built?(driver.file_name, driver.commit, driver.repository!.branch)
+        driver_path = store.built?(driver.file_name, driver.commit, driver.repository!.branch, driver.repository!.uri)
         if driver_path
           driver_key = Path[driver_path].basename
           allocated_modules << {key: driver_key, module_id: mod_id}
