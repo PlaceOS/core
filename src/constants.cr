@@ -39,8 +39,8 @@ module PlaceOS::Core
          {% else %}
             {% abort "unsupported architechture" %}
          {% end %}
-  BUILD_HOST = ENV["BUILD_API_HOST"]? || "localhost"
-  BUILD_PORT = (ENV["BUILD_API_PORT"]? || 3000).to_i
+  BUILD_HOST = ENV["BUILD_API_HOST"]?
+  BUILD_PORT = ENV["BUILD_API_PORT"]?
 
-  class_getter build_host = ENV["BUILD_URL"]? || "http://#{BUILD_HOST}:#{BUILD_PORT}"
+  class_getter build_host = ENV["BUILD_URL"]? || ((BUILD_HOST && BUILD_PORT) ? "http://#{BUILD_HOST}:#{BUILD_PORT}" : "https://build.placeos.run")
 end
