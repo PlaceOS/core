@@ -9,7 +9,6 @@ module PlaceOS::Core
   BUILD_TIME   = {{ system("date -u").chomp.stringify }}
   BUILD_COMMIT = {{ env("PLACE_COMMIT") || "DEV" }}
 
-  REPOS   = ENV["ENGINE_REPOS"]? || Path["./repositories"].expand.to_s
   DRIVERS = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Compiler.repository_dir, "drivers")
 
   ETCD_HOST = ENV["ETCD_HOST"]? || "localhost"
@@ -32,4 +31,16 @@ module PlaceOS::Core
   # Used in `ModuleManager`
   PROCESS_CHECK_PERIOD  = (ENV["PLACE_CORE_PROCESS_CHECK_PERIOD"]?.try(&.to_i?) || 80).seconds
   PROCESS_COMMS_TIMEOUT = (ENV["PLACE_CORE_PROCESS_COMMS_TIMEOUT"]?.try(&.to_i?) || 40).seconds
+
+  ARCH = {% if flag?(:x86_64) %}
+           "amd64"
+         {% elsif flag?(:aarch64) %}
+           "arm64"
+         {% else %}
+            {% abort "unsupported architechture" %}
+         {% end %}
+  BUILD_HOST = ENV["BUILD_API_HOST"]?
+  BUILD_PORT = ENV["BUILD_API_PORT"]?
+
+  class_getter build_host = ENV["BUILD_URL"]? || ((BUILD_HOST && BUILD_PORT) ? "http://#{BUILD_HOST}:#{BUILD_PORT}" : "https://build.placeos.run")
 end
