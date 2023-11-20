@@ -40,7 +40,7 @@ module PlaceOS::Core
       start_lock.synchronize {
         return if started?
 
-        Log.info { "Startubg Driver change feed listener" }
+        Log.info { "Starting Driver change feed listener" }
         driver_builder.start
 
         # Run the on-load processes
