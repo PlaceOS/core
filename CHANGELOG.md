@@ -1,3 +1,69 @@
+## v4.11.10 (2023-10-04)
+
+### Fix
+
+- **healthcheck**: usename can be null causing errors
+
+## v4.11.9 (2023-07-24)
+
+### Fix
+
+- **module_manager**: update to a lazy model loading method
+
+## v4.11.8 (2023-07-14)
+
+### Fix
+
+- **resource**: replaced change feed iterator with async closure
+
+## v4.11.7 (2023-07-14)
+
+### Fix
+
+- **resource**: replaced change feed iterator with async closure
+
+## v4.11.6 (2023-07-14)
+
+### Fix
+
+- **local**: error message may not be present
+
+## v4.11.5 (2023-07-14)
+
+### Fix
+
+- **resource**: missing change events
+
+## v4.11.4 (2023-07-11)
+
+### Fix
+
+- **module_manager**: treat load as a stabilization event
+
+## v4.11.3 (2023-07-04)
+
+### Fix
+
+- **eventbus**: handle read replica race conditions
+
+## v4.11.2 (2023-07-04)
+
+### Fix
+
+- **eventbus**: handle read replica race conditions
+
+## v4.11.1 (2023-06-27)
+
+### Fix
+
+- **process_check**: kill unresponsive processes cleanly ([#263](https://github.com/PlaceOS/core/pull/263))
+
+## v4.11.0 (2023-06-26)
+
+### Feat
+
+- **shard.lock**: bump opentelemetry-instrumentation.cr
+
 ## v4.10.0 (2023-05-04)
 
 ### Feat

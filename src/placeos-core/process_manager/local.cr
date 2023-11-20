@@ -131,8 +131,8 @@ module PlaceOS::Core
         request.payload = response.body
       when 203
         # exec sent to module and it raised an error
-        info = NamedTuple(message: String, backtrace: Array(String)?, code: Int32?).from_json(response.body)
-        request.payload = info[:message]
+        info = NamedTuple(message: String?, backtrace: Array(String)?, code: Int32?).from_json(response.body)
+        request.payload = info[:message] || "request failed"
         request.backtrace = info[:backtrace]
         request.code = info[:code] || 500
         request.error = "RequestFailed"
