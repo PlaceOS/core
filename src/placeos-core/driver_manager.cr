@@ -52,7 +52,15 @@ module PlaceOS::Core
       return Result.new(success: true, output: resp.body.as(String)) if resp.success?
       Result.new(output: "Metadata not found. Server returned #{resp.status_code}")
     rescue ex
-      return Result.new(output: ex.message.not_nil!, name: file_name)
+      Result.new(output: ex.message.not_nil!, name: file_name)
+    end
+
+    def defaults(file_name : String, commit : String, branch : String, uri : String)
+      resp = BuildApi.defaults(file_name, commit, branch, uri)
+      return Result.new(success: true, output: resp.body.as(String)) if resp.success?
+      Result.new(output: "Driver defaults not found. Server returned #{resp.status_code}")
+    rescue ex
+      Result.new(output: ex.message.not_nil!, name: file_name)
     end
 
     def built?(file_name : String, commit : String, branch : String, uri : String) : String?
@@ -126,6 +134,19 @@ module PlaceOS::Core
         uri = "#{path}?#{params}"
         rep = client.get(uri)
         Log.debug { {message: "Getting driver metadata. Server respose: #{rep.status_code}", file_name: file_name, commit: commit, branch: branch} }
+        rep
+      end
+    end
+
+    def self.defaults(file_name : String, commit : String, branch : String, uri : String)
+      host = URI.parse(Core.build_host)
+      file_name = URI.encode_www_form(file_name)
+      ConnectProxy::HTTPClient.new(host) do |client|
+        path = "#{BUILD_API_BASE}/defaults/#{file_name}"
+        params = URI::Params.encode({"url" => uri, "branch" => branch, "commit" => commit})
+        uri = "#{path}?#{params}"
+        rep = client.get(uri)
+        Log.debug { {message: "Getting driver defaults. Server respose: #{rep.status_code}", file_name: file_name, commit: commit, branch: branch} }
         rep
       end
     end

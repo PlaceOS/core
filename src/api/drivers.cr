@@ -37,18 +37,18 @@ module PlaceOS::Core::Api
     ) : Nil
       Log.context.set(driver: driver_file, repository: repository, commit: commit, branch: branch)
       repo = Model::Repository.find!(repository)
-      metadata = store.metadata(driver_file, commit, branch, repo.uri)
-      if metadata.success
+      defaults = store.defaults(driver_file, commit, branch, repo.uri)
+      if defaults.success
         response.headers["Content-Type"] = "application/json"
-        render text: metadata.output
+        render text: defaults.output
       end
       password = repo.decrypt_password if repo.password.presence
       result = store.compile(driver_file, repo.uri, commit, branch, false, repo.username, password)
       if result.success
-        metadata = store.metadata(driver_file, commit, branch, repo.uri)
-        if metadata.success
+        defaults = store.defaults(driver_file, commit, branch, repo.uri)
+        if defaults.success
           response.headers["Content-Type"] = "application/json"
-          render text: metadata.output
+          render text: defaults.output
         end
       end
       render :internal_server_error, text: result.output
