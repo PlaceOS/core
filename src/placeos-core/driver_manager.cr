@@ -190,7 +190,7 @@ module PlaceOS::Core
           Log.debug { {message: "Invoked request: URI: #{link} . Server response: #{rep.status_code}", server_resp: rep.body} }
           rep
         end
-        raise "Returned invalid response : #{link}, resp: #{resp}" unless resp.success? || resp.status_code == 303
+        raise "Returned invalid response code: #{resp.status_code}, #{link}, resp: #{resp.body}" unless resp.success? || resp.status_code == 303
         task = JSON.parse(resp.body).as_h
         break if task["state"] != "pending"
         sleep 5
