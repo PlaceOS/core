@@ -199,7 +199,7 @@ shards:
 
   pg-orm:
     git: https://github.com/spider-gazelle/pg-orm.git
-    version: 1.0.0+git.commit.e614b076c9f185d0891b505ea74c4b5e7e6307b7
+    version: 1.1.0+git.commit.e35e4c535be1ab47b6afb821723ceafb637fa4e8
 
   place_calendar:
     git: https://github.com/placeos/calendar.git
@@ -211,7 +211,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.9.15
+    version: 6.9.16
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -219,7 +219,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.27.0
+    version: 9.35.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
