@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.3.0
+    version: 7.3.1
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -15,7 +15,7 @@ shards:
 
   ameba:
     git: https://github.com/crystal-ameba/ameba.git
-    version: 1.5.0
+    version: 1.6.1
 
   auto_initialize:
     git: https://github.com/kostya/auto_initialize.git
@@ -27,7 +27,7 @@ shards:
 
   bindata:
     git: https://github.com/spider-gazelle/bindata.git
-    version: 1.11.1
+    version: 2.0.0
 
   clustering:
     git: https://github.com/place-labs/clustering.git
@@ -83,7 +83,7 @@ shards:
 
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
-    version: 0.3.1
+    version: 0.4.1
 
   exec_from:
     git: https://github.com/place-labs/exec_from.git
@@ -139,7 +139,7 @@ shards:
 
   jwt:
     git: https://github.com/crystal-community/jwt.git
-    version: 1.6.0
+    version: 1.6.1
 
   log_helper:
     git: https://github.com/spider-gazelle/log_helper.git
@@ -163,7 +163,7 @@ shards:
 
   office365:
     git: https://github.com/placeos/office365.git
-    version: 1.23.2
+    version: 1.23.3
 
   open_api:
     git: https://github.com/elbywan/open_api.cr.git
@@ -211,7 +211,7 @@ shards:
 
   place_calendar:
     git: https://github.com/placeos/calendar.git
-    version: 4.19.1
+    version: 4.20.1
 
   placeos-compiler:
     git: https://github.com/placeos/compiler.git
@@ -223,7 +223,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.9.16
+    version: 6.9.18
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -231,7 +231,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.35.7
+    version: 9.37.2
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -287,7 +287,7 @@ shards:
 
   ssh2:
     git: https://github.com/spider-gazelle/ssh2.cr.git
-    version: 1.6.0
+    version: 1.6.1
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
