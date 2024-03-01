@@ -231,7 +231,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.37.4
+    version: 9.39.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
