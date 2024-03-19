@@ -1,3 +1,9 @@
+## v4.13.1 (2024-03-19)
+
+### Fix
+
+- **driver_manager**: interacting with private repo ([#267](https://github.com/PlaceOS/core/pull/267))
+
 ## v4.13.0 (2024-03-19)
 
 ### Feat
