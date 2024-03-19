@@ -1,12 +1,8 @@
-## v4.12.0 (2023-11-21)
+## v4.13.0 (2024-03-19)
 
 ### Feat
 
-- PPT-524 Integrate the build service into core ([#262](https://github.com/PlaceOS/core/pull/262))
-
-### Refactor
-
-- details endpoint will retrieve driver defaults instead of metadata ([#264](https://github.com/PlaceOS/core/pull/264))
+- integrate build service ([#266](https://github.com/PlaceOS/core/pull/266))
 
 ## v4.11.10 (2023-10-04)
 
