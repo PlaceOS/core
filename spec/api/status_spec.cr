@@ -11,18 +11,16 @@ module PlaceOS::Core::Api
 
     describe "status/" do
       it "renders data about node" do
-        repo, driver, _, resource_manager = create_resources
+        _, driver, _, resource_manager = create_resources
 
         driver.reload!
 
-        binary = Compiler.executable_name(driver.file_name, driver.commit, driver.id.as(String))
         response = client.get(namespace, headers: json_headers)
         response.status_code.should eq 200
 
-        status = Core::Client::CoreStatus.from_json(response.body)
+        status = Status::Statistics.from_json(response.body)
 
-        status.compiled_drivers.should contain binary
-        status.available_repositories.should contain repo.folder_name
+        status.compiled_drivers.should_not be_empty
 
         status.run_count.local.modules.should eq 0
         status.run_count.local.drivers.should eq 0

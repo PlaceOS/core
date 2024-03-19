@@ -17,10 +17,6 @@ shards:
     git: https://github.com/crystal-ameba/ameba.git
     version: 1.6.1
 
-  auto_initialize:
-    git: https://github.com/kostya/auto_initialize.git
-    version: 0.1.0
-
   backtracer:
     git: https://github.com/sija/backtracer.cr.git
     version: 1.2.2
@@ -84,10 +80,6 @@ shards:
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
     version: 0.4.1
-
-  exec_from:
-    git: https://github.com/place-labs/exec_from.git
-    version: 2.0.0
 
   faker:
     git: https://github.com/askn/faker.git
@@ -212,10 +204,6 @@ shards:
   place_calendar:
     git: https://github.com/placeos/calendar.git
     version: 4.20.1
-
-  placeos-compiler:
-    git: https://github.com/placeos/compiler.git
-    version: 4.9.3
 
   placeos-core-client:
     git: https://github.com/placeos/core-client.git

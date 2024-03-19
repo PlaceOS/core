@@ -7,14 +7,9 @@ The coordination service for running drivers on [PlaceOS](https://place.technolo
 
 ## Implementation
 
-### Cloning
-
-Core handles the cloning of driver repositories.
-If a repository is already present on the file system, its git state is adjusted to match the model's commit.
-
 ### Compilation
 
-Compilation of drivers is performed on all core nodes.
+Compilation of drivers and binary management is performed by `build-api` service.
 
 ### Module Management
 

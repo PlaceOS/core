@@ -47,9 +47,9 @@ module PlaceOS::Core
       end
     end
 
-    abstract def debug(module_id : String, &on_message : DebugCallback)
+    abstract def debug(module_id : String, &_on_message : DebugCallback)
 
-    abstract def ignore(module_id : String, &on_message : DebugCallback)
+    abstract def ignore(module_id : String, &_on_message : DebugCallback)
 
     abstract def ignore(module_id : String) : Array(DebugCallback)
 

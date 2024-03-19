@@ -17,6 +17,8 @@ module PlaceOS::Core
 
     getter redis : Redis::Client { Redis::Client.boot(REDIS_URL) }
 
+    protected getter(store : DriverStore) { DriverStore.new }
+
     def initialize(@edge_id : String, socket : HTTP::WebSocket, @redis : Redis? = nil)
       @transport = Transport.new do |(sequence_id, request)|
         if request.is_a?(Protocol::Client::Request)
@@ -121,9 +123,14 @@ module PlaceOS::Core
         driver = mod.driver.not_nil!
         mod_id = mod.id.as(String)
         edge_modules[mod_id] = mod
-        driver_key = Compiler::Helper.driver_binary_name(driver_file: driver.file_name, commit: driver.commit, id: driver.id)
-        allocated_modules << {key: driver_key, module_id: mod_id}
-        allocated_drivers << driver_key
+        driver_path = store.built?(driver.file_name, driver.commit, driver.repository!.branch, driver.repository!.uri)
+        if driver_path
+          driver_key = Path[driver_path].basename
+          allocated_modules << {key: driver_key, module_id: mod_id}
+          allocated_drivers << driver_key
+        else
+          Log.error { {message: "Executable for #{driver.id} not present", driver: driver.id, commit: driver.commit} }
+        end
       end
 
       add_modules = allocated_modules.reject { |mod| modules.includes?(mod[:module_id]) }
@@ -245,7 +252,7 @@ module PlaceOS::Core
     ###############################################################################################
 
     def fetch_binary(driver_key : String) : Protocol::Message::BinaryBody
-      path = File.join(PlaceOS::Compiler.binary_dir, driver_key)
+      path = store.path(driver_key).to_s
       Protocol::Message::BinaryBody.new(success: File.exists?(path), key: driver_key, path: path)
     end
 

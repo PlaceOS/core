@@ -44,10 +44,6 @@ RUN shards install --production --ignore-crystal-version --skip-postinstall --sk
 # Add src
 COPY ./src /app/src
 
-RUN shards build exec_from \
-      --error-trace \
-      --production
-
 # Build the required target
 ENV UNAME_AT_COMPILE_TIME=true
 

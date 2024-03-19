@@ -20,6 +20,17 @@ x-postgresdb-client-env: &postgresdb-client-env
   PG_USER: ${PG_USER:-postgres}
   PG_PASSWORD: ${PG_PASSWORD:-password}
 
+x-s3-client-env: &s3-client-env
+  AWS_REGION: ${AWS_REGION:-"us-east-1"}
+  AWS_KEY: ${AWS_KEY:-"root"}
+  AWS_SECRET: ${AWS_SECRET:-"password"}
+  AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT:-"http://minio:9000"}
+  AWS_S3_BUCKET: ${AWS_S3_BUCKET:-"placeos-drivers-build-service"}
+
+x-build-api-env: &build-api-env
+  BUILD_API_HOST: ${BUILD_API_HOST:-build_service}
+  BUILD_API_PORT: ${BUILD_API_PORT:-3000}
+
 services:
   test: # Module coordinator
     image: placeos/service-spec-runner:${CRYSTAL_VERSION:-latest}
@@ -37,17 +48,14 @@ services:
       - redis
       - postgres
       - migrator
+      - build_service
     security_opt:
       - seccomp:unconfined
     environment:
       # Environment
       GITHUB_ACTION: ${GITHUB_ACTION:-}
       # Service Hosts
-      << : *etcd-client-env
-      << : *redis-client-env
-      << : *postgresdb-client-env
-      # Environment
-      << : *deployment-env
+      <<: [*etcd-client-env,*redis-client-env, *postgresdb-client-env,*deployment-env, *build-api-env]
 
   redis:
     image: eqalpha/keydb
@@ -82,8 +90,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: place_development
-    ports:
-      - 5432:5432
+
   migrator:
     build:
       context: ${PWD}/spec/migration
@@ -94,3 +101,44 @@ services:
     environment:
       GITHUB_ACTION: ${GITHUB_ACTION:-}
       PG_DATABASE_URL: ${PG_DATABASE_URL:-postgresql://postgres:password@postgres:5432/place_development}
+
+  build_service:
+    image: placeos/build_service:nightly
+    restart: always
+    hostname: build_service
+    depends_on:
+      - minio
+      - testbucket
+    environment:
+      <<: *s3-client-env
+
+  minio:
+    image: minio/minio:latest
+    volumes:
+      - s3:/data
+    ports:
+      - 9000:9000
+      - 9090:9090
+    environment:
+      << : *s3-client-env
+      MINIO_ROOT_USER: $AWS_KEY
+      MINIO_ROOT_PASSWORD: $AWS_SECRET
+    command: server /data --console-address ":9090"
+
+  testbucket:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    environment:
+      << : *s3-client-env
+    entrypoint: >
+      sh -c '
+      sleep 3 &&
+      mc config host add s3 $AWS_S3_ENDPOINT $AWS_KEY $AWS_SECRET &&
+      mc mb -p s3/$AWS_S3_BUCKET &&
+      exit 0
+      '
+
+volumes:
+  s3:
+    driver: local

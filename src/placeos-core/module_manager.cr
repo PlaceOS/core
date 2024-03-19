@@ -4,8 +4,6 @@ require "mutex"
 require "redis"
 require "uri/json"
 
-require "placeos-compiler/compiler"
-require "placeos-compiler/helper"
 require "placeos-models/control_system"
 require "placeos-models/driver"
 require "placeos-models/module"
@@ -18,16 +16,18 @@ require "../constants"
 require "./process_check"
 require "./process_manager/edge"
 require "./process_manager/local"
+require "./driver_manager"
 
 module PlaceOS::Core
   class ModuleManager < Resource(Model::Module)
     include ProcessCheck
-    include Compiler::Helper
 
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
 
     getter clustering : Clustering
     getter discovery : HoundDog::Discovery
+
+    protected getter store : DriverStore
 
     def stop
       clustering.stop
@@ -70,6 +70,7 @@ module PlaceOS::Core
     )
       @uri = uri.is_a?(URI) ? uri : URI.parse(uri)
       ModuleManager.uri = @uri
+      @store = DriverStore.new
 
       @discovery = discovery || HoundDog::Discovery.new(service: "core", uri: @uri)
       @clustering = clustering || Clustering.new(
@@ -139,7 +140,8 @@ module PlaceOS::Core
       if ModuleManager.core_uri(mod, rendezvous_hash) == uri
         driver = mod.driver!
         driver_id = driver.id.as(String)
-        repository_folder = driver.repository.not_nil!.folder_name
+        # repository_folder = driver.repository.not_nil!.folder_name
+        repository = driver.repository!
 
         ::Log.with_context(
           driver_id: driver_id,
@@ -149,14 +151,14 @@ module PlaceOS::Core
           driver_name: driver.name,
           driver_commit: driver.commit,
         ) do
-          driver_path = PlaceOS::Compiler.is_built?(driver.file_name, repository_folder, driver.commit, id: driver_id)
+          driver_path = store.built?(driver.file_name, driver.commit, repository.branch, repository.uri)
           # Check if the driver is built
           if driver_path.nil?
             Log.error { "driver does not exist for module" }
             return
           end
 
-          process_manager(mod, &.load(module_id, driver_path))
+          process_manager(mod, &.load(module_id, driver_path.to_s))
         end
 
         start_module(mod) if mod.running
@@ -261,7 +263,8 @@ module PlaceOS::Core
 
       stale_path || driver.commit_was.try { |commit|
         # Try to create a driver path from what the commit used to be
-        Path[Compiler::Helper.driver_binary_path(driver.file_name, commit, driver_id)]
+        # Path[Compiler::Helper.driver_binary_path(driver.file_name, commit, driver_id)]
+        store.driver_binary_path(driver.file_name, commit)
       }
     end
 

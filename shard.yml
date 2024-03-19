@@ -1,5 +1,5 @@
 name: placeos-core
-version: 4.11.10
+version: 4.12.0
 crystal: ~> 1.3
 
 targets:
@@ -7,8 +7,6 @@ targets:
     main: src/core-app.cr
   edge:
     main: src/edge-app.cr
-  exec_from:
-    main: lib/exec_from/src/app.cr
 
 dependencies:
   action-controller:
@@ -37,14 +35,6 @@ dependencies:
   log_helper:
     github: spider-gazelle/log_helper
     version: ~> 1
-
-  placeos-core-client:
-    github: placeos/core-client
-    version: ~> 0.3
-
-  placeos-compiler:
-    github: placeos/compiler
-    version: ~> 4.9
 
   placeos-driver:
     github: placeos/driver
@@ -87,8 +77,9 @@ dependencies:
   tasker:
     github: spider-gazelle/tasker
 
-  auto_initialize:
-    github: kostya/auto_initialize
+  connect-proxy:
+    github: spider-gazelle/connect-proxy
+    version: ~> 2.0
 
 development_dependencies:
   ameba:
