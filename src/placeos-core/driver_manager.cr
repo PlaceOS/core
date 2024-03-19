@@ -28,7 +28,7 @@ module PlaceOS::Core
     def compile(file_name : String, url : String, commit : String, branch : String, force : Bool, username : String? = nil, password : String? = nil) : Result
       Log.info { {message: "Requesting build service to compile driver", driver_file: file_name, branch: branch, repository: url} }
       begin
-        resp = BuildApi.compile(file_name, url, commit, branch, force)
+        resp = BuildApi.compile(file_name, url, commit, branch, force, username, password)
         unless resp.success?
           Log.error { {message: resp.body, status_code: resp.status_code, driver: file_name, commit: commit, branch: branch, force: force} }
           return Result.new(output: resp.body, name: file_name)
