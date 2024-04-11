@@ -235,7 +235,7 @@ shards:
 
   redis_service_manager:
     git: https://github.com/place-labs/redis_service_manager.git
-    version: 3.0.0
+    version: 3.1.1
 
   rendezvous-hash:
     git: https://github.com/caspiano/rendezvous-hash.git
