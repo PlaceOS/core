@@ -12,6 +12,10 @@ module PlaceOS::Core
   LOGSTASH_HOST = ENV["LOGSTASH_HOST"]?
   LOGSTASH_PORT = ENV["LOGSTASH_PORT"]?
 
+  # Minimize the number of connections being made to redis
+  REDIS_LOCK = Driver::RedisStorage.redis_lock
+  REDIS_CLIENT = Driver::RedisStorage.shared_redis_client
+
   def self.log_backend
     if !(logstash_host = LOGSTASH_HOST.presence).nil?
       logstash_port = LOGSTASH_PORT.try(&.to_i?) || abort("LOGSTASH_PORT is either malformed or not present in environment")
@@ -48,7 +52,6 @@ module PlaceOS::Core
   end
 
   # Wait for the upstream services to be ready
-  # - etcd
   # - redis
   # - postgres
   def self.wait_for_resources

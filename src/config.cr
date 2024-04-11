@@ -22,13 +22,6 @@ require "./telemetry"
 # Server required after application controllers
 require "action-controller/server"
 
-# Configure Service discovery
-HoundDog.configure do |settings|
-  settings.service_namespace = "core"
-  settings.etcd_host = PlaceOS::Core::ETCD_HOST
-  settings.etcd_port = PlaceOS::Core::ETCD_PORT
-end
-
 # Filter out sensitive params that shouldn't be logged
 filter_params = ["password", "bearer_token"]
 

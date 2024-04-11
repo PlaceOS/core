@@ -1,5 +1,5 @@
 require "hardware"
-require "hound-dog"
+require "redis_service_manager"
 
 require "../process_manager"
 require "./common"
@@ -9,10 +9,10 @@ module PlaceOS::Core
     include ProcessManager
     include Common
 
-    private getter discovery : HoundDog::Discovery
+    private getter discovery : Clustering::Discovery
     private getter store : DriverStore
 
-    def initialize(@discovery : HoundDog::Discovery)
+    def initialize(@discovery : Clustering::Discovery)
       @store = DriverStore.new
     end
 
@@ -199,7 +199,7 @@ module PlaceOS::Core
       edge_id = Model::Module.find!(module_id).edge_id if Model::Module.has_edge_hint?(module_id)
       node = edge_id ? discovery.find?(edge_id) : discovery.find?(module_id)
       raise Error.new("No registered core instances") if node.nil?
-      node[:uri]
+      node
     end
   end
 end

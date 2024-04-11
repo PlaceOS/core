@@ -8,9 +8,6 @@ module PlaceOS::Core::Healthcheck
         check_resource?("redis") { ::PlaceOS::Driver::RedisStorage.with_redis &.ping }
       },
       Promise.defer {
-        check_resource?("etcd") { ModuleManager.instance.discovery.etcd(&.maintenance.status) }
-      },
-      Promise.defer {
         check_resource?("postgres") { pg_healthcheck }
       },
     ).then(&.all?).get
