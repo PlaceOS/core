@@ -15,16 +15,14 @@ module PlaceOS::Core::Mappings
   end
 
   def self.mocked_fail_manager
-    discovery = discovery_mock
-    clustering = MockClustering.new(uri: CORE_URL, discovery: discovery)
-    Mock.new(CORE_URL, discovery: discovery, clustering: clustering)
+    Mock.new(CORE_URL, clustering_mock)
   end
 
   describe ControlSystemModules, tags: "mappings" do
     describe ".update_mapping" do
       it "ignores systems not mapped to node" do
         control_system = Model::Generator.control_system
-        control_system.id = DiscoveryMock::DOES_NOT_MAP
+        control_system.id = Clustering::Discovery::DOES_NOT_MAP
         control_system_modules = ControlSystemModules.new(module_manager: module_manager_mock, startup: false)
         control_system_modules.process_resource(:updated, control_system).skipped?.should be_true
       end

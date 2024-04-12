@@ -13,7 +13,7 @@ module PlaceOS::Core
   LOGSTASH_PORT = ENV["LOGSTASH_PORT"]?
 
   # Minimize the number of connections being made to redis
-  REDIS_LOCK = Driver::RedisStorage.redis_lock
+  REDIS_LOCK   = Driver::RedisStorage.redis_lock
   REDIS_CLIENT = Driver::RedisStorage.shared_redis_client
 
   def self.log_backend

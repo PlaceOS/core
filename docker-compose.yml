@@ -6,10 +6,6 @@ x-deployment-env: &deployment-env
   ENV: ${ENV:-development}
   SG_ENV: ${SG_ENV:-development}
 
-x-etcd-client-env: &etcd-client-env
-  ETCD_HOST: ${ETCD_HOST:-etcd}
-  ETCD_PORT: ${ETCD_PORT:-2379}
-
 x-redis-client-env: &redis-client-env
   REDIS_URL: ${REDIS_URL:-redis://redis:6379}
 
@@ -44,7 +40,6 @@ services:
       - ${PWD}/spec:/app/spec
       - ${PWD}/src:/app/src
     depends_on:
-      - etcd
       - redis
       - postgres
       - migrator
@@ -55,28 +50,12 @@ services:
       # Environment
       GITHUB_ACTION: ${GITHUB_ACTION:-}
       # Service Hosts
-      <<: [*etcd-client-env,*redis-client-env, *postgresdb-client-env,*deployment-env, *build-api-env]
+      <<: [*redis-client-env, *postgresdb-client-env,*deployment-env, *build-api-env]
 
   redis:
     image: eqalpha/keydb
     restart: always
     hostname: redis
-
-  etcd:
-    image: quay.io/coreos/etcd:${ETCD_VERSION:-v3.5.4}
-    restart: always
-    hostname: etcd
-    environment:
-      ALLOW_NONE_AUTHENTICATION: "yes"
-      ETCD_NAME: "etcd"
-      ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd:2380"
-      ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
-      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
-      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
-      ETCD_INITIAL_CLUSTER_TOKEN: "etcd-cluster"
-      ETCD_INITIAL_CLUSTER=etcd: "http://etcd:2380"
-      ETCD_INITIAL_CLUSTER_STATE: "new"
-      TZ: $TZ
 
   postgres:
     hostname: postgres

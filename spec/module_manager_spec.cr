@@ -53,11 +53,7 @@ module PlaceOS::Core
     end
 
     describe "startup" do
-      it "registers to etcd" do
-        # Remove metadata in etcd
-        namespace = HoundDog.settings.service_namespace
-        HoundDog.etcd_client.kv.delete_prefix(namespace)
-
+      it "registers to redis" do
         # Clear relevant tables
         Model::Driver.clear
         Model::Module.clear
@@ -70,13 +66,14 @@ module PlaceOS::Core
         sleep 3
 
         # Check that the node is registered in etcd
-        module_manager.discovery.nodes.map(&.[:name]).should contain(module_manager.discovery.name)
+        core_uri = URI.parse(CORE_URL)
+        module_manager.discovery.nodes.should contain(core_uri)
 
-        module_manager.discovery.unregister
+        module_manager.stop
         sleep 0.1
 
         # Check that the node is no longer registered in etcd
-        module_manager.discovery.nodes.map(&.[:name]).should_not contain(module_manager.discovery.name)
+        module_manager.discovery.nodes.should_not contain(core_uri)
       ensure
         module_manager.try &.stop
       end
