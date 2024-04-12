@@ -1,3 +1,9 @@
+## v4.14.0 (2024-04-12)
+
+### Feat
+
+- migrate to redis for service discovery ([#268](https://github.com/PlaceOS/core/pull/268))
+
 ## v4.13.1 (2024-03-19)
 
 ### Fix
