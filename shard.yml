@@ -30,7 +30,7 @@ dependencies:
 
   placeos-driver:
     github: placeos/driver
-    branch: master
+    version: ">= 7.0.0"
 
   placeos-log-backend:
     github: place-labs/log-backend
