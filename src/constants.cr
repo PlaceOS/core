@@ -11,10 +11,11 @@ module PlaceOS::Core
 
   DRIVERS = ENV["ENGINE_DRIVERS"]? || File.join(PlaceOS::Compiler.repository_dir, "drivers")
 
-  ETCD_HOST = ENV["ETCD_HOST"]? || "localhost"
-  ETCD_PORT = (ENV["ETCD_PORT"]? || 2379).to_i
-
   REDIS_URL = ENV["REDIS_URL"]? || "redis://localhost:6379"
+
+  # seconds before a node is considered offline
+  # should not be divisible by 3
+  CLUSTER_NODE_TTL = (ENV["CLUSTER_NODE_TTL"]? || "20").to_i
 
   # `core` self-registers to etcd with this information.
   # In k8s we can grab the Pod information from the environment

@@ -15,11 +15,9 @@ module PlaceOS::Core
     getter transport : Transport
     getter edge_id : String
 
-    getter redis : Redis::Client { Redis::Client.boot(REDIS_URL) }
-
     protected getter(store : DriverStore) { DriverStore.new }
 
-    def initialize(@edge_id : String, socket : HTTP::WebSocket, @redis : Redis? = nil)
+    def initialize(@edge_id : String, socket : HTTP::WebSocket)
       @transport = Transport.new do |(sequence_id, request)|
         if request.is_a?(Protocol::Client::Request)
           handle_request(sequence_id, request)
@@ -215,10 +213,8 @@ module PlaceOS::Core
       {{ raise "Edge modules cannot request control systems" }}
     end
 
-    private getter redis_lock = Mutex.new
-
     def on_redis(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?)
-      redis_lock.synchronize do
+      Driver::RedisStorage.with_redis do |redis|
         case action
         in .hset?
           value = status_value || "null"

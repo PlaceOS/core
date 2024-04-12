@@ -25,10 +25,6 @@ shards:
     git: https://github.com/spider-gazelle/bindata.git
     version: 2.0.0
 
-  clustering:
-    git: https://github.com/place-labs/clustering.git
-    version: 3.1.1
-
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
     version: 2.0.0
@@ -69,10 +65,6 @@ shards:
     git: https://github.com/arcage/crystal-email.git
     version: 0.7.0
 
-  etcd:
-    git: https://github.com/place-labs/crystal-etcd.git
-    version: 1.2.5
-
   eventbus:
     git: https://github.com/spider-gazelle/eventbus.git
     version: 0.9.9+git.commit.ca8ef0c5e21ee15da079edd5bcea39bee7e07f26
@@ -108,10 +100,6 @@ shards:
   hot_topic:
     git: https://github.com/jgaskins/hot_topic.git
     version: 0.1.0+git.commit.3c901e77b6e000930398738260a2944b6f5785dc
-
-  hound-dog:
-    git: https://github.com/place-labs/hound-dog.git
-    version: 2.9.1
 
   http-params-serializable:
     git: https://github.com/place-labs/http-params-serializable.git
@@ -211,7 +199,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 6.9.19
+    version: 6.11.0+git.commit.9363dbec039d92ccc0ea5afdbaa549bc6bb14cdf
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -219,7 +207,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.42.2
+    version: 9.45.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -244,6 +232,10 @@ shards:
   redis-cluster:
     git: https://github.com/caspiano/redis-cluster.cr.git
     version: 0.8.5
+
+  redis_service_manager:
+    git: https://github.com/place-labs/redis_service_manager.git
+    version: 3.1.1
 
   rendezvous-hash:
     git: https://github.com/caspiano/rendezvous-hash.git

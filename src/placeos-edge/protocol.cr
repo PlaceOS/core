@@ -12,17 +12,17 @@ module PlaceOS::Edge::Protocol
   # Binary messages
   #
   class Binary < BinData
-    enum Status
+    enum Status : UInt8
       Success
       Fail
     end
 
     endian big
-    uint64 :sequence_id
+    field sequence_id : UInt64
 
-    enum_field UInt8, status : Status = Status::Success
-    int32 :length, value: ->{ key.bytesize }
-    string :key, length: ->{ length }
+    field status : Status = Status::Success
+    field length : Int32, value: ->{ key.bytesize }
+    field key : String, length: ->{ length }
 
     # Keep a reference to the remainder of the message
     protected setter binary : IO

@@ -34,14 +34,16 @@ def clear_tables
   PlaceOS::Model::Edge.clear
 end
 
+def clustering_mock
+  MockClustering.new("core")
+end
+
 def discovery_mock
-  DiscoveryMock.new("core", uri: CORE_URL)
+  Clustering::Discovery.new(clustering_mock)
 end
 
 def module_manager_mock
-  discovery = discovery_mock
-  clustering = MockClustering.new(uri: CORE_URL, discovery: discovery)
-  PlaceOS::Core::ModuleManager.new(CORE_URL, discovery: discovery, clustering: clustering)
+  PlaceOS::Core::ModuleManager.new(CORE_URL, clustering: clustering_mock)
 end
 
 macro around_suite(block)
@@ -55,7 +57,6 @@ end
 
 around_suite ->{
   clear_tables
-  HoundDog::Service.clear_namespace
 }
 
 PgORM::Database.configure { |_| }
@@ -151,24 +152,71 @@ def create_resources(process : Bool = true, use_head : Bool = false)
   {repository, driver, mod, resource_manager}
 end
 
-class DiscoveryMock < HoundDog::Discovery
+# reopen this for specs
+class Clustering::Discovery
   DOES_NOT_MAP = "<does-not-map>"
 
   def own_node?(key : String) : Bool
     key != DOES_NOT_MAP
   end
-
-  def etcd_nodes
-    [@service_events.node].map &->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)
-  end
 end
 
 class MockClustering < Clustering
-  def start(&stabilize : Array(HoundDog::Service::Node) ->)
-    @stabilize = stabilize
-    stabilize.call([discovery.node])
+  NODE_ID  = "----core1----"
+  NODE_URI = ENV["CORE_URL"]? || "http://core:3000"
+  VERSION  = "1"
+
+  getter uri : String = NODE_URI
+  getter ulid : String = NODE_ID
+
+  # registers this node with the cluster as a member
+  def register : Bool
+    rendezvous_hash = rendezvous
+    @version = VERSION
+
+    ready_cb = Proc(Nil).new do
+      cluster_stable_callbacks.each do |callback|
+        spawn do
+          begin
+            callback.call
+          rescue error
+            Log.error(exception: error) { "notifying cluster stable" }
+          end
+        end
+      end
+    end
+
+    rebalance_callbacks.each do |callback|
+      spawn do
+        begin
+          callback.call(rendezvous_hash, ready_cb)
+        rescue error
+          Log.error(exception: error) { "performing rebalance callback" }
+        end
+      end
+    end
+    true
   end
 
-  def stop
+  # removes this node from the cluster as a member
+  getter unregister : Bool = true
+
+  # is this node registered as part of the cluster
+  getter? registered : Bool = true
+
+  # is this class watching for changes to the cluster
+  # this should return true if registered returns true
+  getter? watching : Bool = true
+
+  # returns the list of known nodes
+  def rendezvous : RendezvousHash
+    RendezvousHash.new(nodes: [NODE_URI])
+  end
+
+  # returns a node_id => URI mapping
+  def node_hash : Hash(String, URI)
+    {
+      NODE_ID => URI.parse(NODE_URI),
+    }
   end
 end

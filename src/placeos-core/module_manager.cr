@@ -1,7 +1,5 @@
-require "clustering"
-require "hound-dog"
+require "redis_service_manager"
 require "mutex"
-require "redis"
 require "uri/json"
 
 require "placeos-models/control_system"
@@ -25,12 +23,12 @@ module PlaceOS::Core
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
 
     getter clustering : Clustering
-    getter discovery : HoundDog::Discovery
+    getter discovery : Clustering::Discovery
 
     protected getter store : DriverStore
 
     def stop
-      clustering.stop
+      clustering.unregister
       stop_process_check
     end
 
@@ -44,8 +42,6 @@ module PlaceOS::Core
 
     # Redis channel that cluster leader publishes stable cluster versions to
     REDIS_VERSION_CHANNEL = "cluster/cluster_version"
-
-    getter redis : Redis { Redis.new(url: REDIS_URL) }
 
     # Singleton configured from environment
     class_getter instance : ModuleManager { ModuleManager.new(uri: self.uri) }
@@ -64,19 +60,20 @@ module PlaceOS::Core
     # - once load complete, mark in etcd that load is complete
     def initialize(
       uri : String | URI,
-      discovery : HoundDog::Discovery? = nil,
-      clustering : Clustering? = nil,
-      @redis : Redis? = nil
+      clustering : Clustering? = nil
     )
       @uri = uri.is_a?(URI) ? uri : URI.parse(uri)
       ModuleManager.uri = @uri
       @store = DriverStore.new
 
-      @discovery = discovery || HoundDog::Discovery.new(service: "core", uri: @uri)
-      @clustering = clustering || Clustering.new(
-        uri: @uri,
-        discovery: @discovery,
+      @clustering = clustering || RedisServiceManager.new(
+        service: "core",
+        redis: REDIS_CLIENT,
+        lock: REDIS_LOCK,
+        uri: @uri.to_s,
+        ttl: CLUSTER_NODE_TTL
       )
+      @discovery = Clustering::Discovery.new(@clustering)
       super()
     end
 
@@ -96,9 +93,14 @@ module PlaceOS::Core
 
     # Register core node to the cluster
     protected def start_clustering
-      clustering.start(on_stable: ->publish_version(String)) do |nodes|
+      clustering.on_cluster_stable { publish_version(clustering.version) }
+      clustering.on_rebalance do |nodes, rebalance_complete_cb|
+        Log.info { "cluster rebalance in progress" }
         stabilize(nodes)
+        rebalance_complete_cb.call
+        Log.info { "cluster rebalance complete" }
       end
+      clustering.register
     end
 
     # Event loop
@@ -137,7 +139,9 @@ module PlaceOS::Core
     def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
       module_id = mod.id.as(String)
 
-      if ModuleManager.core_uri(mod, rendezvous_hash) == uri
+      allocated_uri = ModuleManager.core_uri(mod, rendezvous_hash)
+
+      if allocated_uri == @clustering.uri
         driver = mod.driver!
         driver_id = driver.id.as(String)
         # repository_folder = driver.repository.not_nil!.folder_name
@@ -166,6 +170,8 @@ module PlaceOS::Core
         # Not on node, but protocol manager exists
         Log.info { {message: "unloading module no longer on node", module_id: module_id} }
         unload_module(mod)
+      else
+        Log.warn { {message: "load module request invalid. #{allocated_uri.inspect} != #{@clustering.uri.inspect}", module_id: module_id} }
       end
     end
 
@@ -314,49 +320,53 @@ module PlaceOS::Core
     # Run through modules and load to a stable state.
     #
     # Uses a semaphore to ensure intermediary cluster events don't trigger stabilization.
-    def stabilize(nodes : Array(HoundDog::Service::Node)) : Bool
+    def stabilize(rendezvous_hash : RendezvousHash) : Bool
       queued_stabilization_events.add(1)
       stabilize_lock.synchronize do
         queued_stabilization_events.add(-1)
         return false unless queued_stabilization_events.get.zero?
 
-        Log.debug { {message: "stabilizing", nodes: nodes.to_json} }
-
-        # Create a one off rendezvous hash with nodes from the stabilization event
-        rendezvous_hash = RendezvousHash.new(nodes: nodes.map(&->HoundDog::Discovery.to_hash_value(HoundDog::Service::Node)))
-
+        Log.debug { {message: "cluster rebalance: stabilizing", nodes: rendezvous_hash.nodes.to_json} }
         success_count, fail_count = 0_i64, 0_i64
-        timeout_period = 5.seconds
-        waiting = Hash(String?, Promise::DeferredPromise(Nil)).new
 
-        Model::Module.order(id: :asc).all.in_groups_of(STABILIZE_BATCH_SIZE, reuse: true) do |modules|
-          modules.each.reject(Nil).each do |mod|
-            waiting[mod.id] = Promise.defer(same_thread: true, timeout: timeout_period) do
-              begin
-                load_module(mod, rendezvous_hash)
-                success_count += 1
-              rescue e
-                Log.error(exception: e) { {message: "failed to load module during stabilization", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
-                fail_count += 1
-              end
-              nil
-            end
+        SimpleRetry.try_to(max_attempts: 3, base_interval: 100.milliseconds, max_interval: 1.seconds) do
+          timeout_period = 5.seconds
+          waiting = Hash(String?, Promise::DeferredPromise(Nil)).new
 
-            waiting.each do |mod_id, promise|
-              begin
-                promise.get
-              rescue error
-                fail_count += 1
-                Log.error(exception: error) { "load timeout during stabilization: #{mod_id}" }
+          Model::Module.order(id: :asc).all.in_groups_of(STABILIZE_BATCH_SIZE, reuse: true) do |modules|
+            modules.each.reject(Nil).each do |mod|
+              waiting[mod.id] = Promise.defer(same_thread: true, timeout: timeout_period) do
+                begin
+                  load_module(mod, rendezvous_hash)
+                  success_count += 1
+                rescue e
+                  Log.error(exception: e) { {message: "cluster rebalance: module load failure", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+                  fail_count += 1
+                end
+                nil
               end
+
+              waiting.each do |mod_id, promise|
+                begin
+                  promise.get
+                rescue error
+                  fail_count += 1
+                  Log.error(exception: error) { {message: "cluster rebalance: module load timeout", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+                end
+              end
+              waiting.clear
             end
-            waiting.clear
           end
         end
 
-        Log.info { {message: "finished loading modules stabilization", success: success_count, failure: fail_count} }
+        Log.info { {message: "cluster rebalance: finished loading modules on node", success: success_count, failure: fail_count} }
         true
       end
+    rescue error
+      Log.fatal(exception: error) { "cluster rebalance: failed, terminating node" }
+      stop
+      sleep 0.5
+      exit(1)
     end
 
     # Determine if a module is an edge module and allocated to the current core node.
@@ -368,8 +378,8 @@ module PlaceOS::Core
     # Publish cluster version to redis
     #
     def publish_version(cluster_version : String)
-      redis.publish(REDIS_VERSION_CHANNEL, cluster_version)
-
+      Driver::RedisStorage.with_redis { |redis| redis.publish(REDIS_VERSION_CHANNEL, cluster_version) }
+      Log.info { "cluster stable, publishing cluster version" }
       nil
     end
 
@@ -389,9 +399,7 @@ module PlaceOS::Core
     end
 
     def self.core_uri(mod : Model::Module | String, rendezvous_hash : RendezvousHash)
-      rendezvous_hash[hash_id(mod)]?.try do |hash_value|
-        HoundDog::Discovery.from_hash_value(hash_value)[:uri]
-      end
+      rendezvous_hash[hash_id(mod)]?
     end
 
     protected getter uri : URI = ModuleManager.uri
