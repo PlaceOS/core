@@ -1,3 +1,9 @@
+## v4.14.1 (2024-04-12)
+
+### Fix
+
+- **shard.yml**: specify driver version
+
 ## v4.14.0 (2024-04-12)
 
 ### Feat
