@@ -26,7 +26,7 @@ jobs:
         MT: [false]
     continue-on-error: ${{ !matrix.crystal.stable }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Test ${{ matrix.subset }}
         run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tag ${{ matrix.subset }} --order random
         env:
