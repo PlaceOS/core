@@ -13,6 +13,8 @@ module PlaceOS::Core
 
   REDIS_URL = ENV["REDIS_URL"]? || "redis://localhost:6379"
 
+  Log = ::Log.for(self)
+
   # seconds before a node is considered offline
   # should not be divisible by 3
   CLUSTER_NODE_TTL = (ENV["CLUSTER_NODE_TTL"]? || "20").to_i
