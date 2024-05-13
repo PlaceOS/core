@@ -1,4 +1,8 @@
-## Unreleased
+## v4.14.2 (2024-05-13)
+
+### Fix
+
+- **logging**: PPT-1368 - logging to use placeos-log-backend ([#271](https://github.com/PlaceOS/core/pull/271))
 
 ## v4.14.1 (2024-04-12)
 
