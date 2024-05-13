@@ -10,10 +10,10 @@ abstract class PlaceOS::Driver; end
 class PlaceOS::Driver::Protocol; end
 
 # Application code
+require "./placeos-core"
 require "./logging"
 require "./constants"
 
-require "./placeos-core"
 require "./api/*"
 
 # Require telemetry after application code
