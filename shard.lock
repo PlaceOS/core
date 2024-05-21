@@ -75,7 +75,7 @@ shards:
 
   faker:
     git: https://github.com/askn/faker.git
-    version: 0.8.0
+    version: 0.9.0
 
   future:
     git: https://github.com/crystal-community/future.cr.git
@@ -83,7 +83,7 @@ shards:
 
   git-repository:
     git: https://github.com/place-labs/git-repository.git
-    version: 1.3.1
+    version: 1.4.0
 
   google:
     git: https://github.com/placeos/google.git
@@ -207,7 +207,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.45.0
+    version: 9.47.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git

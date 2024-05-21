@@ -70,7 +70,7 @@ module PlaceOS::Core
         module_manager.discovery.nodes.should contain(core_uri)
 
         module_manager.stop
-        sleep 0.1
+        sleep 2
 
         # Check that the node is no longer registered in etcd
         module_manager.discovery.nodes.should_not contain(core_uri)

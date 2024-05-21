@@ -61,16 +61,16 @@ around_suite ->{
 
 PgORM::Database.configure { |_| }
 Spec.before_suite do
-  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :warn)
-  Log.builder.bind("place_os.*", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
-  Log.builder.bind("http.client", backend: PlaceOS::Core::LOG_STDOUT, level: :warn)
-  Log.builder.bind("clustering", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
-  Log.builder.bind("hound_dog.*", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
+  Log.builder.bind("*", backend: PlaceOS::LogBackend.log_backend, level: :warn)
+  Log.builder.bind("place_os.*", backend: PlaceOS::LogBackend.log_backend, level: :error)
+  Log.builder.bind("http.client", backend: PlaceOS::LogBackend.log_backend, level: :warn)
+  Log.builder.bind("clustering", backend: PlaceOS::LogBackend.log_backend, level: :error)
+  Log.builder.bind("hound_dog.*", backend: PlaceOS::LogBackend.log_backend, level: :error)
 end
 
 Spec.after_suite do
   PlaceOS::Core::ResourceManager.instance.stop
-  Log.builder.bind("*", backend: PlaceOS::Core::LOG_STDOUT, level: :error)
+  Log.builder.bind("*", backend: PlaceOS::LogBackend.log_backend, level: :error)
   puts "\n> Terminating stray driver processes"
   `pkill -f ".*core-spec.*"` rescue nil
 end
