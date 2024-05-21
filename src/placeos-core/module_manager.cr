@@ -351,7 +351,7 @@ module PlaceOS::Core
                   promise.get
                 rescue error
                   fail_count += 1
-                  Log.error(exception: error) { {message: "cluster rebalance: module load timeout", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+                  Log.error(exception: error) { {message: "cluster rebalance: module load timeout", module_id: mod_id, name: mod.name, custom_name: mod.custom_name} }
                 end
               end
               waiting.clear

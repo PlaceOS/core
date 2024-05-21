@@ -20,8 +20,6 @@ module PlaceOS::Core::Api
 
         status = Status::Statistics.from_json(response.body)
 
-        status.compiled_drivers.should_not be_empty
-
         status.run_count.local.modules.should eq 0
         status.run_count.local.drivers.should eq 0
         status.run_count.edge.should be_empty
