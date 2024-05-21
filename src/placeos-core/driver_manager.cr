@@ -190,12 +190,13 @@ module PlaceOS::Core
           Log.debug { {message: "Invoked request: URI: #{link} . Server response: #{rep.status_code}", server_resp: rep.body} }
           rep
         end
+
         raise "Returned invalid response code: #{resp.status_code}, #{link}, resp: #{resp.body}" unless resp.success? || resp.status_code == 303
         task = JSON.parse(resp.body).as_h
-        break if task["state"] != "pending"
+        break if task["state"].in?("cancelled", "error", "done")
         sleep 5
       end
-      if resp.success? && task["state"] == "error"
+      if resp.success? && task["state"].in?("cancelled", "error")
         raise task["message"].to_s
       end
       raise "Build API end-point #{link} returned invalid response code #{resp.status_code}, expected 303" unless resp.status_code == 303
