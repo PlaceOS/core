@@ -7,9 +7,6 @@ on:
 jobs:
   test:
     uses: PlaceOS/.github/.github/workflows/containerised-test.yml@main
-    with:
-      todo_issues: true
-      first_commit: 0a1e7680dc203f278f18fbe1f81bfd2713b83d1c
 
   crystal-style:
     uses: PlaceOS/.github/.github/workflows/crystal-style.yml@main
