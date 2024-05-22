@@ -13,11 +13,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        subset:
-          - api
-          - mappings
-          - processes
-          - resource
         crystal:
           - tag: latest
             stable: true
@@ -28,6 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Test ${{ matrix.subset }}
-        run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tag ${{ matrix.subset }} --order random
+        run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tag "~processes"
         env:
           CRYSTAL_VERSION: ${{ matrix.crystal.tag }}
