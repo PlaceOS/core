@@ -1,33 +1,18 @@
 name: CI
-on: push
+on:
+  push:
+    paths-ignore:
+      - "*.md"
+
 jobs:
+  test:
+    uses: PlaceOS/.github/.github/workflows/containerised-test.yml@main
+    with:
+      todo_issues: true
+      first_commit: 0a1e7680dc203f278f18fbe1f81bfd2713b83d1c
+
   crystal-style:
     uses: PlaceOS/.github/.github/workflows/crystal-style.yml@main
 
   dockerfile-style:
     uses: PlaceOS/.github/.github/workflows/dockerfile-style.yml@main
-
-  test:
-    name: "${{ !matrix.crystal.stable && '🚧 ' || ''}}crystal: ${{ matrix.crystal.tag }}, subset: ${{ matrix.subset }}, MT: ${{ matrix.MT }}"
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        subset:
-          - api
-          - mappings
-          - processes
-          - resource
-        crystal:
-          - tag: latest
-            stable: true
-          - tag: unstable
-            stable: false
-        MT: [false]
-    continue-on-error: ${{ !matrix.crystal.stable }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Test ${{ matrix.subset }}
-        run: ./test ${{ matrix.MT && '-Dpreview_mt' || '' }} --tag ${{ matrix.subset }} --order random
-        env:
-          CRYSTAL_VERSION: ${{ matrix.crystal.tag }}
