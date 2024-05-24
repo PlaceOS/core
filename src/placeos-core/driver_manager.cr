@@ -103,7 +103,7 @@ module PlaceOS::Core
         end
 
         body_io = IO::Digest.new(resp.body_io? || IO::Memory.new(resp.body), Digest::MD5.new)
-        File.open(filename, "wb") do |f|
+        File.open(filename, "wb+") do |f|
           IO.copy(body_io, f)
           f.chmod(0o755)
         end
