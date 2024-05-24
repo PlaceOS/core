@@ -3,14 +3,14 @@ openapi: 3.0.3
 info:
   description: Internal core API. Handles driver management and comms
   title: core
-  version: 4.8.0
+  version: 4.14.3
 paths:
   /api/core/v1/chaos/terminate:
     post:
       summary: Terminate a process by executable path
       tags:
       - Chaos
-      operationId: PlaceOS::Core::Api::Chaos#terminate
+      operationId: PlaceOS::Core::Api::Chaos_terminate
       parameters:
       - name: path
         in: query
@@ -68,7 +68,7 @@ paths:
         If the module is already running, it will be updated to latest settings.'
       tags:
       - Command
-      operationId: PlaceOS::Core::Api::Command#load
+      operationId: PlaceOS::Core::Api::Command_load
       parameters:
       - name: module_id
         in: path
@@ -121,7 +121,7 @@ paths:
       summary: Executes a command against a module
       tags:
       - Command
-      operationId: PlaceOS::Core::Api::Command#execute
+      operationId: PlaceOS::Core::Api::Command_execute
       parameters:
       - name: module_id
         in: path
@@ -187,7 +187,7 @@ paths:
         a common operation and limited to system administrators'
       tags:
       - Command
-      operationId: PlaceOS::Core::Api::Command#module_debugger
+      operationId: PlaceOS::Core::Api::Command_module_debugger
       parameters:
       - name: module_id
         in: path
@@ -235,140 +235,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
-  /api/core/v1/drivers:
-    get:
-      summary: The drivers available
-      tags:
-      - Drivers
-      operationId: PlaceOS::Core::Api::Drivers#index
-      parameters:
-      - name: repository
-        in: query
-        description: the repository folder name
-        example: drivers
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/String'
-        404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
-        406:
-          description: Not Acceptable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
-        415:
-          description: Unsupported Media Type
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
-        422:
-          description: Unprocessable Entity
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
-  /api/core/v1/drivers/{file_name}:
-    get:
-      summary: Returns the list of commits for a particular driver
-      tags:
-      - Drivers
-      operationId: PlaceOS::Core::Api::Drivers#show
-      parameters:
-      - name: file_name
-        in: path
-        description: the name of the file in the repository
-        example: drivers/place/meet.cr
-        required: true
-        schema:
-          type: string
-      - name: repository
-        in: query
-        description: the repository folder name
-        example: drivers
-        required: true
-        schema:
-          type: string
-      - name: branch
-        in: query
-        description: the branch we want the commits from
-        example: main
-        required: false
-        schema:
-          type: string
-      - name: count
-        in: query
-        description: the number of commits we want to return
-        example: "50"
-        required: false
-        schema:
-          type: integer
-          format: Int32
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PlaceOS__Compiler__Git__Commit'
-        404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
-        406:
-          description: Not Acceptable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
-        415:
-          description: Unsupported Media Type
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
-        422:
-          description: Unprocessable Entity
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
   /api/core/v1/drivers/{file_name}/compiled:
     get:
       summary: Boolean check whether driver is compiled
       tags:
       - Drivers
-      operationId: PlaceOS::Core::Api::Drivers#compiled
+      operationId: PlaceOS::Core::Api::Drivers_compiled
       parameters:
       - name: file_name
         in: path
@@ -433,7 +305,7 @@ paths:
       summary: Returns the details of a driver
       tags:
       - Drivers
-      operationId: PlaceOS::Core::Api::Drivers#details
+      operationId: PlaceOS::Core::Api::Drivers_details
       parameters:
       - name: file_name
         in: path
@@ -444,8 +316,8 @@ paths:
           type: string
       - name: repository
         in: query
-        description: the repository folder name
-        example: drivers
+        description: the id of the repository
+        example: repo-xxxx
         required: true
         schema:
           type: string
@@ -496,65 +368,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
-  /api/core/v1/drivers/{repository}/branches:
-    get:
-      summary: Returns an array of branches for a repository
-      tags:
-      - Drivers
-      operationId: PlaceOS::Core::Api::Drivers#branches
-      parameters:
-      - name: repository
-        in: path
-        description: the repository folder name
-        example: drivers
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/String'
-        404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
-        406:
-          description: Not Acceptable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
-        415:
-          description: Unsupported Media Type
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
-        422:
-          description: Unprocessable Entity
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
   /api/core/v1/edge/control:
     get:
       summary: websocket handling edge connections
       tags:
       - Edge
-      operationId: PlaceOS::Core::Api::Edge#edge_control
+      operationId: PlaceOS::Core::Api::Edge_edge_control
       parameters:
       - name: edge_id
         in: query
@@ -601,7 +420,7 @@ paths:
       summary: route for checking the health of the service
       tags:
       - Root
-      operationId: PlaceOS::Core::Api::Root#healthcheck
+      operationId: PlaceOS::Core::Api::Root_healthcheck
       parameters: []
       responses:
         200:
@@ -643,7 +462,7 @@ paths:
       summary: returns the build details of the service
       tags:
       - Root
-      operationId: PlaceOS::Core::Api::Root#version
+      operationId: PlaceOS::Core::Api::Root_version
       parameters: []
       responses:
         200:
@@ -689,7 +508,7 @@ paths:
       summary: has the service finished loading
       tags:
       - Root
-      operationId: PlaceOS::Core::Api::Root#ready
+      operationId: PlaceOS::Core::Api::Root_ready
       parameters: []
       responses:
         200:
@@ -731,7 +550,7 @@ paths:
       summary: General statistics related to the process
       tags:
       - Status
-      operationId: PlaceOS::Core::Api::Status#statistics
+      operationId: PlaceOS::Core::Api::Status_statistics
       parameters: []
       responses:
         200:
@@ -775,7 +594,7 @@ paths:
       summary: details related to a process (+ anything else we can think of)
       tags:
       - Status
-      operationId: PlaceOS::Core::Api::Status#driver
+      operationId: PlaceOS::Core::Api::Status_driver
       parameters:
       - name: path
         in: query
@@ -826,7 +645,7 @@ paths:
       summary: details about the overall machine load
       tags:
       - Status
-      operationId: PlaceOS::Core::Api::Status#load
+      operationId: PlaceOS::Core::Api::Status_load
       parameters: []
       responses:
         200:
@@ -871,7 +690,7 @@ paths:
         managed edges
       tags:
       - Status
-      operationId: PlaceOS::Core::Api::Status#loaded
+      operationId: PlaceOS::Core::Api::Status_loaded
       parameters: []
       responses:
         200:
@@ -912,24 +731,6 @@ paths:
                 $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
 components:
   schemas:
-    String:
-      type: string
-    PlaceOS__Compiler__Git__Commit:
-      type: object
-      properties:
-        commit:
-          type: string
-        date:
-          type: string
-        author:
-          type: string
-        subject:
-          type: string
-      required:
-      - commit
-      - date
-      - author
-      - subject
     Bool:
       type: boolean
     PlaceOS__Model__Version:
