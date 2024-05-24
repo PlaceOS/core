@@ -1,3 +1,9 @@
+## v4.14.3 (2024-05-24)
+
+### Fix
+
+- **driver_manager**: should be truncating when recomp driver is retrieved ([#273](https://github.com/PlaceOS/core/pull/273))
+
 ## v4.14.2 (2024-05-13)
 
 ### Fix
