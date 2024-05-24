@@ -1,3 +1,9 @@
+## v4.14.4 (2024-05-24)
+
+### Fix
+
+- **shard.lock**: ConnectProxy::HTTPClient class methods ignore proxy
+
 ## v4.14.3 (2024-05-24)
 
 ### Fix
