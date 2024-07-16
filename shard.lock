@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.4.1
+    version: 7.4.2
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -91,7 +91,7 @@ shards:
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
-    version: 0.4.8
+    version: 0.4.9
 
   hardware:
     git: https://github.com/crystal-community/hardware.git
@@ -155,7 +155,7 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.5.3+git.commit.cd3994b22d9f7a0d68752698974d3873a1b2fce2
+    version: 0.5.4+git.commit.9b26aabef208b9eb0bf4612788362fa41768790b
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
@@ -179,7 +179,7 @@ shards:
 
   pg-orm:
     git: https://github.com/spider-gazelle/pg-orm.git
-    version: 1.1.0+git.commit.27528d29d0b4e6184d9bc52d9e8ffdf2685ec5d3
+    version: 1.1.1+git.commit.282c353b676806eef73786645f8cd852cdb60bc3
 
   place_calendar:
     git: https://github.com/placeos/calendar.git
@@ -199,7 +199,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.53.1
+    version: 9.53.3
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
