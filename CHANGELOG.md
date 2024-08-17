@@ -1,3 +1,9 @@
+## v4.14.5 (2024-08-17)
+
+### Fix
+
+- **Dockerfile**: edge tmp folder permissions
+
 ## v4.14.4 (2024-05-24)
 
 ### Fix
