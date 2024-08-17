@@ -5,6 +5,7 @@ require "placeos-driver/core_ext"
 
 require "./placeos-edge/config"
 require "./placeos-edge/client"
+require "./logging"
 
 module PlaceOS::Edge
   uri = PLACE_URI
