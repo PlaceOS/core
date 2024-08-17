@@ -61,6 +61,8 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN mkdir -p repositories bin/drivers
 RUN chown appuser -R /app
 
+RUN mkdir -p /app/tmp
+
 ###############################################################################
 
 FROM scratch as minimal
@@ -83,6 +85,8 @@ COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
 
 # Copy the app into place
 COPY --from=build /app/bin /bin
+
+COPY --from=build --chown=10001:10001 /app/tmp /tmp
 
 USER appuser:appuser
 
