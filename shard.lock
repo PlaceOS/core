@@ -83,7 +83,7 @@ shards:
 
   git-repository:
     git: https://github.com/place-labs/git-repository.git
-    version: 1.4.0
+    version: 1.4.1
 
   google:
     git: https://github.com/placeos/google.git
@@ -191,7 +191,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 7.2.1
+    version: 7.2.4
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -199,7 +199,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.57.1
+    version: 9.58.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
