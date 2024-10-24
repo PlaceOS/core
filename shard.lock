@@ -203,7 +203,7 @@ shards:
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
-    version: 3.1.0
+    version: 3.1.1
 
   pool:
     git: https://github.com/ysbaddaden/pool.git

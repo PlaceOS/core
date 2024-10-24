@@ -33,7 +33,7 @@ module PlaceOS::Edge
       &@on_request : {UInt64, ::PlaceOS::Edge::Protocol::Request} ->
     )
       @sequence_atomic = Atomic(UInt64).new(sequence_id)
-      spawn(same_thread: true) { write_websocket }
+      spawn { write_websocket }
     end
 
     def sequence_id : UInt64
@@ -129,7 +129,7 @@ module PlaceOS::Edge
           # the transport can reconnect gracefully
           while closed?
             return if close_channel.closed?
-            sleep 0.1
+            sleep 100.milliseconds
           end
 
           socket_lock.synchronize do
@@ -220,7 +220,7 @@ module PlaceOS::Edge
           end
         end
       in Protocol::Request
-        spawn(same_thread: true) do
+        spawn do
           begin
             on_request.call({message.sequence_id, body})
           rescue e

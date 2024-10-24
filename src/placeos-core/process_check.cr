@@ -47,7 +47,7 @@ module PlaceOS::Core
       # Asynchronously check if any processes are timing out on comms, and if so, restart them
       grouped_managers.each do |protocol_manager, module_ids|
         # Asynchronously check if any processes are timing out on comms, and if so, restart them
-        spawn(same_thread: true) do
+        spawn do
           state = begin
             # If there's an empty response, the modules that were meant to be running are not.
             # This is taken as a sign that the process is dead.

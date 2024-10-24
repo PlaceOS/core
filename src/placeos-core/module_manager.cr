@@ -335,7 +335,7 @@ module PlaceOS::Core
 
           Model::Module.order(id: :asc).all.in_groups_of(STABILIZE_BATCH_SIZE, reuse: true) do |modules|
             modules.each.reject(Nil).each do |mod|
-              waiting[mod.id] = Promise.defer(same_thread: true, timeout: timeout_period) do
+              waiting[mod.id] = Promise.defer(timeout: timeout_period) do
                 begin
                   load_module(mod, rendezvous_hash)
                   success_count += 1
@@ -365,7 +365,7 @@ module PlaceOS::Core
     rescue error
       Log.fatal(exception: error) { "cluster rebalance: failed, terminating node" }
       stop
-      sleep 0.5
+      sleep 500.milliseconds
       exit(1)
     end
 

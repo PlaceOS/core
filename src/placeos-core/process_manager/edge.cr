@@ -26,7 +26,7 @@ module PlaceOS::Core
         end
       end
 
-      spawn(same_thread: true) { transport.listen(socket) }
+      spawn { transport.listen(socket) }
       Fiber.yield
     end
 

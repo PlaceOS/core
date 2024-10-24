@@ -95,15 +95,15 @@ module PlaceOS::Edge
         end
       end
 
-      spawn(same_thread: true) { transport.connect(uri, initial_socket) }
+      spawn { transport.connect(uri, initial_socket) }
 
       while transport.closed?
-        sleep 0.01
+        sleep 10.milliseconds
         Fiber.yield
       end
 
       # Send ping frames
-      spawn(same_thread: true) { transport.ping if ping? }
+      spawn { transport.ping if ping? }
 
       yield
 

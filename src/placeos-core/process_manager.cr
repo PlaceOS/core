@@ -40,7 +40,7 @@ module PlaceOS::Core
       debug(module_id, &callback)
 
       # Asyncronously send debug messages from the module
-      spawn(same_thread: true) do
+      spawn do
         while message = channel.receive?
           socket.send(message)
         end

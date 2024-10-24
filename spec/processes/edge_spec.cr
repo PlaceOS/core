@@ -178,7 +178,7 @@ module PlaceOS::Core::ProcessManager
 
         spawn do
           while Process.exists?(pid)
-            sleep 0.1
+            sleep 100.milliseconds
           end
           success.send nil
         end
@@ -259,7 +259,7 @@ module PlaceOS::Core::ProcessManager
         test_starting(pm, ctx.module, ctx.driver_key)
         pm.stop(ctx.module.id.as(String))
 
-        sleep 0.1
+        sleep 100.milliseconds
         pm.loaded_modules.should eq({ctx.driver_key => [] of String})
       end
     end

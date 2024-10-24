@@ -63,14 +63,14 @@ module PlaceOS::Core
         module_manager = ModuleManager.new(uri: CORE_URL)
         module_manager.start
 
-        sleep 3
+        sleep 3.seconds
 
         # Check that the node is registered in etcd
         core_uri = URI.parse(CORE_URL)
         module_manager.discovery.nodes.should contain(core_uri)
 
         module_manager.stop
-        sleep 2
+        sleep 2.seconds
 
         # Check that the node is no longer registered in etcd
         module_manager.discovery.nodes.should_not contain(core_uri)

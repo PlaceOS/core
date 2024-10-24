@@ -194,7 +194,7 @@ module PlaceOS::Core
         raise "Returned invalid response code: #{resp.status_code}, #{link}, resp: #{resp.body}" unless resp.success? || resp.status_code == 303
         task = JSON.parse(resp.body).as_h
         break if task["state"].in?("cancelled", "error", "done")
-        sleep 5
+        sleep 5.seconds
       end
       if resp.success? && task["state"].in?("cancelled", "error")
         raise task["message"].to_s
