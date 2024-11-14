@@ -1,3 +1,9 @@
+## v4.14.7 (2024-11-14)
+
+### Fix
+
+- **Dockerfile**: owner user must exist on the filesystem
+
 ## v4.14.6 (2024-11-14)
 
 ### Fix
