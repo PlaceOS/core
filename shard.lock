@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.4.3
+    version: 7.4.4
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -191,7 +191,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 7.2.16
+    version: 7.2.18
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -259,7 +259,7 @@ shards:
 
   ssh2:
     git: https://github.com/spider-gazelle/ssh2.cr.git
-    version: 1.6.1
+    version: 1.7.0
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
