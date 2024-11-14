@@ -60,9 +60,8 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 # Create binary directories
 RUN mkdir -p repositories bin/drivers
 RUN chmod 0777 repositories && chmod 0777 bin/drivers
+RUN mkdir -p /app/tmp && chmod 0777 /app/tmp
 RUN chown appuser -R /app
-
-RUN mkdir -p /app/tmp && chmod 1777 /app/tmp
 
 ###############################################################################
 
@@ -86,9 +85,9 @@ COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
 
 # Copy the app into place
 COPY --from=build /app/bin /bin
+COPY --from=build --chown=appuser:appuser --chmod=0777 /app/tmp /tmp/
 
-COPY --from=build /app/tmp /tmp
-
+# Use an unprivileged user.
 USER appuser:appuser
 
 ###############################################################################
