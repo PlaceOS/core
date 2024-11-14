@@ -1,4 +1,34 @@
 Lint/NotNil:
+  Description: Identifies usage of `not_nil!` calls
   Enabled: false
-Style/QueryBoolMethods:
+  Severity: Warning
+
+Naming/BlockParameterName:
+  Description: Disallows non-descriptive block parameter names
   Enabled: false
+  Severity: Convention
+
+Lint/SpecFilename:
+  Description: Enforces spec filenames to have `_spec` suffix
+  Enabled: false
+  Severity: Warning
+
+Naming/QueryBoolMethods:
+  Description: Reports boolean properties without the `?` suffix
+  Enabled: false
+  Severity: Convention
+
+Documentation/DocumentationAdmonition:
+  Description: Reports documentation admonitions
+  Enabled: false
+  Severity: Warning
+
+Lint/UselessAssign:
+  Description: Disallows useless variable assignments
+  Enabled: false
+  Severity: Warning
+
+Lint/ShadowedArgument:
+  Description: Disallows shadowed arguments
+  Enabled: false
+  Severity: Warning
