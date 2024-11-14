@@ -1,3 +1,9 @@
+## v4.14.6 (2024-11-14)
+
+### Fix
+
+- **Dockerfile**: ensure tmp folder has the correct permissions ([#274](https://github.com/PlaceOS/core/pull/274))
+
 ## v4.14.5 (2024-08-17)
 
 ### Fix
