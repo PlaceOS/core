@@ -179,7 +179,7 @@ module PlaceOS::Core
     protected def no_module_error(module_id)
       reason = if remote_module = Model::Module.find(module_id)
                  if remote_module.running
-                   "it is running but not loaded on this host"
+                   "it is running but not loaded. Check driver is compiled."
                  else
                    "it is stopped"
                  end
