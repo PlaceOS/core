@@ -58,15 +58,13 @@ RUN PLACE_VERSION=$PLACE_VERSION \
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # Create binary directories
-RUN mkdir -p repositories bin/drivers
-RUN chmod 0777 repositories && chmod 0777 bin/drivers
-RUN mkdir -p /app/tmp && chmod 0777 /app/tmp
+RUN mkdir -p repositories bin/drivers tmp
 RUN chown appuser -R /app
 
 ###############################################################################
 
 FROM scratch as minimal
-WORKDIR /
+WORKDIR /app
 ENV PATH=$PATH:/bin
 
 # Copy the user information over
@@ -83,9 +81,21 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 # This is required for Timezone support
 COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
 
+# configure folder permissions
+COPY --from=build --chown=0:0 /app/tmp /tmp
+COPY --from=build --chown=0:0 /app/bin/drivers /app/bin/drivers
+COPY --from=build --chown=0:0 /app/repositories /app/repositories
+
+# This seems to be the only way to set permissions properly
+COPY --from=build /bin /bin
+COPY --from=build /lib/ld-musl-* /lib/
+RUN chmod -R a+rwX /tmp
+RUN chmod -R a+rwX /app/bin/drivers
+RUN chmod -R a+rwX /app/repositories
+RUN rm -rf /bin /lib
+
 # Copy the app into place
 COPY --from=build /app/bin /bin
-COPY --from=build --chown=appuser:appuser --chmod=0777 /app/tmp /tmp/
 
 # Use an unprivileged user.
 USER appuser:appuser
@@ -101,14 +111,9 @@ CMD ["/bin/edge"]
 # FIXME: core currently has a number of dependandancies on the runtime for
 # retreiving repositories and compiling drivers. When the migrates into an
 # external service, this can base from `minimal` instead for cleaner images.
-FROM build as core
-
-# Copy the app into place
-COPY --from=build /app/bin /bin
+FROM minimal as core
 
 WORKDIR /app
-
-USER appuser:appuser
 
 EXPOSE 3000
 VOLUME ["/app/repositories/", "/app/bin/drivers/"]
