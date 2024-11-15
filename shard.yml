@@ -13,9 +13,6 @@ dependencies:
     github: spider-gazelle/action-controller
     version: ~> 7.2
 
-  git-repository:
-    github: place-labs/git-repository
-
   habitat:
     github: luckyframework/habitat
     version: ~> 0.4

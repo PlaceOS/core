@@ -84,14 +84,12 @@ COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
 # configure folder permissions
 COPY --from=build --chown=0:0 /app/tmp /tmp
 COPY --from=build --chown=0:0 /app/bin/drivers /app/bin/drivers
-COPY --from=build --chown=0:0 /app/repositories /app/repositories
 
 # This seems to be the only way to set permissions properly
 COPY --from=build /bin /bin
 COPY --from=build /lib/ld-musl-* /lib/
 RUN chmod -R a+rwX /tmp
 RUN chmod -R a+rwX /app/bin/drivers
-RUN chmod -R a+rwX /app/repositories
 RUN rm -rf /bin /lib
 
 # Copy the app into place
@@ -116,7 +114,7 @@ FROM minimal as core
 WORKDIR /app
 
 EXPOSE 3000
-VOLUME ["/app/repositories/", "/app/bin/drivers/"]
+VOLUME ["/app/bin/drivers/"]
 ENTRYPOINT ["/bin/core"]
 HEALTHCHECK CMD ["/bin/core", "--curl", "http://localhost:3000/api/core/v1"]
 CMD ["/bin/core", "-b", "0.0.0.0", "-p", "3000"]
