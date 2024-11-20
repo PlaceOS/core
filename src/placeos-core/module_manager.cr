@@ -412,7 +412,8 @@ module PlaceOS::Core
         # Merge module settings
         merged_settings = mod.merge_settings
       rescue e
-        raise ModuleError.new("Failed to merge module settings #{e.message}")
+        merged_settings = "{}".to_json
+        Log.error(exception: e) { {message: "Failed to merge module settings", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
       end
 
       # Start format
