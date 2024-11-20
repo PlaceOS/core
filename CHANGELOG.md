@@ -1,3 +1,9 @@
+## v4.15.1 (2024-11-20)
+
+### Fix
+
+- **module_manager**: PPT-1636 refactor to use empty settings when merge settin… ([#275](https://github.com/PlaceOS/core/pull/275))
+
 ## v4.15.0 (2024-11-15)
 
 ### Feat
