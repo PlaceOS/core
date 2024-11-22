@@ -81,6 +81,10 @@ shards:
     git: https://github.com/crystal-community/future.cr.git
     version: 1.0.0
 
+  git-repository:
+    git: https://github.com/place-labs/git-repository.git
+    version: 1.4.1
+
   google:
     git: https://github.com/placeos/google.git
     version: 3.5.0
