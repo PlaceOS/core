@@ -25,10 +25,14 @@ module PlaceOS::Core
       !ret.nil?
     end
 
-    def compile(file_name : String, url : String, commit : String, branch : String, force : Bool, username : String? = nil, password : String? = nil) : Result
+    def compile(file_name : String, url : String, commit : String, branch : String, force : Bool, username : String? = nil, password : String? = nil, fetch : Bool = true) : Result
       Log.info { {message: "Requesting build service to compile driver", driver_file: file_name, branch: branch, repository: url} }
       begin
         resp = BuildApi.compile(file_name, url, commit, branch, force, username, password)
+        unless fetch
+          return Result.new(success: true)
+        end
+        resp = resp.not_nil!
         unless resp.success?
           Log.error { {message: resp.body, status_code: resp.status_code, driver: file_name, commit: commit, branch: branch, force: force} }
           return Result.new(output: resp.body, name: file_name)
@@ -84,6 +88,25 @@ module PlaceOS::Core
       driver_source = driver_source.rchop(".cr").gsub(/\/|\./, "_")
       commit = commit[..6] if commit.size > 6
       {driver_source, commit, Core::ARCH}.join("_").downcase
+    end
+
+    def reload_driver(driver_id : String)
+      if driver = Model::Driver.find?(driver_id)
+        repo = driver.repository!
+
+        if compiled?(driver.file_name, driver.commit, repo.branch, repo.uri)
+          manager = ModuleManager.instance
+          stale_path = manager.reload_modules(driver)
+          if path = stale_path
+            File.delete(path) rescue nil if File.exists?(path)
+          end
+        else
+          return {status: 404, message: "Driver not compiled or not available on S3"}
+        end
+      else
+        return {status: 404, message: "Driver with id #{driver_id} not found "}
+      end
+      {status: 404, message: "OK"}
     end
 
     private def fetch_binary(link : LinkData) : String
@@ -164,7 +187,7 @@ module PlaceOS::Core
       end
     end
 
-    def self.compile(file_name : String, url : String, commit : String, branch : String, force : Bool, username : String? = nil, password : String? = nil)
+    def self.compile(file_name : String, url : String, commit : String, branch : String, force : Bool, username : String? = nil, password : String? = nil, fetch : Bool = true)
       host = URI.parse(Core.build_host)
       file_name = URI.encode_www_form(file_name)
       headers = HTTP::Headers.new
@@ -202,8 +225,10 @@ module PlaceOS::Core
       raise "Build API end-point #{link} returned invalid response code #{resp.status_code}, expected 303" unless resp.status_code == 303
       raise "Build API end-point #{link} returned invalid state #{task["state"]}, expected 'done'" unless task["state"] == "done"
       hdr = resp.headers["Location"] rescue raise "Build API returned compilation done, but missing Location URL"
-      ConnectProxy::HTTPClient.new(host) do |client|
-        client.get(hdr)
+      if fetch
+        ConnectProxy::HTTPClient.new(host) do |client|
+          client.get(hdr)
+        end
       end
     end
   end
