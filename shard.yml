@@ -75,11 +75,12 @@ dependencies:
     github: spider-gazelle/connect-proxy
     version: ~> 2.0
 
-  git-repository:
-    github: place-labs/git-repository
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba
 
   faker:
     github: askn/faker
+
+  git-repository:
+    github: place-labs/git-repository
