@@ -81,3 +81,6 @@ development_dependencies:
 
   faker:
     github: askn/faker
+
+  git-repository:
+    github: place-labs/git-repository

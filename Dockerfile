@@ -18,21 +18,22 @@ ENV USER=appuser
 
 # See https://stackoverflow.com/a/55757473/12429735
 RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    "${USER}"
+  --disabled-password \
+  --gecos "" \
+  --home "/nonexistent" \
+  --shell "/sbin/nologin" \
+  --no-create-home \
+  --uid "${UID}" \
+  "${USER}"
 
 # Install additional libs required for drivers
+# hadolint ignore=DL3059
 RUN apk add \
   --update \
   --no-cache \
-    'apk-tools>=2.10.8-r0' \
-    'expat>=2.2.10-r1' \
-    'libcurl>=7.79.1-r0'
+  'apk-tools>=2.10.8-r0' \
+  'expat>=2.2.10-r1' \
+  'libcurl>=7.79.1-r0'
 
 # Install shards for caching
 COPY shard.yml shard.yml
@@ -49,17 +50,17 @@ ENV UNAME_AT_COMPILE_TIME=true
 
 # hadolint ignore=SC2086
 RUN PLACE_VERSION=$PLACE_VERSION \
-    PLACE_COMMIT=$PLACE_COMMIT \
-    shards build $TARGET \
-      --error-trace \
-      --production \
-      --static
+  PLACE_COMMIT=$PLACE_COMMIT \
+  shards build $TARGET \
+  --error-trace \
+  --production \
+  --static
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # Create binary directories
-RUN mkdir -p repositories bin/drivers tmp
-RUN chown appuser -R /app
+RUN mkdir -p repositories bin/drivers tmp \
+  && chown appuser -R /app
 
 ###############################################################################
 
@@ -89,7 +90,9 @@ COPY --from=build --chown=0:0 /app/bin/drivers /app/bin/drivers
 COPY --from=build /bin /bin
 COPY --from=build /lib/ld-musl-* /lib/
 RUN chmod -R a+rwX /tmp
+# hadolint ignore=DL3059
 RUN chmod -R a+rwX /app/bin/drivers
+# hadolint ignore=SC2114,DL3059
 RUN rm -rf /bin /lib
 
 # Copy the app into place

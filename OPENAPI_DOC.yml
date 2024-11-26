@@ -3,7 +3,7 @@ openapi: 3.0.3
 info:
   description: Internal core API. Handles driver management and comms
   title: core
-  version: 4.14.3
+  version: 4.15.1
 paths:
   /api/core/v1/chaos/terminate:
     post:
@@ -270,6 +270,122 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Bool'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/drivers/{file_name}/recompile:
+    post:
+      summary: Force re-compile driver
+      tags:
+      - Drivers
+      operationId: PlaceOS::Core::Api::Drivers_recompile
+      parameters:
+      - name: file_name
+        in: path
+        description: the name of the file in the repository
+        example: drivers/place/meet.cr
+        required: true
+        schema:
+          type: string
+      - name: commit
+        in: query
+        description: the commit hash of the driver to check is compiled
+        example: e901494
+        required: true
+        schema:
+          type: string
+      - name: tag
+        in: query
+        description: the driver database id
+        example: driver-GFEaAlJB5
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/String'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/drivers/{driver_id}/reload:
+    post:
+      summary: Fetch and reload compiled driver
+      tags:
+      - Drivers
+      operationId: PlaceOS::Core::Api::Drivers_reload
+      parameters:
+      - name: driver_id
+        in: path
+        description: the driver database id
+        example: driver-GFEaAlJB5
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/String'
         404:
           description: Not Found
           content:
@@ -733,6 +849,8 @@ components:
   schemas:
     Bool:
       type: boolean
+    String:
+      type: string
     PlaceOS__Model__Version:
       type: object
       properties:
