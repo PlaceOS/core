@@ -1,3 +1,9 @@
+## v4.16.0 (2024-11-26)
+
+### Feat
+
+- PPT-1701 added extra endpoints for recompile and reload ([#276](https://github.com/PlaceOS/core/pull/276))
+
 ## v4.15.1 (2024-11-20)
 
 ### Fix
