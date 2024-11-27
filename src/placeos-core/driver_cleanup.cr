@@ -24,13 +24,13 @@ module PlaceOS::Core::DriverCleanup
 
   private def self.running_drivers
     sql = <<-SQL
-    SELECT DISTINCT ON (driver.commit) 
+    SELECT DISTINCT ON (driver.commit)
     regexp_replace(regexp_replace(driver.file_name, '.cr$', '', 'g'), '[/.]', '_', 'g') || '_' || LEFT(driver.commit, 6) || '_' AS driver_file
-    FROM 
-        mod, 
+    FROM
+        mod,
         driver
-    WHERE 
-        mod.running = true 
+    WHERE
+        mod.running = true
         AND driver.id = mod.driver_id
     ORDER BY driver.commit;
     SQL
