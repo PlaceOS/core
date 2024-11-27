@@ -15,7 +15,7 @@ module PlaceOS::Core::DriverCleanup
     local = Dir.new(DriverStore::BINARY_PATH).children
     running = running_drivers
     stale = local - running
-    FileUtils.rm_rf(stale.map { |file| Path[DriverStore::BINARY_PATH, file] })
+    FileUtils.rm_rf(stale.map { |file| Path[DriverStore::BINARY_PATH, file] }) unless stale.empty?
   end
 
   private def self.arch
