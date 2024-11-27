@@ -29,7 +29,7 @@ module PlaceOS::Core::Healthcheck
 
   @@pg_healthcheck_url : String? = nil
 
-  private def self.pg_healthcheck_url(timeout = 5)
+  def self.pg_healthcheck_url(timeout = 5)
     @@pg_healthcheck_url ||= begin
       url = PgORM::Settings.to_uri
       uri = URI.parse(url)

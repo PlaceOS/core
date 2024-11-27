@@ -102,6 +102,9 @@ Signal::TERM.trap &terminate
 # Wait for redis and postgres to be ready
 PlaceOS::Core.wait_for_resources
 
+# Start cleaning un-used driver task
+PlaceOS::Core::DriverCleanup.start_cleanup
+
 spawn do
   begin
     PlaceOS::Core.start_managers
