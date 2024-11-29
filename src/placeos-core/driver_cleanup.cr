@@ -18,11 +18,11 @@ module PlaceOS::Core::DriverCleanup
     FileUtils.rm_rf(stale.map { |file| Path[DriverStore::BINARY_PATH, file] }) unless stale.empty?
   end
 
-  private def self.arch
+  def self.arch
     {% if flag?(:x86_64) %} "amd64" {% elsif flag?(:aarch64) %} "arm64" {% end %} || raise("Uknown architecture")
   end
 
-  private def self.running_drivers
+  def self.running_drivers
     sql = <<-SQL
     SELECT DISTINCT ON (driver.commit)
     regexp_replace(regexp_replace(driver.file_name, '.cr$', '', 'g'), '[/.]', '_', 'g') || '_' || LEFT(driver.commit, 6) || '_' AS driver_file
