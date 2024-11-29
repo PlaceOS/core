@@ -1,3 +1,9 @@
+## v4.17.0 (2024-11-29)
+
+### Feat
+
+- PPT-1635 stale driver cleanup task ([#277](https://github.com/PlaceOS/core/pull/277))
+
 ## v4.16.0 (2024-11-26)
 
 ### Feat
