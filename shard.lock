@@ -51,7 +51,7 @@ shards:
 
   debug:
     git: https://github.com/sija/debug.cr.git
-    version: 2.0.3
+    version: 2.0.4
 
   defined:
     git: https://github.com/wyhaines/defined.cr.git
@@ -155,7 +155,7 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.5.4+git.commit.9b26aabef208b9eb0bf4612788362fa41768790b
+    version: 0.5.5+git.commit.83eace832dad20a71231e71a42258538b05fb193
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
@@ -191,7 +191,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 7.2.18
+    version: 7.3.0
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -199,7 +199,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.60.0
+    version: 9.60.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
