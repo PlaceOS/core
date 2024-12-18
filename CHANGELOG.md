@@ -1,3 +1,9 @@
+## v4.17.1 (2024-12-18)
+
+### Fix
+
+- **driver_manager**: fix reload_driver to return proper status code ([#278](https://github.com/PlaceOS/core/pull/278))
+
 ## v4.17.0 (2024-11-29)
 
 ### Feat
