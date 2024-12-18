@@ -106,7 +106,7 @@ module PlaceOS::Core
       else
         return {status: 404, message: "Driver with id #{driver_id} not found "}
       end
-      {status: 404, message: "OK"}
+      {status: 200, message: "OK"}
     end
 
     private def fetch_binary(link : LinkData) : String
