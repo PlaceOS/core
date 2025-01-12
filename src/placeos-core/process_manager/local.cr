@@ -115,8 +115,10 @@ module PlaceOS::Core
 
       # Build remote core request
       user_id = request.user_id
-      params = user_id ? "?user_id=#{user_id}" : nil
-      core_uri.path = "/api/core/v1/command/#{remote_module_id}/execute#{params}"
+      params = URI::Params.build do |query|
+        query.add("user_id", user_id) if user_id
+      end
+      core_uri.path = "/api/core/v1/command/#{remote_module_id}/execute?#{params}"
       response = HTTP::Client.post(
         core_uri,
         headers: HTTP::Headers{"X-Request-ID" => "int-#{request.reply}-#{remote_module_id}-#{Time.utc.to_unix_ms}"},
