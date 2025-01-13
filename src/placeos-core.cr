@@ -27,13 +27,14 @@ module PlaceOS::Core
   # - redis
   # - postgres
   def self.wait_for_resources
-    Retriable.retry(
-      max_elapsed_time: 1.minutes,
-      on_retry: ->(_e : Exception, n : Int32, _t : Time::Span, _i : Time::Span) {
-        Log.warn { "attempt #{n} connecting to services" }
-      }
+    attempt = 0
+    SimpleRetry.try_to(
+      base_interval: 1.second,
+      max_elapsed_time: 1.minute
     ) do
       # Ensure services are reachable and healthy
+      attempt += 1
+      Log.warn { "attempt #{attempt} connecting to services" } if attempt > 1
       raise "retry" unless Healthcheck.healthcheck?
     end
   rescue

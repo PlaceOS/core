@@ -16,9 +16,6 @@ require "./constants"
 
 require "./api/*"
 
-# Require telemetry after application code
-require "./telemetry"
-
 # Server required after application controllers
 require "action-controller/server"
 
