@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.5.0
+    version: 7.5.1
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -151,15 +151,15 @@ shards:
 
   opentelemetry-api:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
-    version: 0.5.1
+    version: 0.5.2+git.commit.77c9232ca6ff7de52529f309a0cb20b8459f7b20
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.5.5+git.commit.83eace832dad20a71231e71a42258538b05fb193
+    version: 0.6.0+git.commit.6978cfe19aa590fb61fd7fdc0a25eb0c78674309
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
-    version: 0.6.3+git.commit.470e34105727b039aee2bb3650e907bf6eefc971
+    version: 0.6.4+git.commit.c7237732135f6d0cab84abc6bb6d438c9f8f9d66
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -179,7 +179,7 @@ shards:
 
   pg-orm:
     git: https://github.com/spider-gazelle/pg-orm.git
-    version: 1.1.2+git.commit.9b340ee269cd4a10ed6c5b51235cbaf45fc380e1
+    version: 1.1.2+git.commit.7714bb4d3e57fadcfded9d2e17247b5d3506e379
 
   place_calendar:
     git: https://github.com/placeos/calendar.git
@@ -199,7 +199,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.60.1
+    version: 9.61.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
