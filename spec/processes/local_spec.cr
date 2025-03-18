@@ -6,7 +6,10 @@ module PlaceOS::Core::ProcessManager
   def self.with_driver(&)
     _, driver, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
     result = DriverResource.load(driver, store, true)
-    yield mod, result.path, ProcessManager.path_to_key(result.path), driver
+
+    driver_key = ProcessManager.path_to_key(result.path)
+    puts "\n\nPROCESSING DRIVER key: #{driver_key}, path: #{result.path}, driver: #{driver.inspect}\n\n"
+    yield mod, result.path, driver_key, driver
   end
 
   def self.test_starting(manager, mod, driver_key)

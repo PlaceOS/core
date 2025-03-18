@@ -57,7 +57,7 @@ module PlaceOS::Core
       super
     rescue exception : ModuleError
       if exception.message =~ /module #{module_id} not running on this host/
-        raise no_module_error(module_id)
+        raise no_module_error(module_id, exception)
       else
         raise exception
       end
@@ -153,7 +153,13 @@ module PlaceOS::Core
       module_manager = ModuleManager.instance
       unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
         Log.info { {module_id: module_id, message: "module not loaded"} }
-        raise no_module_error(module_id)
+        # Attempt to start the module, recover from abnormal conditions
+        begin
+          module_manager.start_module(Model::Module.find!(module_id))
+        rescue exception
+          raise no_module_error(module_id, exception)
+        end
+        raise no_module_error(module_id) unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
       end
 
       begin
@@ -164,7 +170,7 @@ module PlaceOS::Core
         request.payload = response[0]
       rescue exception
         if exception.message.try(&.includes?("module #{module_id} not running on this host"))
-          raise no_module_error(module_id)
+          raise no_module_error(module_id, exception)
         else
           raise exception
         end
@@ -176,7 +182,7 @@ module PlaceOS::Core
 
     # Render more information for missing module exceptions
     #
-    protected def no_module_error(module_id)
+    protected def no_module_error(module_id, cause : Exception? = nil)
       reason = if remote_module = Model::Module.find(module_id)
                  if remote_module.running
                    "it is running but not loaded. Check driver is compiled."
@@ -187,7 +193,7 @@ module PlaceOS::Core
                  "it is not present in the database"
                end
 
-      ModuleError.new("Could not locate module #{module_id}, #{reason}")
+      ModuleError.new("Could not locate module #{module_id}, #{reason}", cause: cause)
     end
 
     # Clustering
