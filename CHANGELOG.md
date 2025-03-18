@@ -1,3 +1,9 @@
+## v4.18.0 (2025-03-18)
+
+### Feat
+
+- **process_manager/local**: attempt to recover from abnormal conditions
+
 ## v4.17.1 (2024-12-18)
 
 ### Fix
