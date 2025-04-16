@@ -2,7 +2,7 @@
 ARG TARGET=core
 ARG CRYSTAL_VERSION=latest
 
-FROM placeos/crystal:$CRYSTAL_VERSION as build
+FROM placeos/crystal:$CRYSTAL_VERSION AS build
 WORKDIR /app
 
 ARG TARGET
@@ -64,7 +64,7 @@ RUN mkdir -p repositories bin/drivers tmp \
 
 ###############################################################################
 
-FROM scratch as minimal
+FROM scratch AS minimal
 WORKDIR /app
 ENV PATH=$PATH:/bin
 
@@ -103,7 +103,7 @@ USER appuser:appuser
 
 ###############################################################################
 
-FROM minimal as edge
+FROM minimal AS edge
 ENTRYPOINT ["/bin/edge"]
 CMD ["/bin/edge"]
 
@@ -112,7 +112,7 @@ CMD ["/bin/edge"]
 # FIXME: core currently has a number of dependandancies on the runtime for
 # retreiving repositories and compiling drivers. When the migrates into an
 # external service, this can base from `minimal` instead for cleaner images.
-FROM minimal as core
+FROM minimal AS core
 
 WORKDIR /app
 
