@@ -21,11 +21,13 @@ module PlaceOS::Core
 
       module_manager.local_processes.run_count.should eq(ProcessManager::Count.new(1, 1))
 
-      expected = ["drivers_place_private_helper_cce023_#{DriverCleanup.arch}"]
-      running = DriverCleanup.running_drivers
-      running.should eq(expected)
-      local = Dir.new(DriverStore::BINARY_PATH).children
-      running.should eq(expected)
+      tracker = DriverCleanup::StaleProcessTracker.new(DriverStore::BINARY_PATH, REDIS_CLIENT)
+      stale_list = tracker.update_and_find_stale(ENV["STALE_THRESHOLD_DAYS"]?.try &.to_i || 30)
+      stale_list.size.should eq(0)
+      driver_file = Path[DriverStore::BINARY_PATH, "drivers_place_private_helper_cce023a_#{DriverCleanup.arch}"].to_s
+      p! driver_file
+      value = REDIS_CLIENT.hgetall(driver_file)
+      value["last_executed_at"].to_i64.should be > 0
     end
   end
 end
