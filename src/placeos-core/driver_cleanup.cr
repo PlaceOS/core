@@ -64,7 +64,7 @@ module PlaceOS::Core::DriverCleanup
           else
             Log.warn { "No Redis entry found for: #{exe_path}" }
           end
-        rescue ex : Errno
+        rescue ex : Exception
           Log.error(exception: ex) { "Failed to delete #{exe_path}" }
         end
       end
