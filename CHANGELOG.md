@@ -1,3 +1,9 @@
+## v4.19.0 (2025-05-19)
+
+### Feat
+
+- PPT-2047,PPT-2048 driver integrity checker + refactoring driver_manager ([#281](https://github.com/PlaceOS/core/pull/281))
+
 ## v4.18.0 (2025-03-18)
 
 ### Feat
