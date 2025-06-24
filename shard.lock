@@ -27,7 +27,7 @@ shards:
 
   azblob:
     git: https://github.com/spider-gazelle/azblob.cr.git
-    version: 0.1.0+git.commit.154582499bf9d1296b446c0817fea465321f0735
+    version: 0.1.0
 
   backtracer:
     git: https://github.com/sija/backtracer.cr.git
@@ -183,7 +183,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.69.0
+    version: 9.70.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
