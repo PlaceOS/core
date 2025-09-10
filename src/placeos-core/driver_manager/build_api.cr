@@ -88,5 +88,27 @@ module PlaceOS::Core
         end
       end
     end
+
+    def self.monitor(state : String)
+      host = URI.parse(Core.build_host)
+      ConnectProxy::HTTPClient.new(host) do |client|
+        path = "#{BUILD_API_BASE}/monitor"
+        params = URI::Params.encode({"state" => state})
+        uri = "#{path}?#{params}"
+        rep = client.get(uri)
+        Log.debug { {message: "Getting build service monitor. Server respose: #{rep.status_code}", state: state} }
+        rep
+      end
+    end
+
+    def self.cancel_job(job : String)
+      host = URI.parse(Core.build_host)
+      ConnectProxy::HTTPClient.new(host) do |client|
+        path = "#{BUILD_API_BASE}/cancel/#{URI.encode_www_form(job)}"
+        rep = client.delete(path)
+        Log.debug { {message: "Cancelling build job. Server respose: #{rep.status_code}", job: job} }
+        rep
+      end
+    end
   end
 end
