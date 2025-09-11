@@ -143,5 +143,47 @@ module PlaceOS::Core
       @[JSON::Field(converter: Time::EpochConverter)]
       getter link_expiry : Time
     end
+
+    enum State
+      Pending
+      Running
+      Cancelled
+      Error
+      Done
+
+      def to_s(io : IO) : Nil
+        io << (member_name || value.to_s).downcase
+      end
+
+      def to_s : String
+        String.build { |io| to_s(io) }
+      end
+    end
+
+    record TaskStatus, state : State, id : String, message : String,
+      driver : String, repo : String, branch : String, commit : String, timestamp : Time do
+      include JSON::Serializable
+    end
+
+    record CancelStatus, status : String, message : String do
+      include JSON::Serializable
+    end
+
+    def monitor_jobs(state : State = State::Pending)
+      resp = BuildApi.monitor(state.to_s)
+      return {success: true, output: Array(TaskStatus).from_json(resp.body), code: 200} if resp.success?
+      {success: false, output: "Build service returned #{resp.status_code} with reponse #{resp.body}", code: resp.status_code}
+    rescue ex
+      {success: false, output: "Call to Build service endpoint failed with error  #{ex.message}", code: 500}
+    end
+
+    def cancel_job(job : String)
+      resp = BuildApi.cancel_job(job)
+
+      return {success: true, output: CancelStatus.from_json(resp.body), code: resp.status_code} if resp.success? || resp.status_code == 409
+      {success: false, output: CancelStatus.new("error", "Build service returned #{resp.status_code} with reponse #{resp.body}"), code: resp.status_code}
+    rescue ex
+      {success: false, output: CancelStatus.new("error", "Call to Build service endpoint failed with error  #{ex.message}"), code: 500}
+    end
   end
 end
