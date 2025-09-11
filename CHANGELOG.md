@@ -1,3 +1,9 @@
+## v4.20.0 (2025-09-11)
+
+### Feat
+
+- [PPT-1758] Added build service monitor functionality ([#282](https://github.com/PlaceOS/core/pull/282))
+
 ## v4.19.0 (2025-05-19)
 
 ### Feat
