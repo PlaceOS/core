@@ -1,3 +1,9 @@
+## v4.20.1 (2025-09-23)
+
+### Fix
+
+- **constants**: core host IPv6 value support
+
 ## v4.20.0 (2025-09-11)
 
 ### Feat
