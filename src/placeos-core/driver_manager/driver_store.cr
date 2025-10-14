@@ -102,14 +102,12 @@ module PlaceOS::Core
 
     private def validate_binary(path : Path) : Bool
       # Try to execute the binary with -h flag to validate it's a working executable
-      begin
-        result = Process.run(path.to_s, ["-h"], output: Process::Redirect::Close, error: Process::Redirect::Close)
-        # If the process runs without crashing, consider it valid
-        result.exit_code == 0
-      rescue ex : Exception
-        Log.error(exception: ex) { {message: "Driver binary validation failed", path: path.to_s} }
-        false
-      end
+      result = Process.run(path.to_s, ["-h"], output: Process::Redirect::Close, error: Process::Redirect::Close)
+      # If the process runs without crashing, consider it valid
+      result.exit_code == 0
+    rescue ex : Exception
+      Log.error(exception: ex) { {message: "Driver binary validation failed", path: path.to_s} }
+      false
     end
 
     def reload_driver(driver_id : String)
