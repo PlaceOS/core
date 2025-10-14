@@ -14,7 +14,7 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(name: path, description: "the driver executable name", example: "drivers_place_meet_c54390a")]
       driver_key : String,
       @[AC::Param::Info(description: "optionally provide the edge id the driver is running on", example: "edge-12345")]
-      edge_id : String? = nil
+      edge_id : String? = nil,
     ) : Nil
       raise Error::NotFound.new("no process manager found for #{driver_key}") unless manager = module_manager.process_manager(driver_key, edge_id)
       manager.kill(driver_key)

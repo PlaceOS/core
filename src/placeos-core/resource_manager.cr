@@ -32,7 +32,7 @@ module PlaceOS::Core
       @module_names : Mappings::ModuleNames = Mappings::ModuleNames.new,
       @settings_updates : SettingsUpdate = SettingsUpdate.new,
       @driver_module_names : Mappings::DriverModuleNames = Mappings::DriverModuleNames.new,
-      testing : Bool = false
+      testing : Bool = false,
     )
     end
 

@@ -55,7 +55,7 @@ macro around_suite(block)
   end
 end
 
-around_suite ->{
+around_suite -> {
   clear_tables
 }
 

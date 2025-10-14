@@ -25,7 +25,7 @@ module PlaceOS::Core
 
     def self.update_module_mapping(
       mod : Model::Module,
-      module_manager : ModuleManager = ModuleManager.instance
+      module_manager : ModuleManager = ModuleManager.instance,
     ) : Resource::Result
       module_id = mod.id.as(String)
       # Only consider name change events

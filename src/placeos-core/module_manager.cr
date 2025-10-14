@@ -60,7 +60,7 @@ module PlaceOS::Core
     # - once load complete, mark in etcd that load is complete
     def initialize(
       uri : String | URI,
-      clustering : Clustering? = nil
+      clustering : Clustering? = nil,
     )
       @uri = uri.is_a?(URI) ? uri : URI.parse(uri)
       ModuleManager.uri = @uri

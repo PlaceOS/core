@@ -13,7 +13,7 @@ module PlaceOS::Core::Api
     def edge_control(
       socket,
       @[AC::Param::Info(description: "the edge this device is handling", example: "edge-1234")]
-      edge_id : String
+      edge_id : String,
     ) : Nil
       module_manager.manage_edge(edge_id, socket)
     end

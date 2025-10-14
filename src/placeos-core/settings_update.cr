@@ -24,7 +24,7 @@ module PlaceOS
 
     def self.update_modules(
       settings : Model::Settings,
-      module_manager : ModuleManager
+      module_manager : ModuleManager,
     )
       Log.context.set(settings_id: settings.id)
       result = Result::Success
