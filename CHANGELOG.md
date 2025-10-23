@@ -1,3 +1,9 @@
+## v4.20.2 (2025-10-23)
+
+### Refactor
+
+- **driver_store**: Add checks to ensure validity of existing + d… ([#283](https://github.com/PlaceOS/core/pull/283))
+
 ## v4.20.1 (2025-09-23)
 
 ### Fix
