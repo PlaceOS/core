@@ -12,7 +12,7 @@ module PlaceOS::Core::Api
     @[AC::Route::POST("/:module_id/load")]
     def load(
       @[AC::Param::Info(description: "the module id we want to load", example: "mod-1234")]
-      module_id : String
+      module_id : String,
     ) : Nil
       mod = Model::Module.find(module_id)
       raise Error::NotFound.new("module #{module_id} not found in database") unless mod
@@ -25,7 +25,7 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(description: "the module id we want to send an execute request to", example: "mod-1234")]
       module_id : String,
       @[AC::Param::Info(description: "the user context for the execution", example: "user-1234")]
-      user_id : String? = nil
+      user_id : String? = nil,
     ) : Nil
       unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
         Log.info { {module_id: module_id, message: "module not loaded"} }
@@ -62,7 +62,7 @@ module PlaceOS::Core::Api
     def module_debugger(
       socket,
       @[AC::Param::Info(description: "the module we want to debug", example: "mod-1234")]
-      module_id : String
+      module_id : String,
     ) : Nil
       # Forward debug messages to the websocket
       module_manager.process_manager(module_id, &.attach_debugger(module_id, socket))

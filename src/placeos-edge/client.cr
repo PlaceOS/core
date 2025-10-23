@@ -49,7 +49,7 @@ module PlaceOS::Edge
       @sequence_id : UInt64 = 0,
       @skip_handshake : Bool = false,
       @ping : Bool = true,
-      @store = Core::DriverStore.new
+      @store = Core::DriverStore.new,
     )
       @secret = if secret && secret.presence
                   secret
@@ -83,7 +83,7 @@ module PlaceOS::Edge
           end
           nil
         },
-        on_connect: ->{
+        on_connect: -> {
           handshake unless skip_handshake?
           nil
         }

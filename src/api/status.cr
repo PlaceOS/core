@@ -42,7 +42,7 @@ module PlaceOS::Core::Api
     @[AC::Route::GET("/driver")]
     def driver(
       @[AC::Param::Info(name: "path", description: "the path of the compiled driver", example: "/path/to/compiled_driver")]
-      driver_path : String
+      driver_path : String,
     ) : DriverStatus
       DriverStatus.new(
         local: module_manager.local_processes.driver_status(driver_path),

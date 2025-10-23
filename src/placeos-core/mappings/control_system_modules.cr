@@ -12,7 +12,7 @@ module PlaceOS::Core
 
     def initialize(
       @startup : Bool = true,
-      @module_manager : ModuleManager = ModuleManager.instance
+      @module_manager : ModuleManager = ModuleManager.instance,
     )
       super()
     end
@@ -28,7 +28,7 @@ module PlaceOS::Core
     def self.update_mapping(
       system : Model::ControlSystem,
       startup : Bool = false,
-      module_manager : ModuleManager = ModuleManager.instance
+      module_manager : ModuleManager = ModuleManager.instance,
     ) : Resource::Result
       relevant_node = startup || module_manager.discovery.own_node?(system.id.as(String))
       unless relevant_node
@@ -57,7 +57,7 @@ module PlaceOS::Core
     #
     def self.update_logic_modules(
       system : Model::ControlSystem,
-      module_manager : ModuleManager = ModuleManager.instance
+      module_manager : ModuleManager = ModuleManager.instance,
     ) : Int32
       return 0 if system.destroyed?
 
@@ -90,7 +90,7 @@ module PlaceOS::Core
     # Pass module_id and updated_name to overrride a lookup
     def self.set_mappings(
       control_system : Model::ControlSystem,
-      mod : Model::Module?
+      mod : Model::Module?,
     ) : Hash(String, String)
       system_id = control_system.id.as(String)
       storage = Driver::RedisStorage.new(system_id, "system")

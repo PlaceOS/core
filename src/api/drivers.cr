@@ -16,7 +16,7 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(description: "the commit hash of the driver to check is compiled", example: "e901494")]
       commit : String,
       @[AC::Param::Info(description: "the driver database id", example: "driver-GFEaAlJB5")]
-      tag : String
+      tag : String,
     ) : Bool
       driver = Model::Driver.find!(tag)
       repository = driver.repository!
@@ -31,7 +31,7 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(description: "the commit hash of the driver to check is compiled", example: "e901494")]
       commit : String,
       @[AC::Param::Info(description: "the driver database id", example: "driver-GFEaAlJB5")]
-      tag : String
+      tag : String,
     ) : String
       driver = Model::Driver.find!(tag)
       repository = driver.repository!
@@ -47,7 +47,7 @@ module PlaceOS::Core::Api
     @[AC::Route::POST("/:driver_id/reload")]
     def reload(
       @[AC::Param::Info(description: "the driver database id", example: "driver-GFEaAlJB5")]
-      driver_id : String
+      driver_id : String,
     ) : String
       result = store.reload_driver(driver_id)
       render status: result[:status], text: result[:message]
@@ -63,7 +63,7 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(description: "the commit hash of the driver to be built", example: "e901494")]
       commit : String,
       @[AC::Param::Info(description: "the branch of the repository", example: "main")]
-      branch : String = "master"
+      branch : String = "master",
     ) : Nil
       Log.context.set(driver: driver_file, repository: repository, commit: commit, branch: branch)
       repo = Model::Repository.find!(repository)

@@ -18,7 +18,17 @@ module PlaceOS::Core
     def compiled?(file_name : String, commit : String, branch : String, uri : String) : Bool
       Log.debug { {message: "Checking whether driver is compiled or not?", driver: file_name, commit: commit, branch: branch, repo: uri} }
       path = Path[binary_path, executable_name(file_name, commit)]
-      return true if File.exists?(path)
+
+      if File.exists?(path)
+        # Validate that the local file is a valid executable by running it with -h
+        if validate_binary(path)
+          return true
+        else
+          Log.warn { {message: "Local binary exists but is corrupted, removing and re-downloading", driver_file: file_name, path: path.to_s} }
+          File.delete(path) rescue nil
+        end
+      end
+
       resp = BuildApi.compiled?(file_name, commit, branch, uri)
       return false unless resp.success?
       ret = fetch_binary(LinkData.from_json(resp.body)) rescue nil
@@ -90,6 +100,16 @@ module PlaceOS::Core
       {driver_source, commit, Core::ARCH}.join("_").downcase
     end
 
+    private def validate_binary(path : Path) : Bool
+      # Try to execute the binary with -h flag to validate it's a working executable
+      result = Process.run(path.to_s, ["-h"], output: Process::Redirect::Close, error: Process::Redirect::Close)
+      # If the process runs without crashing, consider it valid
+      result.exit_code == 0
+    rescue ex : Exception
+      Log.error(exception: ex) { {message: "Driver binary validation failed", path: path.to_s} }
+      false
+    end
+
     def reload_driver(driver_id : String)
       if driver = Model::Driver.find?(driver_id)
         repo = driver.repository!
@@ -120,16 +140,27 @@ module PlaceOS::Core
                ConnectProxy::HTTPClient.new(url.host.not_nil!, 9000).get(uri.to_s)
              end
       if resp.success?
-        unless link.size == resp.headers.fetch("Content-Length", "0").to_i
-          Log.error { {message: "Expected content length #{link.size}, but received #{resp.headers.fetch("Content-Length", "0")}", driver_file: driver_file} }
+        # Check Content-Length header first if available
+        content_length = resp.headers.fetch("Content-Length", "0").to_i64
+        if content_length > 0 && link.size != content_length
+          Log.error { {message: "Expected content length #{link.size}, but received #{content_length}", driver_file: driver_file} }
           raise Error.new("Response size doesn't match with build service returned result")
         end
 
         body_io = IO::Digest.new(resp.body_io? || IO::Memory.new(resp.body), Digest::MD5.new)
+        bytes_written = 0_i64
         File.open(filename, "wb+") do |f|
-          IO.copy(body_io, f)
+          bytes_written = IO.copy(body_io, f)
           f.chmod(0o755)
         end
+
+        # Verify actual downloaded size matches expected size
+        unless link.size == bytes_written
+          Log.error { {message: "Expected download size #{link.size}, but actually downloaded #{bytes_written} bytes", driver_file: driver_file} }
+          File.delete(filename) if File.exists?(filename)
+          raise Error.new("Downloaded size doesn't match expected size from build service")
+        end
+
         filename.to_s
       else
         raise Error.new("Unable to fetch driver. Error : #{resp.body}")

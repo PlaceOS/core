@@ -21,8 +21,8 @@ module PlaceOS::Edge::Protocol
     field sequence_id : UInt64
 
     field status : Status = Status::Success
-    field length : Int32, value: ->{ key.bytesize }
-    field key : String, length: ->{ length }
+    field length : Int32, value: -> { key.bytesize }
+    field key : String, length: -> { length }
 
     # Keep a reference to the remainder of the message
     protected setter binary : IO
@@ -407,7 +407,7 @@ module PlaceOS::Edge::Protocol
         @remove_drivers = [] of String,
         @add_modules = [] of Module,
         @remove_modules = [] of String,
-        @running_modules = [] of Tuple(String, String)
+        @running_modules = [] of Tuple(String, String),
       )
       end
     end

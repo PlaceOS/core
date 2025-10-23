@@ -23,8 +23,8 @@ module PlaceOS::Core
   # In k8s we can grab the Pod information from the environment
   # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-pod-fields-as-values-for-environment-variables
   CORE_HOST_RAW = ENV["CORE_HOST"]? || System.hostname
-  CORE_HOST = !CORE_HOST_RAW.starts_with?('[') && CORE_HOST_RAW.includes?(':') ? "[#{CORE_HOST_RAW}]" : CORE_HOST_RAW
-  CORE_PORT = (ENV["CORE_PORT"]? || "3000").to_i
+  CORE_HOST     = !CORE_HOST_RAW.starts_with?('[') && CORE_HOST_RAW.includes?(':') ? "[#{CORE_HOST_RAW}]" : CORE_HOST_RAW
+  CORE_PORT     = (ENV["CORE_PORT"]? || "3000").to_i
 
   PROD = ENV["SG_ENV"]?.try(&.downcase) == "production"
 
