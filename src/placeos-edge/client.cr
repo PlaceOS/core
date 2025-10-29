@@ -1,11 +1,13 @@
 require "simple_retry"
 require "rwlock"
 require "uri"
+require "tasker"
 
 require "placeos-driver/protocol/management"
 
 require "../placeos-core/process_manager/common"
 require "../placeos-core/driver_manager"
+require "../placeos-core/edge_error"
 
 require "./constants"
 require "./protocol"
@@ -40,6 +42,14 @@ module PlaceOS::Edge
     @loading_modules = Hash(String, Array(String)).new { |hash, key| hash[key] = [] of String }
     # module_id => payload
     @pending_start = {} of String => String
+
+    # Error tracking and reporting
+    private getter recent_errors = Deque(Core::EdgeError).new(100)
+    private getter error_lock = Mutex.new
+    private getter edge_id : String { @secret.split("-").first? || "unknown" }
+    private getter error_report_task : Tasker::Repeat(Nil)?
+    private getter health_report_task : Tasker::Repeat(Nil)?
+    private getter connection_start_time : Time = Time.utc
 
     getter host : String { uri.to_s.gsub(uri.request_target, "") }
 
@@ -81,6 +91,9 @@ module PlaceOS::Edge
             @loading_modules = Hash(String, Array(String)).new { |hash, key| hash[key] = [] of String }
             @pending_start = {} of String => String
           end
+
+          # Stop periodic reporting on disconnect
+          stop_periodic_reporting
           nil
         },
         on_connect: -> {
@@ -104,6 +117,9 @@ module PlaceOS::Edge
 
       # Send ping frames
       spawn { transport.ping if ping? }
+
+      # Start periodic reporting
+      start_periodic_reporting
 
       yield
 
@@ -149,6 +165,7 @@ module PlaceOS::Edge
             module_id: request.module_id,
             message:   "execute errored",
           } }
+          track_error(Core::ErrorType::ModuleExecution, "Module execution failed: #{error.message}", {"module_id" => request.module_id})
           ({false, {message: error.message, backtrace: error.backtrace?, code: error.code}.to_json, error.code})
         end
 
@@ -218,6 +235,7 @@ module PlaceOS::Edge
           response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
           unless response
             Log.warn { "failed to register to core" }
+            track_error(Core::ErrorType::Connection, "Failed to register to core during handshake", severity: Core::Severity::Critical)
             raise "handshake failed"
           end
 
@@ -242,6 +260,7 @@ module PlaceOS::Edge
           Log.info { "handshake success, edge registered" }
         rescue error
           Log.error(exception: error) { "during handshake" }
+          track_error(Core::ErrorType::Connection, "Handshake failed: #{error.message}", severity: Core::Severity::Critical)
           raise error
         end
       end
@@ -267,6 +286,7 @@ module PlaceOS::Edge
             when wait_load.receive?
             when timeout(90.seconds)
               Log.error { "timeout loading #{driver_key}" }
+              track_error(Core::ErrorType::DriverLoad, "Timeout loading driver binary", {"driver_key" => driver_key})
             end
           end
         end
@@ -355,6 +375,7 @@ module PlaceOS::Edge
       end
     rescue error
       Log.error(exception: error) { "error during download attempt" }
+      track_error(Core::ErrorType::DriverLoad, "Error downloading driver binary: #{error.message}", {"driver_key" => key})
       spawn { attempt_download(loaded_channel, key) } unless loaded_channel.closed?
     end
 
@@ -540,6 +561,133 @@ module PlaceOS::Edge
       t = transport?
       raise "cannot send request over closed transport" if t.nil?
       t.send_request(request)
+    end
+
+    # Periodic Reporting
+    ###########################################################################
+
+    # Start periodic error and health reporting tasks
+    protected def start_periodic_reporting
+      # Send error reports every 5 minutes
+      @error_report_task = Tasker.every(5.minutes) do
+        send_error_report
+      end
+
+      # Send health reports every 2 minutes
+      @health_report_task = Tasker.every(2.minutes) do
+        send_health_report
+      end
+
+      Log.info { {edge_id: edge_id, message: "started periodic reporting tasks"} }
+    end
+
+    # Stop periodic reporting tasks
+    protected def stop_periodic_reporting
+      @error_report_task.try(&.cancel)
+      @health_report_task.try(&.cancel)
+      @error_report_task = nil
+      @health_report_task = nil
+
+      Log.info { {edge_id: edge_id, message: "stopped periodic reporting tasks"} }
+    end
+
+    # Send error report to core
+    protected def send_error_report
+      t = transport?
+      return if t.nil?
+
+      error_lock.synchronize do
+        # Get errors from the last 5 minutes to avoid duplicates
+        cutoff_time = Time.utc - 5.minutes
+        recent_error_list = recent_errors.select { |error| error.timestamp > cutoff_time }
+
+        return if recent_error_list.empty?
+
+        # Serialize errors to JSON strings
+        error_json_array = recent_error_list.map(&.to_json)
+
+        request = Protocol::Message::ErrorReport.new(edge_id, error_json_array)
+
+        begin
+          Protocol.request(request, expect: Protocol::Message::Success)
+          Log.debug { {edge_id: edge_id, error_count: error_json_array.size, message: "sent error report"} }
+        rescue e
+          Log.error(exception: e) { {edge_id: edge_id, message: "error sending error report"} }
+        end
+      end
+    end
+
+    # Send health report to core
+    protected def send_health_report
+      t = transport?
+      return if t.nil?
+
+      begin
+        health = get_edge_health
+        health_json = health.to_json
+
+        request = Protocol::Message::HealthReport.new(edge_id, health_json)
+
+        Protocol.request(request, expect: Protocol::Message::Success)
+        Log.debug { {edge_id: edge_id, message: "sent health report"} }
+      rescue e
+        Log.error(exception: e) { {edge_id: edge_id, message: "error sending health report"} }
+      end
+    end
+
+    # Track an error for this edge
+    def track_error(type : Core::ErrorType, message : String, context = {} of String => String, severity = Core::Severity::Error)
+      error = Core::EdgeError.new(edge_id, type, message, context, severity)
+
+      error_lock.synchronize do
+        recent_errors.push(error)
+        recent_errors.shift if recent_errors.size > 100
+      end
+
+      Log.warn { {
+        edge_id:    edge_id,
+        error_type: type.to_s,
+        severity:   severity.to_s,
+        message:    message,
+        context:    context.to_json,
+      } }
+
+      # Send immediate error report for critical errors
+      if severity.critical?
+        spawn { send_immediate_error_report(error) }
+      end
+    end
+
+    # Send immediate error report for critical errors
+    protected def send_immediate_error_report(error : Core::EdgeError)
+      t = transport?
+      return if t.nil?
+
+      begin
+        error_json_array = [error.to_json]
+        request = Protocol::Message::ErrorReport.new(edge_id, error_json_array)
+
+        Protocol.request(request, expect: Protocol::Message::Success)
+        Log.info { {edge_id: edge_id, error_type: error.error_type.to_s, message: "sent immediate error report"} }
+      rescue e
+        Log.error(exception: e) { {edge_id: edge_id, message: "error sending immediate error report"} }
+      end
+    end
+
+    # Get edge health status
+    protected def get_edge_health : Core::EdgeHealth
+      module_count = modules.size
+      failed_modules = [] of String # TODO: Track failed modules
+
+      Core::EdgeHealth.new(
+        edge_id: edge_id,
+        connected: !transport.closed?,
+        last_seen: Time.utc,
+        module_count: module_count,
+        error_count_24h: error_lock.synchronize { recent_errors.count { |e| e.timestamp > Time.utc - 24.hours } },
+        connection_uptime: Time.utc - connection_start_time,
+        failed_modules: failed_modules
+      )
     end
   end
 end
