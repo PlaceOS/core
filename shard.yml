@@ -46,8 +46,8 @@ dependencies:
     version: ~> 3.0
 
   redis-cluster:
-    github: caspiano/redis-cluster.cr
-    version: ">= 0.8.4"
+    github: place-labs/redis-cluster.cr
+    version: ">= 0.8.6"
 
   # clustering service discovery
   redis_service_manager:
