@@ -2,6 +2,7 @@ require "hardware"
 
 require "../placeos-core/module_manager"
 require "../placeos-core/resource_manager"
+require "../placeos-core/edge_error"
 require "./application"
 
 module PlaceOS::Core::Api
@@ -72,6 +73,113 @@ module PlaceOS::Core::Api
         local: module_manager.local_processes.loaded_modules,
         edge: module_manager.edge_processes.loaded_modules,
       )
+    end
+
+    # Edge Error Monitoring Endpoints
+    ###############################################################################################
+
+    # Get errors for a specific edge
+    @[AC::Route::GET("/edge/:edge_id/errors")]
+    def edge_errors(
+      edge_id : String,
+      @[AC::Param::Info(description: "Number of recent errors to return")]
+      limit : Int32 = 50,
+      @[AC::Param::Info(description: "Error type filter")]
+      type : String? = nil,
+    ) : Array(Core::EdgeError)
+      errors = module_manager.edge_errors(edge_id)[edge_id]? || [] of Core::EdgeError
+
+      # Filter by type if specified
+      if type
+        error_type = Core::ErrorType.parse?(type.camelcase)
+        errors = errors.select(&.error_type.==(error_type)) if error_type
+      end
+
+      errors.last(limit)
+    end
+
+    # Get module status for a specific edge
+    @[AC::Route::GET("/edge/:edge_id/modules/status")]
+    def edge_module_status(edge_id : String) : Core::EdgeModuleStatus
+      module_manager.edge_module_status[edge_id]? || Core::EdgeModuleStatus.new(edge_id)
+    end
+
+    # Get health status for all edges
+    @[AC::Route::GET("/edges/health")]
+    def edges_health : Hash(String, Core::EdgeHealth)
+      module_manager.edge_health_status
+    end
+
+    # Get connection status for all edges
+    @[AC::Route::GET("/edges/connections")]
+    def edge_connections : Hash(String, Core::ConnectionMetrics)
+      module_manager.edge_connection_metrics
+    end
+
+    # Get errors from all edges
+    @[AC::Route::GET("/edges/errors")]
+    def all_edge_errors(
+      @[AC::Param::Info(description: "Number of recent errors to return per edge")]
+      limit : Int32 = 50,
+      @[AC::Param::Info(description: "Error type filter")]
+      type : String? = nil,
+    ) : Hash(String, Array(Core::EdgeError))
+      all_errors = module_manager.edge_errors
+
+      # Filter by type if specified
+      if type
+        error_type = Core::ErrorType.parse?(type.camelcase)
+        if error_type
+          all_errors = all_errors.transform_values do |errors|
+            errors.select(&.error_type.==(error_type))
+          end
+        end
+      end
+
+      # Apply limit to each edge
+      all_errors.transform_values(&.last(limit))
+    end
+
+    # Get module failures from all edges
+    @[AC::Route::GET("/edges/modules/failures")]
+    def edge_module_failures : Hash(String, Array(Core::ModuleInitError))
+      module_manager.edge_module_status.transform_values(&.initialization_errors)
+    end
+
+    # Get overall edge statistics
+    @[AC::Route::GET("/edges/statistics")]
+    def edge_statistics : EdgeStatistics
+      health_status = module_manager.edge_health_status
+
+      total_edges = health_status.size
+      connected_edges = health_status.count { |_, health| health.connected }
+      total_errors_24h = health_status.sum { |_, health| health.error_count_24h }
+      total_modules = health_status.sum { |_, health| health.module_count }
+      failed_modules = health_status.sum { |_, health| health.failed_modules.size }
+
+      EdgeStatistics.new(
+        total_edges: total_edges,
+        connected_edges: connected_edges,
+        disconnected_edges: total_edges - connected_edges,
+        total_errors_24h: total_errors_24h,
+        total_modules: total_modules,
+        failed_modules: failed_modules,
+        average_uptime: health_status.values.map(&.connection_uptime).sum / Math.max(1, total_edges)
+      )
+    end
+
+    record EdgeStatistics,
+      total_edges : Int32,
+      connected_edges : Int32,
+      disconnected_edges : Int32,
+      total_errors_24h : Int32,
+      total_modules : Int32,
+      failed_modules : Int32,
+      average_uptime : Time::Span do
+      include JSON::Serializable
+
+      @[JSON::Field(converter: PlaceOS::Core::TimeSpanConverter)]
+      getter average_uptime : Time::Span
     end
   end
 end

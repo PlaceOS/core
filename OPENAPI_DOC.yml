@@ -3,8 +3,113 @@ openapi: 3.0.3
 info:
   description: Internal core API. Handles driver management and comms
   title: core
-  version: 4.15.1
+  version: 4.20.2
 paths:
+  /api/core/v1/build/monitor:
+    get:
+      tags:
+      - BuildMonitor
+      operationId: PlaceOS::Core::Api::BuildMonitor_monitor
+      parameters:
+      - name: state
+        in: query
+        description: state of job to return. One of [pending,running,cancelled error,done].
+          Defaults to 'pending'
+        example: pending
+        schema:
+          type: string
+          enum:
+          - pending
+          - running
+          - cancelled
+          - error
+          - done
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_Array_PlaceOS__Core__DriverStore__TaskStatus____String_'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/build/cancel/{job}:
+    delete:
+      tags:
+      - BuildMonitor
+      operationId: PlaceOS::Core::Api::BuildMonitor_cancel
+      parameters:
+      - name: job
+        in: path
+        description: ID of previously submitted compilation job
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__DriverStore__CancelStatus'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
   /api/core/v1/chaos/terminate:
     post:
       summary: Terminate a process by executable path
@@ -23,7 +128,6 @@ paths:
         in: query
         description: optionally provide the edge id the driver is running on
         example: edge-12345
-        required: false
         schema:
           type: string
           nullable: true
@@ -134,7 +238,6 @@ paths:
         in: query
         description: the user context for the execution
         example: user-1234
-        required: false
         schema:
           type: string
           nullable: true
@@ -448,7 +551,6 @@ paths:
         in: query
         description: the branch of the repository
         example: main
-        required: false
         schema:
           type: string
       responses:
@@ -501,6 +603,227 @@ paths:
       responses:
         101:
           description: Switching Protocols
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/monitoring/edge/{edge_id}/errors/stream:
+    get:
+      summary: WebSocket endpoint for real-time error monitoring of a specific edge
+      tags:
+      - EdgeMonitoring
+      operationId: PlaceOS::Core::Api::EdgeMonitoring_edge_error_stream
+      parameters:
+      - name: edge_id
+        in: path
+        description: the edge ID to monitor
+        example: edge-1234
+        required: true
+        schema:
+          type: string
+      responses:
+        101:
+          description: Switching Protocols
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/monitoring/edges/errors/stream:
+    get:
+      summary: WebSocket endpoint for real-time error monitoring of all edges
+      tags:
+      - EdgeMonitoring
+      operationId: PlaceOS::Core::Api::EdgeMonitoring_all_edges_error_stream
+      parameters: []
+      responses:
+        101:
+          description: Switching Protocols
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/monitoring/edges/modules/stream:
+    get:
+      summary: WebSocket endpoint for real-time module status monitoring
+      tags:
+      - EdgeMonitoring
+      operationId: PlaceOS::Core::Api::EdgeMonitoring_edge_modules_stream
+      parameters: []
+      responses:
+        101:
+          description: Switching Protocols
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/monitoring/cleanup:
+    post:
+      summary: REST endpoint to trigger error cleanup
+      tags:
+      - EdgeMonitoring
+      operationId: PlaceOS::Core::Api::EdgeMonitoring_cleanup_errors
+      parameters:
+      - name: hours
+        in: query
+        description: 'Hours to keep errors (default: 24)'
+        schema:
+          type: integer
+          format: Int32
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSON__Any'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/monitoring/summary:
+    get:
+      summary: REST endpoint to get error summary
+      tags:
+      - EdgeMonitoring
+      operationId: PlaceOS::Core::Api::EdgeMonitoring_error_summary
+      parameters: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSON__Any'
         404:
           description: Not Found
           content:
@@ -845,12 +1168,407 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/edge/{edge_id}/errors:
+    get:
+      summary: Get errors for a specific edge
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status_edge_errors
+      parameters:
+      - name: edge_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: Number of recent errors to return
+        schema:
+          type: integer
+          format: Int32
+      - name: type
+        in: query
+        description: Error type filter
+        schema:
+          type: string
+          nullable: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlaceOS__Core__EdgeError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/edge/{edge_id}/modules/status:
+    get:
+      summary: Get module status for a specific edge
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status_edge_module_status
+      parameters:
+      - name: edge_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__EdgeModuleStatus'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/edges/health:
+    get:
+      summary: Get health status for all edges
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status_edges_health
+      parameters: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hash_String__PlaceOS__Core__EdgeHealth_'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/edges/connections:
+    get:
+      summary: Get connection status for all edges
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status_edge_connections
+      parameters: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hash_String__PlaceOS__Core__ConnectionMetrics_'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/edges/errors:
+    get:
+      summary: Get errors from all edges
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status_all_edge_errors
+      parameters:
+      - name: limit
+        in: query
+        description: Number of recent errors to return per edge
+        schema:
+          type: integer
+          format: Int32
+      - name: type
+        in: query
+        description: Error type filter
+        schema:
+          type: string
+          nullable: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hash_String__Array_PlaceOS__Core__EdgeError__'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/edges/modules/failures:
+    get:
+      summary: Get module failures from all edges
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status_edge_module_failures
+      parameters: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hash_String__Array_PlaceOS__Core__ModuleInitError__'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+  /api/core/v1/status/edges/statistics:
+    get:
+      summary: Get overall edge statistics
+      tags:
+      - Status
+      operationId: PlaceOS::Core::Api::Status_edge_statistics
+      parameters: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Status__EdgeStatistics'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Core__Api__Application__ParameterError'
 components:
   schemas:
+    _Array_PlaceOS__Core__DriverStore__TaskStatus____String_:
+      anyOf:
+      - type: array
+        items:
+          type: object
+          properties:
+            state:
+              type: string
+              enum:
+              - pending
+              - running
+              - cancelled
+              - error
+              - done
+            id:
+              type: string
+            message:
+              type: string
+            driver:
+              type: string
+            repo:
+              type: string
+            branch:
+              type: string
+            commit:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+          required:
+          - state
+          - id
+          - message
+          - driver
+          - repo
+          - branch
+          - commit
+          - timestamp
+      - type: string
+    PlaceOS__Core__DriverStore__CancelStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+      required:
+      - status
+      - message
     Bool:
       type: boolean
     String:
       type: string
+    JSON__Any:
+      type: object
     PlaceOS__Model__Version:
       type: object
       properties:
@@ -1112,6 +1830,244 @@ components:
       required:
       - local
       - edge
+    PlaceOS__Core__EdgeError:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        edge_id:
+          type: string
+        error_type:
+          type: string
+          enum:
+          - connection
+          - module_init
+          - module_execution
+          - driver_load
+          - system_resource
+        message:
+          type: string
+        context:
+          type: object
+          additionalProperties:
+            type: string
+        severity:
+          type: string
+          enum:
+          - info
+          - warning
+          - error
+          - critical
+      required:
+      - timestamp
+      - edge_id
+      - error_type
+      - message
+      - context
+      - severity
+      description: Edge-specific error tracking
+    PlaceOS__Core__EdgeModuleStatus:
+      type: object
+      properties:
+        edge_id:
+          type: string
+        total_modules:
+          type: integer
+          format: Int32
+        running_modules:
+          type: integer
+          format: Int32
+        failed_modules:
+          type: array
+          items:
+            type: string
+        initialization_errors:
+          type: array
+          items:
+            type: object
+            properties:
+              module_id:
+                type: string
+              driver_key:
+                type: string
+              error_message:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+              retry_count:
+                type: integer
+                format: Int32
+            required:
+            - module_id
+            - driver_key
+            - error_message
+            - timestamp
+            - retry_count
+      required:
+      - edge_id
+      - total_modules
+      - running_modules
+      - failed_modules
+      - initialization_errors
+      description: Edge module status aggregation
+    Hash_String__PlaceOS__Core__EdgeHealth_:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          edge_id:
+            type: string
+          connected:
+            type: boolean
+          last_seen:
+            type: string
+            format: date-time
+          connection_uptime:
+            type: object
+          error_count_24h:
+            type: integer
+            format: Int32
+          module_count:
+            type: integer
+            format: Int32
+          failed_modules:
+            type: array
+            items:
+              type: string
+        required:
+        - edge_id
+        - connected
+        - last_seen
+        - connection_uptime
+        - error_count_24h
+        - module_count
+        - failed_modules
+    Hash_String__PlaceOS__Core__ConnectionMetrics_:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          edge_id:
+            type: string
+          total_connections:
+            type: integer
+            format: Int32
+          failed_connections:
+            type: integer
+            format: Int32
+          average_uptime:
+            type: object
+          last_connection_attempt:
+            type: string
+            format: date-time
+          last_successful_connection:
+            type: string
+            format: date-time
+        required:
+        - edge_id
+        - total_connections
+        - failed_connections
+        - average_uptime
+        - last_connection_attempt
+        - last_successful_connection
+    Hash_String__Array_PlaceOS__Core__EdgeError__:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            edge_id:
+              type: string
+            error_type:
+              type: string
+              enum:
+              - connection
+              - module_init
+              - module_execution
+              - driver_load
+              - system_resource
+            message:
+              type: string
+            context:
+              type: object
+              additionalProperties:
+                type: string
+            severity:
+              type: string
+              enum:
+              - info
+              - warning
+              - error
+              - critical
+          required:
+          - timestamp
+          - edge_id
+          - error_type
+          - message
+          - context
+          - severity
+    Hash_String__Array_PlaceOS__Core__ModuleInitError__:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: object
+          properties:
+            module_id:
+              type: string
+            driver_key:
+              type: string
+            error_message:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+            retry_count:
+              type: integer
+              format: Int32
+          required:
+          - module_id
+          - driver_key
+          - error_message
+          - timestamp
+          - retry_count
+    PlaceOS__Core__Api__Status__EdgeStatistics:
+      type: object
+      properties:
+        total_edges:
+          type: integer
+          format: Int32
+        connected_edges:
+          type: integer
+          format: Int32
+        disconnected_edges:
+          type: integer
+          format: Int32
+        total_errors_24h:
+          type: integer
+          format: Int32
+        total_modules:
+          type: integer
+          format: Int32
+        failed_modules:
+          type: integer
+          format: Int32
+        average_uptime:
+          type: object
+      required:
+      - total_edges
+      - connected_edges
+      - disconnected_edges
+      - total_errors_24h
+      - total_modules
+      - failed_modules
+      - average_uptime
     PlaceOS__Core__Api__Application__CommonError:
       type: object
       properties:
