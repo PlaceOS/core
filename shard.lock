@@ -195,15 +195,15 @@ shards:
 
   pool:
     git: https://github.com/ysbaddaden/pool.git
-    version: 0.3.0
+    version: 0.2.4
 
   promise:
     git: https://github.com/spider-gazelle/promise.git
     version: 3.2.0
 
-  redis:
+  redis: # Overridden
     git: https://github.com/stefanwille/crystal-redis.git
-    version: 2.7.0+git.commit.e81d33945592688c07add1274b811c06d0e4ee26
+    version: 2.9.1
 
   redis-cluster:
     git: https://github.com/place-labs/redis-cluster.cr.git
