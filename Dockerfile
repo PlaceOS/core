@@ -62,6 +62,9 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN mkdir -p repositories bin/drivers tmp \
   && chown appuser -R /app
 
+# Create tmp directory with proper permissions
+RUN rm -rf /tmp && mkdir -p /tmp && chmod 1777 /tmp
+
 ###############################################################################
 
 FROM scratch AS minimal
@@ -83,7 +86,9 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 COPY --from=build /usr/share/zoneinfo/ /usr/share/zoneinfo/
 
 # configure folder permissions
-COPY --from=build --chown=0:0 /app/tmp /tmp
+# Copy tmp directory
+COPY --from=build /tmp /tmp
+
 COPY --from=build --chown=0:0 /app/bin/drivers /app/bin/drivers
 
 # This seems to be the only way to set permissions properly
