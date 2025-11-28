@@ -151,7 +151,7 @@ shards:
 
   openssl_ext:
     git: https://github.com/spider-gazelle/openssl_ext.git
-    version: 2.8.1
+    version: 2.8.2
 
   pars: # Overridden
     git: https://github.com/spider-gazelle/pars.git
@@ -255,5 +255,5 @@ shards:
 
   upload-signer:
     git: https://github.com/spider-gazelle/upload-signer.git
-    version: 0.2.0+git.commit.fdf8a1b2886006777efd01d69450c2028e0cf21e
+    version: 0.2.1+git.commit.55191d74c9bb2c7c6813c3abd11fd80ccea0a29d
 
