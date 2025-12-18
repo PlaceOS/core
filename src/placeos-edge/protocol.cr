@@ -125,6 +125,8 @@ module PlaceOS::Edge::Protocol
         ProxyRedis # Success
         FetchBinary
         SettingsAction # Success
+        ErrorReport    # Success
+        HealthReport   # Success
 
         # Response
         Success
@@ -313,6 +315,22 @@ module PlaceOS::Edge::Protocol
       getter setting_value : String
 
       def initialize(@module_id, @setting_name, @setting_value)
+      end
+    end
+
+    struct ErrorReport < Client::Request
+      getter errors : Array(String) # JSON serialized EdgeError objects
+      getter edge_id : String
+
+      def initialize(@edge_id, @errors)
+      end
+    end
+
+    struct HealthReport < Client::Request
+      getter health : String # JSON serialized EdgeHealth object
+      getter edge_id : String
+
+      def initialize(@edge_id, @health)
       end
     end
 

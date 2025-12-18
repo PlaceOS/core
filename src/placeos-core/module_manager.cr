@@ -15,6 +15,7 @@ require "./process_check"
 require "./process_manager/edge"
 require "./process_manager/local"
 require "./driver_manager"
+require "./edge_error"
 
 module PlaceOS::Core
   class ModuleManager < Resource(Model::Module)
@@ -80,6 +81,7 @@ module PlaceOS::Core
     def start(timeout : Time::Span = LOAD_TIMEOUT)
       start_clustering
       start_process_check
+      start_error_cleanup
 
       stabilize_lock.synchronize do
         super(timeout)
@@ -432,6 +434,76 @@ module PlaceOS::Core
 
     def self.needs_restart?(mod : Model::Module) : Bool
       mod.ip_changed? || mod.port_changed? || mod.tls_changed? || mod.udp_changed? || mod.makebreak_changed? || mod.uri_changed?
+    end
+
+    # Edge Error Aggregation Methods
+    ###############################################################################################
+
+    # Get errors from all edges or a specific edge
+    def edge_errors(edge_id : String? = nil) : Hash(String, Array(PlaceOS::Core::EdgeError))
+      if edge_id
+        errors = [] of PlaceOS::Core::EdgeError
+        edge_processes.for?(edge_id) { |manager| errors = manager.get_recent_errors }
+        {edge_id => errors}
+      else
+        edge_processes.collect_edge_errors
+      end
+    end
+
+    # Get module failures from all edges or a specific edge
+    def edge_module_failures(edge_id : String? = nil) : Hash(String, Array(PlaceOS::Core::ModuleError))
+      if edge_id
+        failures = edge_processes.edge_module_failures(edge_id)
+        {edge_id => failures.values.flatten.map { |init_error|
+          PlaceOS::Core::ModuleError.new("Module initialization failed: #{init_error.error_message}")
+        }}
+      else
+        edge_processes.edge_module_status.transform_values do |status|
+          status.initialization_errors.map { |init_error|
+            PlaceOS::Core::ModuleError.new("Module initialization failed: #{init_error.error_message}")
+          }
+        end
+      end
+    end
+
+    # Get connection status for all edges
+    def edge_connection_status : Hash(String, Bool)
+      edge_processes.edge_connection_status
+    end
+
+    # Get health status for all edges
+    def edge_health_status : Hash(String, PlaceOS::Core::EdgeHealth)
+      edge_processes.edge_health_status
+    end
+
+    # Get module status for all edges
+    def edge_module_status : Hash(String, PlaceOS::Core::EdgeModuleStatus)
+      edge_processes.edge_module_status
+    end
+
+    # Get connection metrics for all edges
+    def edge_connection_metrics : Hash(String, PlaceOS::Core::ConnectionMetrics)
+      edge_processes.edge_connection_metrics
+    end
+
+    # Cleanup old errors across all edges
+    def cleanup_old_edge_errors(older_than : Time::Span = 24.hours)
+      edge_processes.cleanup_old_errors(older_than)
+    end
+
+    # Start periodic error cleanup task
+    protected def start_error_cleanup
+      spawn(name: "edge_error_cleanup") do
+        loop do
+          sleep 1.hour
+          begin
+            cleanup_old_edge_errors
+            Log.debug { "completed periodic edge error cleanup" }
+          rescue e
+            Log.error(exception: e) { "error during periodic edge error cleanup" }
+          end
+        end
+      end
     end
   end
 end
