@@ -22,10 +22,18 @@ module PlaceOS::Core
 
     class_property uri : URI = URI.new("http", CORE_HOST, CORE_PORT)
 
+    # Delay before unloading an idle lazy module
+    class_property lazy_unload_delay : Time::Span = ENV["LAZY_UNLOAD_DELAY"]?.try(&.to_i.seconds) || 30.seconds
+
     getter clustering : Clustering
     getter discovery : Clustering::Discovery
 
     protected getter store : DriverStore
+
+    # Track registered lazy modules (module_id => true)
+    # These are modules with launch_on_execute that are "running" but driver not spawned
+    getter lazy_modules : Hash(String, Bool) = {} of String => Bool
+    private getter lazy_modules_lock : Mutex = Mutex.new
 
     def stop
       clustering.unregister
@@ -142,6 +150,12 @@ module PlaceOS::Core
       allocated_uri = ModuleManager.core_uri(mod, rendezvous_hash)
 
       if allocated_uri == @clustering.uri
+        # Handle lazy-load modules: register without spawning driver
+        if mod.launch_on_execute && mod.running
+          register_lazy_module(mod)
+          return
+        end
+
         driver = mod.driver!
         driver_id = driver.id.as(String)
         # repository_folder = driver.repository.not_nil!.folder_name
@@ -178,15 +192,25 @@ module PlaceOS::Core
     # Stop and unload the module from node
     #
     def unload_module(mod : Model::Module)
+      module_id = mod.id.as(String)
+
+      # Remove from lazy modules tracking if present
+      unregister_lazy_module(module_id)
+
       stop_module(mod)
 
-      module_id = mod.id.as(String)
       process_manager(mod, &.unload(module_id))
       Log.info { {message: "unloaded module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
     end
 
     def start_module(mod : Model::Module)
       module_id = mod.id.as(String)
+
+      # For lazy modules, just ensure metadata is in Redis (driver not spawned yet)
+      if mod.launch_on_execute
+        register_lazy_module(mod)
+        return
+      end
 
       process_manager(mod) { |manager| manager.start(module_id, ModuleManager.start_payload(mod)) }
 
@@ -210,6 +234,14 @@ module PlaceOS::Core
     #
     def stop_module(mod : Model::Module)
       module_id = mod.id.as(String)
+
+      # For lazy modules, just remove from tracking and clear metadata
+      if mod.launch_on_execute
+        unregister_lazy_module(module_id)
+        clear_module_metadata(module_id)
+        Log.info { {message: "stopped lazy module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+        return
+      end
 
       process_manager(mod, &.stop(module_id))
       Log.info { {message: "stopped module", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
@@ -412,7 +444,7 @@ module PlaceOS::Core
         # Merge module settings
         merged_settings = mod.merge_settings
       rescue e
-        merged_settings = "{}".to_json
+        merged_settings = "{}"
         Log.error(exception: e) { {message: "Failed to merge module settings", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
       end
 
@@ -432,6 +464,74 @@ module PlaceOS::Core
 
     def self.needs_restart?(mod : Model::Module) : Bool
       mod.ip_changed? || mod.port_changed? || mod.tls_changed? || mod.udp_changed? || mod.makebreak_changed? || mod.uri_changed?
+    end
+
+    # Lazy Module Support
+    ###########################################################################
+
+    # Register a lazy module: populate metadata in Redis without spawning driver
+    def register_lazy_module(mod : Model::Module)
+      module_id = mod.id.as(String)
+
+      lazy_modules_lock.synchronize do
+        return if lazy_modules[module_id]?
+        lazy_modules[module_id] = true
+      end
+
+      populate_lazy_module_metadata(mod)
+      Log.info { {message: "registered lazy module (driver not spawned)", module_id: module_id, name: mod.name, custom_name: mod.custom_name} }
+    end
+
+    # Unregister a lazy module from tracking
+    def unregister_lazy_module(module_id : String)
+      lazy_modules_lock.synchronize do
+        lazy_modules.delete(module_id)
+      end
+    end
+
+    # Check if a module is registered as lazy (running but driver not spawned)
+    def lazy_module?(module_id : String) : Bool
+      lazy_modules_lock.synchronize do
+        lazy_modules[module_id]? || false
+      end
+    end
+
+    # Populate module metadata in Redis from build service (without spawning driver)
+    def populate_lazy_module_metadata(mod : Model::Module)
+      module_id = mod.id.as(String)
+      driver = mod.driver!
+      repository = driver.repository!
+
+      # Fetch metadata from build service
+      result = store.metadata(driver.file_name, driver.commit, repository.branch, repository.uri)
+      unless result.success
+        Log.warn { {message: "failed to fetch lazy module metadata from build service", module_id: module_id, error: result.output} }
+        return
+      end
+
+      begin
+        metadata = JSON.parse(result.output)
+        interface_data = metadata.as_h.dup
+
+        # Add module-specific notes (same as driver does)
+        interface_data["notes"] = JSON::Any.new(mod.notes)
+
+        # Store in Redis at same key driver would use
+        Driver::RedisStorage.with_redis do |redis|
+          redis.set("interface/#{module_id}", interface_data.to_json)
+        end
+
+        Log.debug { {message: "populated lazy module metadata", module_id: module_id} }
+      rescue e
+        Log.error(exception: e) { {message: "failed to parse/store lazy module metadata", module_id: module_id} }
+      end
+    end
+
+    # Clear module metadata from Redis
+    def clear_module_metadata(module_id : String)
+      Driver::RedisStorage.with_redis do |redis|
+        redis.del("interface/#{module_id}")
+      end
     end
   end
 end
