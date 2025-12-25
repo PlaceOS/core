@@ -44,6 +44,50 @@ module PlaceOS::Core::Api
       ensure
         resource_manager.try &.stop
       end
+
+      it "executes a command on a lazy module (launch_on_execute)" do
+        _, _, mod, resource_manager = create_resources
+        mod_id = mod.id.as(String)
+
+        # Set module as lazy-load
+        mod.launch_on_execute = true
+        mod.running = true
+        mod.save!
+
+        module_manager = module_manager_mock
+        # Register as lazy (don't spawn driver)
+        module_manager.load_module(mod)
+        Command.mock_module_manager = module_manager
+
+        # Verify driver is not spawned
+        module_manager.local_processes.module_loaded?(mod_id).should be_false
+        module_manager.lazy_module?(mod_id).should be_true
+
+        # Execute should work (will spawn driver on demand)
+        route = File.join(namespace, mod_id, "execute")
+        response = client.post(route, headers: json_headers, body: EXEC_PAYLOAD)
+        response.status_code.should eq 200
+
+        result = response.body rescue nil
+        result.should eq %("you can delete this file")
+      ensure
+        resource_manager.try &.stop
+      end
+
+      it "returns 404 for non-lazy module that is not loaded" do
+        _, _, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
+        mod_id = mod.id.as(String)
+
+        # Don't load the module, but it's not lazy either
+        module_manager = module_manager_mock
+        Command.mock_module_manager = module_manager
+
+        route = File.join(namespace, mod_id, "execute")
+        response = client.post(route, headers: json_headers, body: EXEC_PAYLOAD)
+        response.status_code.should eq 404
+      ensure
+        module_manager.try &.stop
+      end
     end
 
     describe "command/:module_id/debugger" do
