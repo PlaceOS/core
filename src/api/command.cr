@@ -27,9 +27,17 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(description: "the user context for the execution", example: "user-1234")]
       user_id : String? = nil,
     ) : Nil
+      # Check if module is loaded, or is a lazy module that can be loaded on demand
       unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
-        Log.info { {module_id: module_id, message: "module not loaded"} }
-        raise Error::NotFound.new("module #{module_id} not loaded")
+        # Not loaded - check if it's a lazy module
+        unless module_manager.lazy_module?(module_id)
+          # Not a registered lazy module - check DB for launch_on_execute flag
+          mod = Model::Module.find(module_id)
+          unless mod && mod.launch_on_execute
+            Log.info { {module_id: module_id, message: "module not loaded"} }
+            raise Error::NotFound.new("module #{module_id} not loaded")
+          end
+        end
       end
 
       # NOTE:: we don't use the AC body helper for performance reasons.
