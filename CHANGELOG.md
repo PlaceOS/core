@@ -1,3 +1,10 @@
+## Unreleased
+
+### Feat
+
+- [PPT-2215] add support for launch on execute drivers ([#287](https://github.com/PlaceOS/core/pull/287))
+- **shard.yaml**: update redis-cluster & bump version
+
 ## v4.20.2 (2025-10-23)
 
 ### Refactor
