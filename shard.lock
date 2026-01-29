@@ -171,7 +171,7 @@ shards:
 
   place_calendar:
     git: https://github.com/placeos/calendar.git
-    version: 4.29.3
+    version: 4.29.4
 
   placeos-core-client:
     git: https://github.com/placeos/core-client.git
