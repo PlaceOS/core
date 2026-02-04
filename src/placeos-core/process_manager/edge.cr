@@ -69,7 +69,7 @@ module PlaceOS::Core
       } }
     end
 
-    def execute(module_id : String, payload : String, user_id : String?)
+    def execute(module_id : String, payload : String, user_id : String?, mod : Model::Module? = nil)
       response = Protocol.request(Protocol::Message::Execute.new(module_id, payload, user_id), expect: Protocol::Message::ExecuteResponse, preserve_response: true)
       if response.nil?
         raise PlaceOS::Driver::RemoteException.new("No response received from edge received", IO::TimeoutError.class.to_s)

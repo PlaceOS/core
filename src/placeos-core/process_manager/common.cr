@@ -2,22 +2,7 @@ require "hardware"
 
 # Methods for interacting with module processes common across a local and edge node
 module PlaceOS::Core::ProcessManager::Common
-  def execute(module_id : String, payload : String | IO, user_id : String?)
-    manager = protocol_manager_by_module?(module_id)
-
-    raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
-
-    request_body = payload.is_a?(IO) ? payload.gets_to_end : payload
-    manager.execute(
-      module_id,
-      request_body,
-      user_id: user_id,
-    )
-  rescue error : PlaceOS::Driver::RemoteException
-    raise error
-  rescue exception
-    raise module_error(module_id, exception)
-  end
+  abstract def execute(module_id : String, payload : String | IO, user_id : String?, mod : Model::Module? = nil)
 
   def start(module_id : String, payload : String)
     manager = protocol_manager_by_module?(module_id)
@@ -268,7 +253,7 @@ module PlaceOS::Core::ProcessManager::Common
   #################################################################################################
 
   macro module_error(module_id, exception)
-    if {{ exception }}.is_a?(ModuleError)
+    if {{ exception }}.is_a?(::PlaceOS::Core::ModuleError)
       {{ exception }}
     else
       %driver_path = path_for?({{ module_id }})
@@ -276,7 +261,7 @@ module PlaceOS::Core::ProcessManager::Common
       %context << "module manager not present" unless protocol_manager_by_module?({{ module_id }})
       %context << "driver expected at #{%driver_path} not present" if %driver_path && !File.exists?(%driver_path)
       %message = "When invoking {{@def.name}} on #{{{module_id}}} #{%context.join(", ")}"
-      ModuleError.new(%message, cause: {{ exception }})
+      ::PlaceOS::Core::ModuleError.new(%message, cause: {{ exception }})
     end
   end
 end
