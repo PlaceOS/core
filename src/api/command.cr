@@ -27,18 +27,7 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(description: "the user context for the execution", example: "user-1234")]
       user_id : String? = nil,
     ) : Nil
-      # Check if module is loaded, or is a lazy module that can be loaded on demand
-      unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
-        # Not loaded - check if it's a lazy module
-        unless module_manager.lazy_module?(module_id)
-          # Not a registered lazy module - check DB for launch_on_execute flag
-          mod = Model::Module.find(module_id)
-          unless mod && mod.launch_on_execute
-            Log.info { {module_id: module_id, message: "module not loaded"} }
-            raise Error::NotFound.new("module #{module_id} not loaded")
-          end
-        end
-      end
+      manager, mod_orm = module_manager.process_manager(module_id)
 
       # NOTE:: we don't use the AC body helper for performance reasons.
       # we're just proxying the JSON to the driver without parsing it
@@ -49,9 +38,7 @@ module PlaceOS::Core::Api
         raise Error::NotAcceptable.new(message)
       end
 
-      execute_output = module_manager.process_manager(module_id) do |manager|
-        manager.execute(module_id, body, user_id: user_id)
-      end
+      execute_output = manager.execute(module_id, body, user_id: user_id, mod: mod_orm)
 
       # NOTE:: we are not using the typical response processing
       # as we don't need to deserialise
@@ -73,7 +60,8 @@ module PlaceOS::Core::Api
       module_id : String,
     ) : Nil
       # Forward debug messages to the websocket
-      module_manager.process_manager(module_id, &.attach_debugger(module_id, socket))
+      manager, _mod_orm = module_manager.process_manager(module_id)
+      manager.attach_debugger(module_id, socket)
     end
 
     @[AC::Route::Exception(PlaceOS::Driver::RemoteException, status_code: HTTP::Status::NON_AUTHORITATIVE_INFORMATION)]

@@ -60,19 +60,29 @@ module PlaceOS::Core
       false
     end
 
-    def execute(module_id : String, payload : String | IO, user_id : String?)
-      # Check if this is a lazy module that needs to be loaded
-      mod = Model::Module.find?(module_id)
-      if mod && mod.launch_on_execute
-        return execute_lazy(mod, payload, user_id)
-      end
+    def execute(module_id : String, payload : String | IO, user_id : String?, mod : Model::Module? = nil)
+      mod = mod || Model::Module.find?(module_id)
+      raise ModuleError.new("Could not locate module #{module_id}, no matching database record") unless mod
 
-      super
-    rescue exception : ModuleError
+      # Check if this is a lazy module that needs to be loaded
+      return execute_lazy(mod, payload, user_id) if mod.launch_on_execute
+      raise ModuleError.new("Could not locate module #{module_id}, it is stopped") unless mod.running
+
+      # the module should be running and have a management module
+      manager = protocol_manager_by_module?(module_id) || ensure_lazy_module_loaded(mod)
+      request_body = payload.is_a?(IO) ? payload.gets_to_end : payload
+      manager.execute(
+        module_id,
+        request_body,
+        user_id: user_id,
+      )
+    rescue error : PlaceOS::Driver::RemoteException
+      raise error
+    rescue exception
       if exception.message =~ /module #{module_id} not running on this host/
         raise no_module_error(module_id, exception)
       else
-        raise exception
+        raise module_error(module_id, exception)
       end
     end
 
@@ -85,12 +95,9 @@ module PlaceOS::Core
 
       begin
         # Ensure driver is spawned and module is loaded
-        ensure_lazy_module_loaded(mod)
+        manager = ensure_lazy_module_loaded(mod)
 
         # Execute the request
-        manager = protocol_manager_by_module?(module_id)
-        raise ModuleError.new("No protocol manager for lazy module #{module_id}") if manager.nil?
-
         request_body = payload.is_a?(IO) ? payload.gets_to_end : payload
         manager.execute(module_id, request_body, user_id: user_id)
       ensure
@@ -105,9 +112,9 @@ module PlaceOS::Core
       module_id = mod.id.as(String)
 
       # Already loaded?
-      if protocol_manager_by_module?(module_id)
+      if manager = protocol_manager_by_module?(module_id)
         Log.debug { {message: "lazy module already loaded", module_id: module_id} }
-        return
+        return manager
       end
 
       driver = mod.driver!
@@ -128,6 +135,7 @@ module PlaceOS::Core
 
         Log.info { {message: "spawned driver for lazy module execution", module_id: module_id, name: mod.name} }
       end
+      manager.as(Driver::Protocol::Management)
     end
 
     # Schedule unload of lazy module after idle timeout
@@ -236,18 +244,21 @@ module PlaceOS::Core
     def on_exec(request : Request, response_callback : Request ->)
       module_manager = ModuleManager.instance
       module_id = request.id
-      request = if module_manager.process_manager(module_id, &.module_loaded?(module_id))
-                  local_execute(request)
+
+      manager, mod_orm = module_manager.process_manager(module_id)
+      request = if manager.module_loaded?(module_id)
+                  local_execute(request, module_id, mod_orm)
                 else
                   core_uri = which_core(module_id)
                   if core_uri == discovery.uri
                     # If the module maps to this node
-                    local_execute(request)
+                    local_execute(request, module_id, mod_orm)
                   else
                     # Otherwise, dial core node responsible for the module
                     remote_execute(core_uri, request)
                   end
                 end
+
       response_callback.call(request)
     rescue error
       request.set_error(error)
@@ -291,35 +302,10 @@ module PlaceOS::Core
       request
     end
 
-    protected def local_execute(request)
-      module_id = request.id
-
-      module_manager = ModuleManager.instance
-      unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
-        Log.info { {module_id: module_id, message: "module not loaded"} }
-        # Attempt to start the module, recover from abnormal conditions
-        begin
-          module_manager.start_module(Model::Module.find!(module_id))
-        rescue exception
-          raise no_module_error(module_id, exception)
-        end
-        raise no_module_error(module_id) unless module_manager.process_manager(module_id, &.module_loaded?(module_id))
-      end
-
-      begin
-        response = module_manager.process_manager(module_id) { |manager|
-          manager.execute(module_id, request.payload.as(String), user_id: request.user_id)
-        } || {"".as(String?), 500}
-        request.code = response[1]
-        request.payload = response[0]
-      rescue exception
-        if exception.message.try(&.includes?("module #{module_id} not running on this host"))
-          raise no_module_error(module_id, exception)
-        else
-          raise exception
-        end
-      end
-
+    protected def local_execute(request, module_id, mod_orm)
+      response = execute(module_id, request.payload.as(String), request.user_id, mod_orm) || {"".as(String?), 500}
+      request.code = response[1]
+      request.payload = response[0]
       request.cmd = :result
       request
     end

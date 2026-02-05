@@ -307,27 +307,39 @@ module PlaceOS::Core
     end
 
     ###############################################################################################
-
     # Delegate `Model::Module` to a `ProcessManager`, either local or on an edge
     #
-    def process_manager(mod : Model::Module | String, & : ProcessManager ->)
-      edge_id = case mod
+    def process_manager(mod : String) : Tuple(ProcessManager, Model::Module)
+      mod_orm = case mod
                 in Model::Module
-                  mod.edge_id if mod.on_edge?
+                  mod
                 in String
-                  # TODO: Cache `Module` to `Edge` relation in `ModuleManager`
-                  Model::Module.find!(mod).edge_id if Model::Module.has_edge_hint?(mod)
+                  mod_lookup = Model::Module.find?(mod)
+                  raise ModuleError.new("Could not locate module #{mod}, no matching database record") unless mod_lookup
+                  mod_lookup
                 end
 
-      if edge_id
+      if mod_orm.on_edge? && (edge_id = mod_orm.edge_id)
+        if (manager = edge_processes.for?(edge_id)).nil?
+          raise ModuleError.new("Could not locate module #{mod_orm.id}, missing edge manager for #{edge_id}")
+        end
+        return {manager, mod_orm}
+      end
+
+      {local_processes, mod_orm}
+    end
+
+    # if we have the module loaded
+    def process_manager(mod : Model::Module, & : ProcessManager ->)
+      if mod.on_edge? && (edge_id = mod.edge_id)
         if (manager = edge_processes.for?(edge_id)).nil?
           Log.error { "missing edge manager for #{edge_id}" }
           return
         end
         yield manager
-      else
-        yield local_processes
       end
+
+      yield local_processes
     end
 
     def process_manager(driver_key : String, edge_id : String?) : ProcessManager?

@@ -65,6 +65,26 @@ module PlaceOS::Edge
       @uri = uri
     end
 
+    alias ModuleError = ::PlaceOS::Core::ModuleError
+
+    # Implement the abstract method from Common
+    def execute(module_id : String, payload : String | IO, user_id : String?, mod : Model::Module? = nil)
+      manager = protocol_manager_by_module?(module_id)
+
+      raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
+
+      request_body = payload.is_a?(IO) ? payload.gets_to_end : payload
+      manager.execute(
+        module_id,
+        request_body,
+        user_id: user_id,
+      )
+    rescue error : PlaceOS::Driver::RemoteException
+      raise error
+    rescue exception
+      raise module_error(module_id, exception)
+    end
+
     # Initialize the WebSocket API
     #
     # Optionally accepts a block called after connection has been established.
