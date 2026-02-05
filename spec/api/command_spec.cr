@@ -74,7 +74,7 @@ module PlaceOS::Core::Api
         resource_manager.try &.stop
       end
 
-      it "returns 404 for non-lazy module that is not loaded" do
+      it "recovers a module that is not loaded but should be" do
         _, _, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
         mod_id = mod.id.as(String)
 
@@ -84,7 +84,7 @@ module PlaceOS::Core::Api
 
         route = File.join(namespace, mod_id, "execute")
         response = client.post(route, headers: json_headers, body: EXEC_PAYLOAD)
-        response.status_code.should eq 404
+        response.status_code.should eq 200
       ensure
         module_manager.try &.stop
       end
