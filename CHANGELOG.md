@@ -2,6 +2,7 @@
 
 ### Feat
 
+- improve exec flows ([#288](https://github.com/PlaceOS/core/pull/288))
 - [PPT-2215] add support for launch on execute drivers ([#287](https://github.com/PlaceOS/core/pull/287))
 - **shard.yaml**: update redis-cluster & bump version
 
