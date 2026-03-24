@@ -143,7 +143,7 @@ shards:
 
   neuroplastic:
     git: https://github.com/spider-gazelle/neuroplastic.git
-    version: 1.13.1
+    version: 1.14.1
 
   office365:
     git: https://github.com/placeos/office365.git
@@ -187,7 +187,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.85.0
+    version: 9.86.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
