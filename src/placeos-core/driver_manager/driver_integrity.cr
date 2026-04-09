@@ -4,16 +4,19 @@ require "tasker"
 require "./driver_store"
 
 module PlaceOS::Core::DriverIntegrity
-  DEFAULT_SCAN_INTERVAL = 2.hours
-  DISABLE_DRIVER_SCAN = ENV["INTEGRITY_SCAN_DISABLED"]? == "true"
+  DEFAULT_SCAN_INTERVAL         = 2.hours
+  DRIVER_SCAN_ENABLED           = ENV["INTEGRITY_SCAN_ENABLED"]? == "true"
+  DRIVER_SCAN_DOWNLOAD_DISABLED = ENV["DRIVER_SCAN_DOWNLOAD_DISABLED"]? == "true"
+  DRIVER_SCAN_LOAD_DISABLED     = ENV["DRIVER_SCAN_LOAD_DISABLED"]? == "true"
 
   record DriverRecord, id : String, driver_file : String, file_name : String, commit : String, uri : String, branch : String, username : String?, password : String?, running : Bool do
     include DB::Serializable
   end
+
   @@tasker_inst : Tasker::Repeat(Nil)?
 
   def self.start_integrity_checker : Nil
-    return if DISABLE_DRIVER_SCAN
+    return unless DRIVER_SCAN_ENABLED
     @@tasker_inst = Tasker.every(ENV["INTEGRITY_SCAN_INTERVAL"]?.try &.to_i.hours || DEFAULT_SCAN_INTERVAL) do
       sync_drivers
     end
@@ -48,8 +51,8 @@ module PlaceOS::Core::DriverIntegrity
     stale = existing - db_drivers
     FileUtils.rm_rf(stale.map { |file| Path[DriverStore::BINARY_PATH, file] }) unless stale.empty?
     add_drivers_obj = drivers_arr.select { |rec| (rec.driver_file + Core::ARCH).in?(add_drivers) }
-    download_drivers(add_drivers_obj)
-    load_running_modules(drivers_arr.select(&.running))
+    download_drivers(add_drivers_obj) if !add_drivers_obj.empty? && !DRIVER_SCAN_DOWNLOAD_DISABLED
+    load_running_modules(drivers_arr.select(&.running)) unless DRIVER_SCAN_LOAD_DISABLED
   end
 
   def self.all_drivers : Array(DriverRecord)
@@ -85,12 +88,13 @@ module PlaceOS::Core::DriverIntegrity
     drivers_to_start = drivers.select { |rec| (rec.driver_file + Core::ARCH).in?(drivers_delta) }
     module_manager = ModuleManager.instance
     drivers_to_start.each do |driver|
-      Log.warn { "driver integrity reloading driver: #{driver.file_name} #{driver.commit} (#{driver.id})" }
+      Log.warn { "[driver integrity] reloading driver: #{driver.file_name} #{driver.commit} (#{driver.id})" }
       module_manager.reload_modules(Model::Driver.find!(driver.id))
     end
   end
 
   def self.download_drivers(drivers : Array(DriverRecord))
+    Log.warn { "[driver integrity] downloading #{drivers.size} missing executables" }
     store = DriverStore.new
     drivers.each do |driver|
       next if store.built?(driver.file_name, driver.commit, driver.branch, driver.uri)
