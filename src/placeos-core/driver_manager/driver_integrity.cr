@@ -61,12 +61,14 @@ module PlaceOS::Core::DriverIntegrity
           WHEN char_length(d.commit) >= 7 THEN LEFT(d.commit, 7)
           ELSE d.commit
         END) || '_' AS driver_file,
-        d.id, d.file_name, d.commit, r.uri, r.branch,r.username, r.password, m.running
+        d.id, d.file_name, d.commit, r.uri, r.branch, r.username, r.password,
+        bool_or(m.running) AS running
     FROM driver d
     JOIN repo r ON d.repository_id = r.id
     JOIN mod m ON d.id = m.driver_id
     WHERE d.compilation_output IS NULL
-      AND r.has_runtime_error = false;
+      AND r.has_runtime_error = false
+    GROUP BY d.id, r.id;
     SQL
 
     result = ::DB.connect(Healthcheck.pg_healthcheck_url) do |db|
