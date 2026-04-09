@@ -5,19 +5,21 @@ require "./driver_store"
 
 module PlaceOS::Core::DriverIntegrity
   DEFAULT_SCAN_INTERVAL = 2.hours
+  DISABLE_DRIVER_SCAN = ENV["INTEGRITY_SCAN_DISABLED"]? == "true"
 
   record DriverRecord, id : String, driver_file : String, file_name : String, commit : String, uri : String, branch : String, username : String?, password : String?, running : Bool do
     include DB::Serializable
   end
   @@tasker_inst : Tasker::Repeat(Nil)?
 
-  def self.start_integrity_checker
+  def self.start_integrity_checker : Nil
+    return if DISABLE_DRIVER_SCAN
     @@tasker_inst = Tasker.every(ENV["INTEGRITY_SCAN_INTERVAL"]?.try &.to_i.hours || DEFAULT_SCAN_INTERVAL) do
       sync_drivers
     end
   end
 
-  def self.stop_integrity_checker
+  def self.stop_integrity_checker : Nil
     @@tasker_inst.try &.cancel
   end
 
@@ -81,6 +83,7 @@ module PlaceOS::Core::DriverIntegrity
     drivers_to_start = drivers.select { |rec| (rec.driver_file + Core::ARCH).in?(drivers_delta) }
     module_manager = ModuleManager.instance
     drivers_to_start.each do |driver|
+      Log.warn { "driver integrity reloading driver: #{driver.file_name} #{driver.commit} (#{driver.id})" }
       module_manager.reload_modules(Model::Driver.find!(driver.id))
     end
   end
