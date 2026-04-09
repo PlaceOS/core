@@ -6,8 +6,8 @@ require "./driver_store"
 module PlaceOS::Core::DriverIntegrity
   DEFAULT_SCAN_INTERVAL         = 2.hours
   DRIVER_SCAN_ENABLED           = ENV["INTEGRITY_SCAN_ENABLED"]? == "true"
-  DRIVER_SCAN_DOWNLOAD_DISABLED = ENV["DRIVER_SCAN_DOWNLOAD_DISABLED"]? == "true"
-  DRIVER_SCAN_LOAD_DISABLED     = ENV["DRIVER_SCAN_LOAD_DISABLED"]? == "true"
+  DRIVER_SCAN_DOWNLOAD_DISABLED = ENV["INTEGRITY_SCAN_DOWNLOAD_DISABLED"]? == "true"
+  DRIVER_SCAN_LOAD_DISABLED     = ENV["INTEGRITY_SCAN_LOAD_DISABLED"]? == "true"
 
   record DriverRecord, id : String, driver_file : String, file_name : String, commit : String, uri : String, branch : String, username : String?, password : String?, running : Bool do
     include DB::Serializable
