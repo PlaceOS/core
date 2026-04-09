@@ -9,6 +9,7 @@
 
 ### Fix
 
+- **process_manager/common**: signal kill for pid -1
 - **driver_integrity**: add disable flag and logging
 
 ## v4.20.2 (2025-10-23)
