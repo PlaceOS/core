@@ -9,6 +9,7 @@
 
 ### Fix
 
+- **driver_integrity**: standardize env vars
 - **driver_integrity**: disable by default
 - **process_manager/common**: signal kill for pid -1
 - **driver_integrity**: add disable flag and logging
