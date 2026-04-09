@@ -50,7 +50,7 @@ module PlaceOS::Core::ProcessManager::Common
   def kill(driver_key : String) : Bool
     !!protocol_manager_by_driver?(driver_key).try do |manager|
       pid = manager.pid
-      Process.signal(Signal::KILL, pid)
+      Process.signal(Signal::KILL, pid) unless pid == -1
       true
     end
   rescue
