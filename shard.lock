@@ -179,7 +179,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 7.20.2
+    version: 7.21.0
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -201,17 +201,17 @@ shards:
     git: https://github.com/spider-gazelle/promise.git
     version: 3.2.0
 
-  redis: # Overridden
-    git: https://github.com/stefanwille/crystal-redis.git
-    version: 2.9.1
+  redis:
+    git: https://github.com/place-labs/crystal-redis.git
+    version: 2.9.1+git.commit.993651b2cd7d472e6d8634337dd0ed9d2a8fa8dd
 
   redis-cluster:
     git: https://github.com/place-labs/redis-cluster.cr.git
-    version: 0.8.10
+    version: 0.8.11
 
   redis_service_manager:
     git: https://github.com/place-labs/redis_service_manager.git
-    version: 3.3.0
+    version: 3.3.1
 
   rendezvous-hash:
     git: https://github.com/caspiano/rendezvous-hash.git
