@@ -179,7 +179,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 7.21.0
+    version: 7.21.1
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -203,7 +203,7 @@ shards:
 
   redis:
     git: https://github.com/place-labs/crystal-redis.git
-    version: 2.9.1+git.commit.993651b2cd7d472e6d8634337dd0ed9d2a8fa8dd
+    version: 2.9.1+git.commit.95ec396dd6fdd772d2cbe0bb14ede7e96e6270df
 
   redis-cluster:
     git: https://github.com/place-labs/redis-cluster.cr.git
