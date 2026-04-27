@@ -13,8 +13,9 @@ require "placeos-models/spec/generator"
 
 require "spec"
 
-SPEC_DRIVER = "drivers/place/private_helper.cr"
-CORE_URL    = ENV["CORE_URL"]? || "http://core:3000"
+SPEC_DRIVER        = "drivers/place/private_helper.cr"
+SPEC_DRIVER_COMMIT = ENV["SPEC_DRIVER_COMMIT"]? || "d2b97745373084441f6035deca6301a633f9edaf"
+CORE_URL           = ENV["CORE_URL"]? || "http://core:3000"
 
 # To reduce the run-time of the very setup heavy specs.
 # - Use teardown if you need to clear a temporary repository
@@ -27,6 +28,24 @@ def random_id
 end
 
 def clear_tables
+  begin
+    PlaceOS::Core::Services.current_resource_manager?.try &.stop
+    PlaceOS::Core::ResourceManager.current_instance?.try &.stop
+  rescue
+  end
+
+  begin
+    if module_manager = PlaceOS::Core::Services.current_module_manager? || PlaceOS::Core::ModuleManager.current_instance?
+      module_manager.local_processes.shutdown
+      module_manager.stop
+    end
+  rescue
+  end
+
+  PlaceOS::Core::ResourceManager.reset_instance
+  PlaceOS::Core::ModuleManager.reset_instance
+  PlaceOS::Core::Services.reset
+
   PlaceOS::Model::ControlSystem.clear
   PlaceOS::Model::Repository.clear
   PlaceOS::Model::Driver.clear
@@ -69,10 +88,14 @@ Spec.before_suite do
 end
 
 Spec.after_suite do
-  PlaceOS::Core::ResourceManager.instance.stop
+  PlaceOS::Core::Services.current_resource_manager?.try &.stop
+  PlaceOS::Core::ResourceManager.current_instance?.try &.stop
+  PlaceOS::Core::Services.current_module_manager?.try &.stop
+  PlaceOS::Core::ModuleManager.current_instance?.try &.stop
+  PlaceOS::Core::ResourceManager.reset_instance
+  PlaceOS::Core::ModuleManager.reset_instance
+  PlaceOS::Core::Services.reset
   Log.builder.bind("*", backend: PlaceOS::LogBackend.log_backend, level: :error)
-  puts "\n> Terminating stray driver processes"
-  `pkill -f ".*core-spec.*"` rescue nil
 end
 
 # Create models for a test
@@ -87,11 +110,7 @@ def setup(role : PlaceOS::Model::Driver::Role? = nil, use_head : Bool = false)
   driver_file_name = "drivers/place/private_helper.cr"
   driver_module_name = "PrivateHelper"
   driver_name = "spec_helper"
-  driver_commit = if use_head
-                    "HEAD"
-                  else
-                    GitRepository.new(repository_uri).commits("master", depth: 1).first.hash
-                  end
+  driver_commit = use_head ? "HEAD" : SPEC_DRIVER_COMMIT
   driver_role = role || PlaceOS::Model::Driver::Role::Logic
 
   existing_repo = PlaceOS::Model::Repository.where(uri: repository_uri).first?
@@ -103,6 +122,14 @@ def setup(role : PlaceOS::Model::Driver::Role? = nil, use_head : Bool = false)
 
   if existing_repo && existing_driver && existing_module && !needs_control_system && right_driver_role
     repository, driver, mod = existing_repo, existing_driver, existing_module
+    # Tests reuse the same models heavily, so normalize mutable runtime-ish
+    # state that other specs may have changed.
+    if mod.edge_id.presence || mod.launch_on_execute || !mod.running
+      mod.edge_id = nil
+      mod.launch_on_execute = false
+      mod.running = true
+      mod.save!
+    end
   else
     clear_tables
 
@@ -176,23 +203,19 @@ class MockClustering < Clustering
 
     ready_cb = Proc(Nil).new do
       cluster_stable_callbacks.each do |callback|
-        spawn do
-          begin
-            callback.call
-          rescue error
-            Log.error(exception: error) { "notifying cluster stable" }
-          end
+        begin
+          callback.call
+        rescue error
+          Log.error(exception: error) { "notifying cluster stable" }
         end
       end
     end
 
     rebalance_callbacks.each do |callback|
-      spawn do
-        begin
-          callback.call(rendezvous_hash, ready_cb)
-        rescue error
-          Log.error(exception: error) { "performing rebalance callback" }
-        end
+      begin
+        callback.call(rendezvous_hash, ready_cb)
+      rescue error
+        Log.error(exception: error) { "performing rebalance callback" }
       end
     end
     true

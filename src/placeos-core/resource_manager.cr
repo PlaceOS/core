@@ -19,11 +19,25 @@ module PlaceOS::Core
     getter? started = false
 
     private getter start_lock = Mutex.new
+    @@instance_lock = Mutex.new
 
     @@instance : ResourceManager?
 
     def self.instance(testing = false) : ResourceManager
-      (@@instance ||= ResourceManager.new(testing: testing)).as(ResourceManager)
+      @@instance_lock.synchronize do
+        (@@instance ||= ResourceManager.new(testing: testing)).as(ResourceManager)
+      end
+    end
+
+    def self.current_instance? : ResourceManager?
+      @@instance
+    end
+
+    def self.reset_instance
+      @@instance_lock.synchronize do
+        @@instance.try &.stop
+        @@instance = nil
+      end
     end
 
     def initialize(
@@ -68,6 +82,7 @@ module PlaceOS::Core
       @started = false
       driver_builder.stop
       control_system_modules.stop
+      driver_module_names.stop
       module_names.stop
       settings_updates.stop
     end

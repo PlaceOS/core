@@ -24,10 +24,14 @@ module PlaceOS::Core
     def attach_debugger(module_id : String, socket : HTTP::WebSocket)
       Log.trace { {message: "binding debug session to module", module_id: module_id} }
 
-      channel = Channel(String).new(capacity: 1)
+      channel = Channel(String).new(capacity: 8)
 
       callback : String -> Nil = ->(message : String) do
-        channel.send(message) unless channel.closed?
+        begin
+          channel.send(message) unless channel.closed?
+        rescue Channel::ClosedError
+          nil
+        end
       end
 
       # Stop debugging when the socket closes
@@ -36,15 +40,19 @@ module PlaceOS::Core
         ignore(module_id, &callback)
       end
 
-      # Attach the debug callback for the module
-      debug(module_id, &callback)
-
       # Asyncronously send debug messages from the module
       spawn do
-        while message = channel.receive?
-          socket.send(message)
+        begin
+          while message = channel.receive?
+            socket.send(message)
+          end
+        rescue IO::Error | Channel::ClosedError
+          nil
         end
       end
+
+      # Attach the debug callback for the module after the sender fiber exists
+      debug(module_id, &callback)
     end
 
     abstract def debug(module_id : String, &_on_message : DebugCallback)
@@ -66,7 +74,8 @@ module PlaceOS::Core
     # Handler for settings updates
     #
     def on_setting(id : String, setting_name : String, setting_value : YAML::Any)
-      mod = PlaceOS::Model::Module.find!(id)
+      mod = PlaceOS::Model::Module.find?(id)
+      raise ModuleError.new("Could not locate module #{id}, no matching database record") unless mod
       if setting = mod.settings_at?(:none)
       else
         setting = PlaceOS::Model::Settings.new

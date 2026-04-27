@@ -34,10 +34,19 @@ module PlaceOS::Core
     # These are modules with launch_on_execute that are "running" but driver not spawned
     getter lazy_modules : Hash(String, Bool) = {} of String => Bool
     private getter lazy_modules_lock : Mutex = Mutex.new
+    @@instance_lock = Mutex.new
 
     def stop
+      @local_processes.try &.shutdown
+      @local_processes = nil
+      edge_processes.stop
+      lazy_modules_lock.synchronize do
+        lazy_modules.clear
+      end
       clustering.unregister
+      clustering.clear_callbacks
       stop_process_check
+      @started = false
     end
 
     delegate path_for?, to: local_processes
@@ -51,14 +60,35 @@ module PlaceOS::Core
     # Redis channel that cluster leader publishes stable cluster versions to
     REDIS_VERSION_CHANNEL = "cluster/cluster_version"
 
+    @@instance : ModuleManager?
+
     # Singleton configured from environment
-    class_getter instance : ModuleManager { ModuleManager.new(uri: self.uri) }
+    def self.instance : ModuleManager
+      @@instance_lock.synchronize do
+        @@instance ||= ModuleManager.new(uri: self.uri)
+      end
+    end
+
+    def self.current_instance? : ModuleManager?
+      @@instance
+    end
+
+    def self.reset_instance
+      @@instance_lock.synchronize do
+        @@instance.try &.stop
+        @@instance = nil
+      end
+    end
 
     # Manager for remote edge module processes
     getter edge_processes : Edge::Server = Edge::Server.new
 
     # Manager for local module processes
-    getter local_processes : ProcessManager::Local { ProcessManager::Local.new(discovery) }
+    @local_processes : ProcessManager::Local?
+
+    getter local_processes : ProcessManager::Local do
+      @local_processes ||= ProcessManager::Local.new(discovery, self)
+    end
 
     # Start up process is as follows..
     # - registered
@@ -147,6 +177,11 @@ module PlaceOS::Core
     def load_module(mod : Model::Module, rendezvous_hash : RendezvousHash = discovery.rendezvous)
       module_id = mod.id.as(String)
 
+      if on_managed_edge?(mod)
+        Log.info { {message: "edge module desired state updated", module_id: module_id, edge_id: mod.edge_id} }
+        return
+      end
+
       allocated_uri = ModuleManager.core_uri(mod, rendezvous_hash)
 
       if allocated_uri == @clustering.uri
@@ -156,10 +191,19 @@ module PlaceOS::Core
           return
         end
 
-        driver = mod.driver!
+        driver = mod.driver || mod.driver_id.try { |id| Model::Driver.find?(id) }
+        unless driver
+          Log.debug { {message: "deferring module load until driver exists", module_id: module_id, driver_id: mod.driver_id} }
+          return
+        end
+
         driver_id = driver.id.as(String)
         # repository_folder = driver.repository.not_nil!.folder_name
-        repository = driver.repository!
+        repository = driver.repository || driver.repository_id.try { |id| Model::Repository.find?(id) }
+        unless repository
+          Log.debug { {message: "deferring module load until repository exists", module_id: module_id, driver_id: driver_id} }
+          return
+        end
 
         ::Log.with_context(
           driver_id: driver_id,
@@ -172,7 +216,7 @@ module PlaceOS::Core
           driver_path = store.built?(driver.file_name, driver.commit, repository.branch, repository.uri)
           # Check if the driver is built
           if driver_path.nil?
-            Log.error { "driver does not exist for module" }
+            Log.debug { "driver does not exist for module" }
             return
           end
 
@@ -185,7 +229,7 @@ module PlaceOS::Core
         Log.info { {message: "unloading module no longer on node", module_id: module_id} }
         unload_module(mod)
       else
-        Log.warn { {message: "load module request invalid. #{allocated_uri.inspect} != #{@clustering.uri.inspect}", module_id: module_id} }
+        Log.debug { {message: "load module request invalid. #{allocated_uri.inspect} != #{@clustering.uri.inspect}", module_id: module_id} }
       end
     end
 
@@ -193,6 +237,11 @@ module PlaceOS::Core
     #
     def unload_module(mod : Model::Module)
       module_id = mod.id.as(String)
+
+      if on_managed_edge?(mod)
+        Log.info { {message: "edge module marked for unload via desired state", module_id: module_id, edge_id: mod.edge_id} }
+        return
+      end
 
       # Remove from lazy modules tracking if present
       unregister_lazy_module(module_id)
@@ -205,6 +254,11 @@ module PlaceOS::Core
 
     def start_module(mod : Model::Module)
       module_id = mod.id.as(String)
+
+      if on_managed_edge?(mod)
+        Log.info { {message: "edge module marked running via desired state", module_id: module_id, edge_id: mod.edge_id} }
+        return
+      end
 
       # For lazy modules, just ensure metadata is in Redis (driver not spawned yet)
       if mod.launch_on_execute
@@ -235,6 +289,11 @@ module PlaceOS::Core
     def stop_module(mod : Model::Module)
       module_id = mod.id.as(String)
 
+      if on_managed_edge?(mod)
+        Log.info { {message: "edge module marked stopped via desired state", module_id: module_id, edge_id: mod.edge_id} }
+        return
+      end
+
       # For lazy modules, just remove from tracking and clear metadata
       if mod.launch_on_execute
         unregister_lazy_module(module_id)
@@ -250,9 +309,26 @@ module PlaceOS::Core
     # Update/start modules with new configuration
     #
     def refresh_module(mod : Model::Module)
-      process_manager(mod) do |_manager|
-        mod.running.tap { |running| start_module(mod) if running }
+      return mod.running if on_managed_edge?(mod)
+
+      module_id = mod.id.as(String)
+
+      loaded = process_manager(mod) do |manager|
+        manager.module_loaded?(module_id)
       end
+
+      unless loaded || (mod.launch_on_execute && mod.running)
+        load_module(mod)
+        loaded = process_manager(mod) do |manager|
+          manager.module_loaded?(module_id)
+        end
+      end
+
+      if mod.running && (loaded || mod.launch_on_execute)
+        start_module(mod)
+      end
+
+      mod.running
     end
 
     # Stops modules on stale driver and starts them on the new driver
@@ -333,10 +409,11 @@ module PlaceOS::Core
     def process_manager(mod : Model::Module, & : ProcessManager ->)
       if mod.on_edge? && (edge_id = mod.edge_id)
         if (manager = edge_processes.for?(edge_id)).nil?
-          Log.error { "missing edge manager for #{edge_id}" }
+          Log.debug { "missing edge manager for #{edge_id}" }
           return
         end
         yield manager
+        return
       end
 
       yield local_processes
@@ -433,7 +510,8 @@ module PlaceOS::Core
       case mod
       in String
         if Model::Module.has_edge_hint?(mod)
-          Model::Module.find!(mod).edge_id.as(String)
+          model = Model::Module.find?(mod)
+          model.try(&.edge_id).try(&.as(String)) || mod
         else
           mod
         end
@@ -452,19 +530,78 @@ module PlaceOS::Core
     ###########################################################################
 
     def self.start_payload(mod : Model::Module)
+      live_mod = mod.id.try { |id| Model::Module.find?(id.as(String)) } || mod
+      payload_mod = prepare_payload_module(live_mod, fallback: mod)
+
       begin
-        # Merge module settings
-        merged_settings = mod.merge_settings
+        merged_settings = merge_module_settings(payload_mod)
       rescue e
         merged_settings = "{}"
-        Log.error(exception: e) { {message: "Failed to merge module settings", module_id: mod.id, name: mod.name, custom_name: mod.custom_name} }
+        Log.error(exception: e) { {message: "Failed to merge module settings", module_id: payload_mod.id, name: payload_mod.name, custom_name: payload_mod.custom_name} }
       end
 
       # Start format
-      payload = mod.to_json.rchop
+      payload = payload_mod.to_json.rchop
 
       # The settings object needs to be unescaped
-      %(#{payload},"control_system":#{mod.control_system.to_json},"settings":#{merged_settings}})
+      %(#{payload},"control_system":#{payload_mod.control_system.to_json},"settings":#{merged_settings}})
+    end
+
+    private def self.merge_module_settings(mod : Model::Module) : String
+      hierarchy = mod.settings
+
+      if mod.role.logic?
+        control_system = mod.control_system || mod.control_system_id.try { |id| Model::ControlSystem.find?(id) }
+        if control_system
+          hierarchy.concat(control_system.settings_hierarchy)
+        else
+          raise Model::Error::NoParent.new("Missing control system: module_id=#{mod.id} control_system_id=#{mod.control_system_id}")
+        end
+      end
+
+      driver_id = mod.driver_id || mod.driver.try(&.id)
+      raise Model::Error::NoParent.new("Missing driver: module_id=#{mod.id} driver_id=#{mod.driver_id}") if driver_id.nil?
+
+      hierarchy.concat(Model::Settings.for_parent(driver_id))
+
+      hierarchy
+        .compact
+        .reverse!
+        .reduce({} of YAML::Any => YAML::Any) do |merged, setting|
+          begin
+            merged.merge!(setting.any)
+          rescue error
+            Log.warn(exception: error) { "failed to merge settings: #{setting.inspect}" }
+          end
+          merged
+        end
+        .to_json
+    end
+
+    private def self.prepare_payload_module(primary : Model::Module, fallback : Model::Module) : Model::Module
+      hydrate_module_associations!(fallback, fallback: fallback)
+      hydrate_module_associations!(primary, fallback: fallback)
+
+      return primary unless primary.driver.nil?
+      return fallback unless fallback.driver.nil?
+
+      primary
+    end
+
+    private def self.hydrate_module_associations!(target : Model::Module, fallback : Model::Module)
+      if target.driver.nil?
+        driver = fallback.driver ||
+                 fallback.driver_id.try { |id| Model::Driver.find?(id) } ||
+                 target.driver_id.try { |id| Model::Driver.find?(id) }
+        target.driver = driver unless driver.nil?
+      end
+
+      if target.control_system.nil?
+        control_system = fallback.control_system ||
+                         fallback.control_system_id.try { |id| Model::ControlSystem.find?(id) } ||
+                         target.control_system_id.try { |id| Model::ControlSystem.find?(id) }
+        target.control_system = control_system unless control_system.nil?
+      end
     end
 
     def self.execute_payload(method : String | Symbol, args : Enumerable? = nil, named_args : Hash | NamedTuple | Nil = nil)
@@ -511,8 +648,17 @@ module PlaceOS::Core
     # Populate module metadata in Redis from build service (without spawning driver)
     def populate_lazy_module_metadata(mod : Model::Module)
       module_id = mod.id.as(String)
-      driver = mod.driver!
-      repository = driver.repository!
+      driver = mod.driver || mod.driver_id.try { |id| Model::Driver.find?(id) }
+      unless driver
+        Log.debug { {message: "skipping lazy module metadata until driver exists", module_id: module_id, driver_id: mod.driver_id} }
+        return
+      end
+
+      repository = driver.repository || driver.repository_id.try { |id| Model::Repository.find?(id) }
+      unless repository
+        Log.debug { {message: "skipping lazy module metadata until repository exists", module_id: module_id, driver_id: driver.id} }
+        return
+      end
 
       # Fetch metadata from build service
       result = store.metadata(driver.file_name, driver.commit, repository.branch, repository.uri)

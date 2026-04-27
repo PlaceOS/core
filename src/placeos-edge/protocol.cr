@@ -121,16 +121,14 @@ module PlaceOS::Edge::Protocol
         Unload # Success
 
         # -> Client
-        Register
         ProxyRedis # Success
         FetchBinary
         SettingsAction # Success
+        RuntimeEvent   # Success
+        Heartbeat      # Success
 
         # Response
         Success
-
-        # -> Server
-        RegisterResponse
 
         # -> Client
         DebugMessage
@@ -299,20 +297,35 @@ module PlaceOS::Edge::Protocol
       end
     end
 
-    struct Register < Client::Request
-      getter modules : Set(String)
-      getter drivers : Set(String)
-
-      def initialize(@modules, @drivers)
-      end
-    end
-
     struct SettingsAction < Client::Request
       getter module_id : String
       getter setting_name : String
       getter setting_value : String
 
       def initialize(@module_id, @setting_name, @setting_value)
+      end
+    end
+
+    struct RuntimeEvent < Client::Request
+      getter kind : String
+      getter module_id : String?
+      getter driver_key : String?
+      getter message : String?
+      getter snapshot_version : String?
+      getter backlog_depth : Int32?
+
+      def initialize(@kind, @module_id = nil, @driver_key = nil, @message = nil, @snapshot_version = nil, @backlog_depth = nil)
+      end
+    end
+
+    struct Heartbeat < Client::Request
+      @[JSON::Field(converter: Time::EpochConverter)]
+      getter timestamp : Time
+      getter snapshot_version : String?
+      getter pending_updates : Int32
+      getter pending_events : Int32
+
+      def initialize(@timestamp = Time.utc, @snapshot_version = nil, @pending_updates = 0, @pending_events = 0)
       end
     end
 
@@ -333,7 +346,7 @@ module PlaceOS::Edge::Protocol
     abstract struct ::PlaceOS::Edge::Protocol::Server::Response < ::PlaceOS::Edge::Protocol::Message::ResponseBody
     end
 
-    struct Success < ResponseBody
+    struct Success < Client::Response
       def initialize(@success)
       end
     end
@@ -389,26 +402,6 @@ module PlaceOS::Edge::Protocol
       getter! io : IO
 
       def initialize(@success, @key, @path = nil, @io = nil)
-      end
-    end
-
-    struct RegisterResponse < Server::Response
-      getter add_drivers : Array(String)
-      getter remove_drivers : Array(String)
-      getter add_modules : Array(Module)
-      getter remove_modules : Array(String)
-      getter running_modules : Array(Tuple(String, String))
-
-      alias Module = NamedTuple(key: String, module_id: String)
-
-      def initialize(
-        @success,
-        @add_drivers = [] of String,
-        @remove_drivers = [] of String,
-        @add_modules = [] of Module,
-        @remove_modules = [] of String,
-        @running_modules = [] of Tuple(String, String),
-      )
       end
     end
   end

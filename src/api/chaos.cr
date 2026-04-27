@@ -6,7 +6,7 @@ module PlaceOS::Core::Api
   class Chaos < Application
     base "/api/core/v1/chaos/"
 
-    getter module_manager : ModuleManager { ModuleManager.instance }
+    getter module_manager : ModuleManager { Services.module_manager }
 
     # Terminate a process by executable path
     @[AC::Route::POST("/terminate")]
@@ -17,7 +17,7 @@ module PlaceOS::Core::Api
       edge_id : String? = nil,
     ) : Nil
       raise Error::NotFound.new("no process manager found for #{driver_key}") unless manager = module_manager.process_manager(driver_key, edge_id)
-      manager.kill(driver_key)
+      raise Error::NotFound.new("driver #{driver_key} is not running") unless manager.kill(driver_key)
     end
   end
 end

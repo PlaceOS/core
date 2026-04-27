@@ -18,8 +18,12 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(description: "the driver database id", example: "driver-GFEaAlJB5")]
       tag : String,
     ) : Bool
-      driver = Model::Driver.find!(tag)
-      repository = driver.repository!
+      driver = Model::Driver.find?(tag)
+      raise Error::NotFound.new("driver #{tag} not found") unless driver
+
+      repository = driver.repository || driver.repository_id.try { |id| Model::Repository.find?(id) }
+      raise Error::NotFound.new("repository for driver #{tag} not found") unless repository
+
       store.compiled?(driver_file, commit, repository.branch, repository.uri)
     end
 
@@ -33,8 +37,12 @@ module PlaceOS::Core::Api
       @[AC::Param::Info(description: "the driver database id", example: "driver-GFEaAlJB5")]
       tag : String,
     ) : String
-      driver = Model::Driver.find!(tag)
-      repository = driver.repository!
+      driver = Model::Driver.find?(tag)
+      raise Error::NotFound.new("driver #{tag} not found") unless driver
+
+      repository = driver.repository || driver.repository_id.try { |id| Model::Repository.find?(id) }
+      raise Error::NotFound.new("repository for driver #{tag} not found") unless repository
+
       result = store.compile(driver_file, repository.uri, commit, repository.branch, true, repository.username, repository.decrypt_password, false)
       if result.success
         render text: "OK"
@@ -66,7 +74,8 @@ module PlaceOS::Core::Api
       branch : String = "master",
     ) : Nil
       Log.context.set(driver: driver_file, repository: repository, commit: commit, branch: branch)
-      repo = Model::Repository.find!(repository)
+      repo = Model::Repository.find?(repository)
+      raise Error::NotFound.new("repository #{repository} not found") unless repo
       defaults = store.defaults(driver_file, commit, branch, repo.uri)
       if defaults.success
         response.headers["Content-Type"] = "application/json"

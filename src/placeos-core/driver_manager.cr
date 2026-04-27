@@ -13,7 +13,7 @@ module PlaceOS::Core
     def initialize(
       @startup : Bool = true,
       @binary_dir : String = "#{Dir.current}/bin/drivers",
-      @module_manager : ModuleManager = ModuleManager.instance,
+      @module_manager : ModuleManager = Services.module_manager,
     )
       @store = DriverStore.new
       buffer_size = System.cpu_count.to_i
@@ -45,10 +45,14 @@ module PlaceOS::Core
       driver : Model::Driver,
       store : DriverStore,
       startup : Bool = false,
-      module_manager : ModuleManager = ModuleManager.instance,
+      module_manager : ModuleManager = Services.module_manager,
     ) : Core::Result
       driver_id = driver.id.as(String)
-      repository = driver.repository!
+      repository = driver.repository || driver.repository_id.try { |id| Model::Repository.find?(id) }
+      unless repository
+        Log.debug { {message: "deferring driver load until repository exists", driver_id: driver_id, repository_id: driver.repository_id} }
+        return Core::Result.new(success: true)
+      end
 
       force_recompile = driver.recompile_commit?
       commit = force_recompile.nil? ? driver.commit : force_recompile
@@ -97,10 +101,13 @@ module PlaceOS::Core
 
       # (Re)load modules onto the newly compiled driver
       stale_path = module_manager.reload_modules(driver)
+      current_path = store.driver_binary_path(driver.file_name, commit)
 
-      # Remove the stale driver if there was one
-      remove_stale_driver(driver_id: driver_id,
+      # Remove the stale driver only if it differs from the newly compiled artifact.
+      remove_stale_driver(
+        driver_id: driver_id,
         path: stale_path,
+        current_path: current_path,
       )
 
       # Bump the commit on the driver post-compilation and module loading
@@ -113,12 +120,35 @@ module PlaceOS::Core
 
     # Remove the stale driver binary if there was one
     #
-    def self.remove_stale_driver(path : Path?, driver_id : String)
+    def self.remove_stale_driver(path : Path?, driver_id : String, current_path : Path? = nil)
       return unless path
+      if current_path && path == current_path
+        Log.debug { {message: "skipping stale driver removal for current binary", driver_id: driver_id, path: path.to_s} }
+        return
+      end
+      if binary_in_use?(path)
+        Log.info { {message: "skipping stale driver removal for running binary", driver_id: driver_id, path: path.to_s} }
+        return
+      end
       Log.info { {message: "removing stale driver binary", driver_id: driver_id, path: path.to_s} }
       File.delete(path) if File.exists?(path)
     rescue
       Log.error { {message: "failed to remove stale binary", driver_id: driver_id, path: path.to_s} }
+    end
+
+    private def self.binary_in_use?(path : Path) : Bool
+      target = path.to_s
+      Dir.each_child("/proc") do |entry|
+        next unless entry =~ /^\d+$/
+
+        begin
+          exe_path = File.readlink("/proc/#{entry}/exe")
+          return true if exe_path == target
+        rescue
+          next
+        end
+      end
+      false
     end
 
     def self.update_driver_commit(driver : Model::Driver, commit : String, startup : Bool)

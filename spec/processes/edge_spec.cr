@@ -1,5 +1,6 @@
 require "../helper"
-require "./local_spec"
+require "./support"
+require "../placeos-edge/helper"
 
 module PlaceOS::Core::ProcessManager
   record Context,
@@ -17,165 +18,104 @@ module PlaceOS::Core::ProcessManager
     )
 
     edge_manager = Edge.new(edge_id: edge_id, socket: server_ws)
-    spawn { server_ws.run }
+    spawn do
+      server_ws.run
+    rescue IO::Error | Channel::ClosedError
+      nil
+    end
     Fiber.yield
-    spawn { client.connect(client_ws) }
+    spawn do
+      client.connect(client_ws)
+    rescue IO::Error | Channel::ClosedError
+      nil
+    end
     Fiber.yield
-    {client, edge_manager}
+    {client, edge_manager, client_ws, server_ws}
   end
 
   def self.with_edge(&)
     with_driver do |mod, driver_path, driver_key, _driver|
-      if existing_edge_id = mod.edge_id
-        mod.running = false
-        mod.save!
-        edge = Model::Edge.find!(existing_edge_id)
-      else
-        edge = Model::Generator.edge.save!
-        mod.edge_id = edge.id.as(String)
-        mod.running = false
-        mod.save!
+      edge = if existing_edge_id = mod.edge_id
+               Model::Edge.find!(existing_edge_id)
+             else
+               Model::Generator.edge.save!
+             end
+
+      mod.edge_id = edge.id.as(String)
+      mod.running = true
+      mod.save!
+
+      client, process_manager, client_ws, server_ws = client_server(edge.id.as(String))
+
+      begin
+        # Reconcile the desired state locally on the edge. Websocket is only used
+        # for realtime traffic after this point.
+        snapshot = ::PlaceOS::Edge::State::Snapshot.new(
+          edge_id: edge.id.as(String),
+          version: Time.utc.to_unix_ms.to_s,
+          last_modified: Time.utc,
+          drivers: [::PlaceOS::Edge::State::DesiredDriver.new(driver_key)],
+          modules: [::PlaceOS::Edge::State::DesiredModule.new(
+            module_id: mod.id.as(String),
+            driver_key: driver_key,
+            running: true,
+            payload: ModuleManager.start_payload(mod)
+          )]
+        )
+        client.apply_snapshot(snapshot)
+
+        module_id = mod.id.as(String)
+        deadline = Time.instant + 2.seconds
+        until client.driver_loaded?(driver_key) && client.module_loaded?(module_id)
+          raise "timed out waiting for edge snapshot reconciliation" if Time.instant >= deadline
+          sleep 20.milliseconds
+        end
+
+        ctx = Context.new(
+          module: mod,
+          edge: edge,
+          driver_path: driver_path,
+          driver_key: driver_key,
+        )
+
+        yield ({ctx, client, process_manager})
+      ensure
+        client.runtime_manager.kill(driver_key) rescue nil
+        client.disconnect
+        process_manager.transport.disconnect rescue nil
+        client_ws.close rescue nil
+        server_ws.close rescue nil
       end
-
-      ctx = Context.new(
-        module: mod,
-        edge: edge,
-        driver_path: driver_path,
-        driver_key: driver_key,
-      )
-
-      client, process_manager = client_server(edge.id.as(String))
-
-      yield ({ctx, client, process_manager})
     end
   end
 
   describe Edge, tags: ["edge", "processes"] do
-    it "debug" do
-      with_edge do |ctx, _client, pm|
+    it "executes requests and reports runtime status from the edge runtime" do
+      with_edge do |ctx, client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_key: ctx.driver_path)
-        pm.start(module_id: module_id, payload: ModuleManager.start_payload(ctx.module))
-
-        message_channel = Channel(String).new
-
-        pm.debug(module_id) do |message|
-          message_channel.send(message)
-          nil
-        end
-
-        result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
-        result.should eq %("hello")
-        code.should eq 200
-
-        select
-        when message = message_channel.receive
-          message.should eq %([1,"hello"])
-        when timeout 2.seconds
-          raise "timeout"
-        end
-      end
-    end
-
-    describe "driver_loaded?" do
-      it "confirms a driver is loaded" do
-        with_edge do |ctx, client, pm|
-          pm.load(module_id: "mod", driver_key: ctx.driver_key)
-          client.driver_loaded?(ctx.driver_key).should be_true
-          pm.driver_loaded?(ctx.driver_key).should be_true
-        end
-      end
-
-      it "confirms a driver is not loaded" do
-        with_edge do |_ctx, client, pm|
-          pm.driver_loaded?("does-not-exist").should be_false
-          client.driver_loaded?("does-not-exist").should be_false
-        end
-      end
-    end
-
-    describe "driver_status" do
-      it "returns driver status if present" do
-        with_edge do |ctx, client, pm|
-          pm.load(module_id: "mod", driver_key: ctx.driver_path)
-
-          pm.driver_status(ctx.driver_path).should_not be_nil
-          status = client.driver_status(ctx.driver_key)
-          status.should_not be_nil
-          status.not_nil!.running.should be_false
-          status.not_nil!.launch_count.should eq(0)
-        end
-      end
-
-      it "returns nil in not present" do
-        with_edge do |_ctx, client, pm|
-          pm.driver_status("doesntexist").should be_nil
-          client.driver_status("doesntexist").should be_nil
-        end
-      end
-    end
-
-    it "execute" do
-      with_edge do |ctx, _client, pm|
-        module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_key: ctx.driver_path)
-        pm.start(module_id: module_id, payload: ModuleManager.start_payload(ctx.module))
         result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:used_for_place_testing), user_id: nil)
         result.should eq %("you can delete this file")
         code.should eq 200
+
+        pm.runtime_status.connected.should be_true
+        pm.runtime_status.last_seen.should_not be_nil
+        pm.edge_id.should eq(ctx.edge.id)
+
+        client.driver_loaded?(ctx.driver_key).should be_true
+        client.module_loaded?(module_id).should be_true
+        client.driver_status(ctx.driver_key).should_not be_nil
+        client.loaded_modules.should eq({ctx.driver_key => [module_id]})
       end
     end
 
-    it "ignore" do
-      with_edge do |ctx, _client, pm|
-        module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_key: ctx.driver_path)
-        pm.start(module_id: module_id, payload: ModuleManager.start_payload(ctx.module))
-        message_channel = Channel(String).new
-
-        callback = ->(message : String) do
-          message_channel.send message
-          nil
-        end
-
-        pm.debug(module_id, &callback)
-        result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
-        result.should eq %("hello")
-        code.should eq 200
-
-        select
-        when message = message_channel.receive
-          message.should eq %([1,"hello"])
-        when timeout 2.seconds
-          raise "timeout"
-        end
-
-        pm.ignore(module_id, &callback)
-        result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
-        result.should eq %("hello")
-        code.should eq 200
-
-        expect_raises(Exception) do
-          select
-          when message = message_channel.receive
-          when timeout 0.5.seconds
-            raise "timeout"
-          end
-        end
-      end
-    end
-
-    it "kill" do
+    it "kills edge-hosted drivers from core" do
       with_edge do |ctx, client, pm|
-        test_starting(pm, ctx.module, ctx.driver_key)
-
         pid = client.protocol_manager_by_driver?(ctx.driver_key).try(&.pid).not_nil!
-
         Process.exists?(pid).should be_true
-        pm.kill(ctx.driver_path).should be_true
+
+        pm.kill(ctx.driver_key).should be_true
 
         success = Channel(Nil).new
-
         spawn do
           while Process.exists?(pid)
             sleep 100.milliseconds
@@ -192,118 +132,52 @@ module PlaceOS::Core::ProcessManager
       end
     end
 
-    it "load" do
-      with_edge do |ctx, client, pm|
-        pm.driver_loaded?(ctx.driver_path).should be_false
-        pm.module_loaded?("mod").should be_false
-        client.module_loaded?("mod").should be_false
-
-        pm.load(module_id: "mod", driver_key: ctx.driver_path)
-
-        pm.driver_loaded?(ctx.driver_path).should be_true
-        client.driver_loaded?(ctx.driver_key).should be_true
-
-        pm.module_loaded?("mod").should be_true
-        client.module_loaded?("mod").should be_true
-      end
-    end
-
-    it "loaded_modules" do
-      with_edge do |ctx, _client, pm|
-        test_starting(pm, ctx.module, ctx.driver_key)
-      end
-    end
-
-    describe "module_loaded?" do
-      it "confirms a module is loaded" do
-        with_edge do |ctx, _client, pm|
-          pm.load(module_id: "mod", driver_key: ctx.driver_path)
-          pm.module_loaded?("mod").should be_true
-        end
-      end
-
-      it "confirms a module is not loaded" do
-        with_edge do |_ctx, _client, pm|
-          pm.module_loaded?("does-not-exist").should be_false
-        end
-      end
-    end
-
-    it "run_count" do
-      with_edge do |ctx, _client, pm|
-        pm.load(module_id: "mod", driver_key: ctx.driver_path)
-        pm.run_count.should eq(ProcessManager::Count.new(1, 1))
-      end
-    end
-
-    pending "save_setting" do
-    end
-
-    pending "on_redis" do
-    end
-
-    it "start" do
+    it "round-trips lifecycle commands over the realtime channel" do
       with_edge do |ctx, client, pm|
         module_id = ctx.module.id.as(String)
-        pm.load(module_id: module_id, driver_key: ctx.driver_path)
-        pm.start(module_id: module_id, payload: ModuleManager.start_payload(ctx.module))
-        pm.loaded_modules.should eq({ctx.driver_key => [module_id]})
-        client.loaded_modules.should eq({ctx.driver_key => [module_id]})
-        pm.kill(ctx.driver_path)
-      end
-    end
 
-    it "stop" do
-      with_edge do |ctx, _client, pm|
-        pm.kill(ctx.driver_path)
-        test_starting(pm, ctx.module, ctx.driver_key)
-        pm.stop(ctx.module.id.as(String))
+        pm.unload(module_id).should be_true
 
-        sleep 100.milliseconds
-        pm.loaded_modules.should eq({ctx.driver_key => [] of String})
-      end
-    end
-
-    it "system_status" do
-      with_edge do |_ctx, _client, pm|
-        pm.system_status.should be_a(SystemStatus)
-      end
-    end
-
-    describe "unload" do
-      it "removes driver if no dependent modules running" do
-        with_edge do |ctx, _client, pm|
-          pm.system_status.should be_a(SystemStatus)
-          path = ctx.driver_path + UUID.random.to_s
-          module_id = "mod"
-          File.copy(ctx.driver_path, path)
-
-          pm.load(module_id: module_id, driver_key: path)
-          pm.driver_loaded?(path).should be_true
-          pm.module_loaded?(module_id).should be_true
-          pm.unload(module_id)
-          pm.driver_loaded?(path).should be_false
-          pm.module_loaded?(module_id).should be_false
+        deadline = Time.instant + 2.seconds
+        until !client.module_loaded?(module_id)
+          raise "timed out waiting for edge unload" if Time.instant >= deadline
+          sleep 20.milliseconds
         end
-      end
 
-      it "keeps driver if dependent modules still running" do
-        with_edge do |ctx, _client, pm|
-          path = ctx.driver_path + UUID.random.to_s
-          module0 = "mod0"
-          module1 = "mod1"
-          File.copy(ctx.driver_path, path)
+        pm.load(module_id, ctx.driver_key).should be_true
+        pm.start(module_id, ModuleManager.start_payload(ctx.module)).should be_true
 
-          pm.load(module_id: module0, driver_key: path)
-          pm.load(module_id: module1, driver_key: path)
-          pm.driver_loaded?(path).should be_true
-          pm.module_loaded?(module0).should be_true
-          pm.module_loaded?(module1).should be_true
-          pm.unload(module0)
-          pm.module_loaded?(module0).should be_false
-          pm.module_loaded?(module1).should be_true
-          pm.driver_loaded?(path).should be_true
+        deadline = Time.instant + 2.seconds
+        until client.module_loaded?(module_id)
+          raise "timed out waiting for edge reload" if Time.instant >= deadline
+          sleep 20.milliseconds
         end
+
+        pm.stop(module_id).should be_true
+        client.module_loaded?(module_id).should be_true
+      end
+    end
+
+    it "fails execute cleanly when the edge disconnects" do
+      with_edge do |ctx, client, pm|
+        client.disconnect
+
+        deadline = Time.instant + 2.seconds
+        until !pm.runtime_status.connected
+          raise "timed out waiting for edge disconnect" if Time.instant >= deadline
+          sleep 20.milliseconds
+        end
+
+        error = expect_raises(PlaceOS::Driver::RemoteException) do
+          pm.execute(
+            module_id: ctx.module.id.as(String),
+            payload: ModuleManager.execute_payload(:used_for_place_testing),
+            user_id: nil
+          )
+        end
+
+        error.message.to_s.should contain("is not connected")
+        error.code.should eq 503
       end
     end
   end

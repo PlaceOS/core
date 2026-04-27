@@ -19,6 +19,14 @@ module PlaceOS::Core::Mappings
   end
 
   describe ControlSystemModules, tags: "mappings" do
+    Spec.before_each do
+      ::Log.builder.bind("place_os.resource", backend: PlaceOS::LogBackend.log_backend, level: :fatal)
+    end
+
+    Spec.after_each do
+      ::Log.builder.bind("place_os.resource", backend: PlaceOS::LogBackend.log_backend, level: :error)
+    end
+
     describe ".update_mapping" do
       it "ignores systems not mapped to node" do
         control_system = Model::Generator.control_system

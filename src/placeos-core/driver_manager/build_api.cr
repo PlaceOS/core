@@ -48,8 +48,8 @@ module PlaceOS::Core
       host = URI.parse(Core.build_host)
       file_name = URI.encode_www_form(file_name)
       headers = HTTP::Headers.new
-      headers["X-Git-Username"] = username.not_nil! unless username.nil?
-      headers["X-Git-Password"] = password.not_nil! unless password.nil?
+      headers["X-Git-Username"] = username if username
+      headers["X-Git-Password"] = password if password
 
       resp = ConnectProxy::HTTPClient.new(host) do |client|
         path = "#{BUILD_API_BASE}/#{Core::ARCH}/#{file_name}"

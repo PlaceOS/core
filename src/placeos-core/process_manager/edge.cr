@@ -12,13 +12,28 @@ module PlaceOS::Core
     alias Transport = PlaceOS::Edge::Transport
     alias Protocol = PlaceOS::Edge::Protocol
 
+    record RuntimeStatus,
+      connected : Bool,
+      last_seen : Time?,
+      snapshot_version : String?,
+      pending_updates : Int32,
+      pending_events : Int32,
+      last_event : String?,
+      last_error : String? do
+      include JSON::Serializable
+    end
+
     getter transport : Transport
     getter edge_id : String
+    getter runtime_status : RuntimeStatus = RuntimeStatus.new(false, nil, nil, 0, 0, nil, nil)
 
     protected getter(store : DriverStore) { DriverStore.new }
 
-    def initialize(@edge_id : String, socket : HTTP::WebSocket)
-      @transport = Transport.new do |(sequence_id, request)|
+    def initialize(@edge_id : String, socket : HTTP::WebSocket, on_disconnect : Proc(Nil)? = nil)
+      disconnect_handler = on_disconnect || -> { disconnected! }
+      @transport = Transport.new(on_disconnect: ->(_error : IO::Error | HTTP::WebSocket::CloseCode) {
+        disconnect_handler.call
+      }) do |(sequence_id, request)|
         if request.is_a?(Protocol::Client::Request)
           handle_request(sequence_id, request)
         else
@@ -26,8 +41,13 @@ module PlaceOS::Core
         end
       end
 
-      spawn { transport.listen(socket) }
+      spawn do
+        transport.listen(socket)
+      rescue IO::Error | Channel::ClosedError
+        nil
+      end
       Fiber.yield
+      update_runtime_status(connected: true, last_seen: Time.utc, last_event: "connected")
     end
 
     def handle_request(sequence_id : UInt64, request : Protocol::Client::Request)
@@ -37,6 +57,17 @@ module PlaceOS::Core
       when Protocol::Message::DebugMessage
         boolean_response(sequence_id, request) do
           forward_debug_message(request.module_id, request.message)
+        end
+      when Protocol::Message::Heartbeat
+        boolean_response(sequence_id, request) do
+          update_runtime_status(
+            connected: true,
+            last_seen: request.timestamp,
+            snapshot_version: request.snapshot_version,
+            pending_updates: request.pending_updates,
+            pending_events: request.pending_events,
+            last_event: "heartbeat"
+          )
         end
       when Protocol::Message::FetchBinary
         response = fetch_binary(request.key)
@@ -50,15 +81,23 @@ module PlaceOS::Core
             status_value: request.status_value,
           )
         end
-      when Protocol::Message::Register
-        register_response = register(modules: request.modules, drivers: request.drivers)
-        send_response(sequence_id, register_response)
       when Protocol::Message::SettingsAction
         boolean_response(sequence_id, request) do
           on_setting(
             id: request.module_id,
             setting_name: request.setting_name,
             setting_value: YAML.parse(request.setting_value)
+          )
+        end
+      when Protocol::Message::RuntimeEvent
+        boolean_response(sequence_id, request) do
+          update_runtime_status(
+            connected: true,
+            last_seen: Time.utc,
+            snapshot_version: request.snapshot_version,
+            pending_updates: request.backlog_depth,
+            last_event: request.kind,
+            last_error: request.kind == "sync_status" ? request.message : nil
           )
         end
       end
@@ -70,6 +109,8 @@ module PlaceOS::Core
     end
 
     def execute(module_id : String, payload : String, user_id : String?, mod : Model::Module? = nil)
+      raise PlaceOS::Driver::RemoteException.new("Edge #{edge_id} is not connected", "EdgeUnavailable", [] of String, 503) unless runtime_status.connected
+
       response = Protocol.request(Protocol::Message::Execute.new(module_id, payload, user_id), expect: Protocol::Message::ExecuteResponse, preserve_response: true)
       if response.nil?
         raise PlaceOS::Driver::RemoteException.new("No response received from edge received", IO::TimeoutError.class.to_s)
@@ -106,51 +147,6 @@ module PlaceOS::Core
 
     def kill(driver_key : String)
       !!Protocol.request(Protocol::Message::Kill.new(ProcessManager.path_to_key(driver_key)), expect: Protocol::Message::Success)
-    end
-
-    alias Module = Protocol::Message::RegisterResponse::Module
-
-    # Calculates the modules/drivers that the edge needs to add/remove
-    #
-    protected def register(drivers : Set(String), modules : Set(String))
-      allocated_drivers = Set(String).new
-      allocated_modules = Set(Module).new
-      edge_modules = {} of String => PlaceOS::Model::Module
-
-      PlaceOS::Model::Module.on_edge(edge_id).each do |mod|
-        driver = mod.driver.not_nil!
-        mod_id = mod.id.as(String)
-        edge_modules[mod_id] = mod
-        driver_path = store.built?(driver.file_name, driver.commit, driver.repository!.branch, driver.repository!.uri)
-        if driver_path
-          driver_key = Path[driver_path].basename
-          allocated_modules << {key: driver_key, module_id: mod_id}
-          allocated_drivers << driver_key
-        else
-          Log.error { {message: "Executable for #{driver.id} not present", driver: driver.id, commit: driver.commit} }
-        end
-      end
-
-      add_modules = allocated_modules.reject { |mod| modules.includes?(mod[:module_id]) }
-      remove_modules = (modules - allocated_modules.map(&.[:module_id])).to_a
-
-      # After registering the modules we need to start them
-      should_start = [] of Tuple(String, String)
-      add_modules.each do |module_details|
-        module_id = module_details[:module_id]
-        mod = edge_modules[module_id]
-        next unless mod.running
-        should_start << {module_id, ModuleManager.start_payload(mod)}
-      end
-
-      Protocol::Message::RegisterResponse.new(
-        success: true,
-        add_drivers: (allocated_drivers - drivers).to_a,
-        remove_drivers: (drivers - allocated_drivers).to_a,
-        add_modules: add_modules,
-        remove_modules: remove_modules,
-        running_modules: should_start
-      )
     end
 
     # Callbacks
@@ -318,6 +314,13 @@ module PlaceOS::Core
       t.send_request(request)
     end
 
+    def disconnected!
+      update_runtime_status(connected: false, last_seen: Time.utc, last_event: "disconnected")
+      if edge = PlaceOS::Model::Edge.find?(edge_id)
+        edge.update_fields(online: false, last_seen: Time.utc)
+      end
+    end
+
     # Utilities
     ###############################################################################################
 
@@ -327,6 +330,36 @@ module PlaceOS::Core
       exception = match.try &.captures.first || "Exception"
       message = match.pre_match unless match.nil?
       {message, exception}
+    end
+
+    private def update_runtime_status(
+      connected : Bool? = nil,
+      last_seen : Time? = nil,
+      snapshot_version : String? = nil,
+      pending_updates : Int32? = nil,
+      pending_events : Int32? = nil,
+      last_event : String? = nil,
+      last_error : String? = nil,
+    )
+      current = @runtime_status
+      @runtime_status = RuntimeStatus.new(
+        connected: connected.nil? ? current.connected : connected,
+        last_seen: last_seen || current.last_seen,
+        snapshot_version: snapshot_version || current.snapshot_version,
+        pending_updates: pending_updates || current.pending_updates,
+        pending_events: pending_events || current.pending_events,
+        last_event: last_event || current.last_event,
+        last_error: last_error.nil? ? current.last_error : last_error
+      )
+
+      if edge = PlaceOS::Model::Edge.find?(edge_id)
+        edge.update_fields(
+          online: @runtime_status.connected,
+          last_seen: @runtime_status.last_seen
+        )
+      end
+
+      true
     end
   end
 end

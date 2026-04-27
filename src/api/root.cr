@@ -7,8 +7,13 @@ module PlaceOS::Core::Api
   class Root < Application
     base "/api/core/v1/"
 
-    class_getter resource_manager : ResourceManager { ResourceManager.instance }
-    class_getter module_manager : ModuleManager { ModuleManager.instance }
+    def self.resource_manager : ResourceManager
+      Services.resource_manager
+    end
+
+    def self.module_manager : ModuleManager
+      Services.module_manager
+    end
 
     # Health Check
     ###############################################################################################

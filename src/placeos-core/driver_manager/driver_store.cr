@@ -112,13 +112,16 @@ module PlaceOS::Core
 
     def reload_driver(driver_id : String)
       if driver = Model::Driver.find?(driver_id)
-        repo = driver.repository!
+        repo = driver.repository || driver.repository_id.try { |id| Model::Repository.find?(id) }
+        return {status: 404, message: "Repository for driver #{driver_id} not found"} unless repo
 
         if compiled?(driver.file_name, driver.commit, repo.branch, repo.uri)
-          manager = ModuleManager.instance
+          manager = Services.current_module_manager? || ModuleManager.current_instance?
+          return {status: 503, message: "Module manager unavailable"} unless manager
           stale_path = manager.reload_modules(driver)
           if path = stale_path
-            File.delete(path) rescue nil if File.exists?(path)
+            current_path = driver_binary_path(driver.file_name, driver.commit)
+            File.delete(path) rescue nil if File.exists?(path) && path != current_path
           end
         else
           return {status: 404, message: "Driver not compiled or not available on S3"}
@@ -133,6 +136,7 @@ module PlaceOS::Core
       url = URI.parse(link.url)
       driver_file = Path[url.path].basename
       filename = Path[binary_path, driver_file]
+      tmp_filename = Path[binary_path, "#{driver_file}.#{Random::Secure.hex(8)}.tmp"]
       resp = if Core.production? || url.scheme == "https"
                ConnectProxy::HTTPClient.get(url.to_s)
              else
@@ -149,7 +153,7 @@ module PlaceOS::Core
 
         body_io = IO::Digest.new(resp.body_io? || IO::Memory.new(resp.body), Digest::MD5.new)
         bytes_written = 0_i64
-        File.open(filename, "wb+") do |f|
+        File.open(tmp_filename, "wb+") do |f|
           bytes_written = IO.copy(body_io, f)
           f.chmod(0o755)
         end
@@ -157,14 +161,17 @@ module PlaceOS::Core
         # Verify actual downloaded size matches expected size
         unless link.size == bytes_written
           Log.error { {message: "Expected download size #{link.size}, but actually downloaded #{bytes_written} bytes", driver_file: driver_file} }
-          File.delete(filename) if File.exists?(filename)
+          File.delete(tmp_filename) if File.exists?(tmp_filename)
           raise Error.new("Downloaded size doesn't match expected size from build service")
         end
 
+        File.rename(tmp_filename, filename)
         filename.to_s
       else
         raise Error.new("Unable to fetch driver. Error : #{resp.body}")
       end
+    ensure
+      File.delete(tmp_filename) if tmp_filename && File.exists?(tmp_filename)
     end
 
     private record LinkData, size : Int64, md5 : String, modified : Time, url : String, link_expiry : Time do

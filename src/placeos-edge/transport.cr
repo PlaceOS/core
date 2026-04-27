@@ -53,11 +53,20 @@ module PlaceOS::Edge
     end
 
     def connect(uri : URI, socket : HTTP::WebSocket?)
+      if socket
+        Log.debug { "core connection established" }
+        spawn { on_connect.try &.call } if on_connect
+        run_socket(socket).run
+        disconnect unless close_channel.closed?
+        return
+      end
+
       SimpleRetry.try_to(
         base_interval: 500.milliseconds,
         max_interval: 5.seconds
       ) do |_run_count, error|
         if error
+          break if close_channel.closed?
           Log.warn { {error: error.to_s, message: "reconnecting"} }
           on_disconnect.try(&.call(error)) if error.is_a? IO::Error
           socket = nil
@@ -67,7 +76,8 @@ module PlaceOS::Edge
         Log.debug { "core connection established" }
         spawn { on_connect.try &.call } if on_connect
         run_socket(socket.as(HTTP::WebSocket)).run
-        raise "rest api disconnected" unless close_channel.closed?
+        break if close_channel.closed?
+        raise "rest api disconnected"
       end
     rescue error
       disconnect
@@ -86,9 +96,15 @@ module PlaceOS::Edge
             @ping_failures += 1
             Log.debug { "keepalive ping failed #{@ping_failures} times" }
 
-            # if we've been disconnect for ~5min then we restart the service
-            if @ping_failures > 30
-              Log.fatal { "connection failure, restarting..." }
+            # Log warning at 1 minute of failures
+            if @ping_failures == 6
+              Log.warn { "websocket connection appears to be down, reconnection in progress" }
+            end
+
+            # Only exit as last resort after ~10 minutes of continuous failures
+            # This gives reconnection logic time to work
+            if @ping_failures > 60
+              Log.fatal { "websocket connection failed for 10+ minutes, restarting process..." }
               sleep(interval)
               exit(2)
             end
@@ -99,11 +115,17 @@ module PlaceOS::Edge
     end
 
     def disconnect
-      close_channel.close
-      socket_channel.close
+      socket_lock.synchronize do
+        @socket.try(&.close) rescue nil
+      end
+      close_channel.close rescue nil
+      socket_channel.close rescue nil
       response_lock.synchronize do
         responses.each_value(&.close) rescue nil
+        responses.clear
       end
+    rescue Channel::ClosedError
+      nil
     end
 
     protected def run_socket(socket : HTTP::WebSocket)
@@ -148,7 +170,7 @@ module PlaceOS::Edge
       end
     end
 
-    protected def send_response(id : UInt64, response : Protocol::Response)
+    protected def send_response(id : UInt64, response : Protocol::Client::Response | Protocol::Message::BinaryBody | Protocol::Message::Success)
       message = case response
                 in Protocol::Message::Body
                   Protocol::Text.new(sequence_id: id, body: response)
@@ -162,6 +184,8 @@ module PlaceOS::Edge
                 end
 
       socket_channel.send(message)
+    rescue Channel::ClosedError
+      nil
     end
 
     protected def send_request(request : Protocol::Request) : Protocol::Response?
@@ -172,10 +196,18 @@ module PlaceOS::Edge
         responses[id] = response_channel
       end
 
-      socket_channel.send(Protocol::Text.new(sequence_id: id, body: request))
+      begin
+        socket_channel.send(Protocol::Text.new(sequence_id: id, body: request))
+      rescue Channel::ClosedError
+        response_lock.write do
+          responses.delete(id)
+        end
+        return nil
+      end
 
-      select
-      when response = response_channel.receive?
+      response = select
+      when received = response_channel.receive?
+        received
       when timeout 30.seconds
         raise Error::TransportTimeout.new(request)
       end
@@ -185,6 +217,14 @@ module PlaceOS::Edge
       end
 
       response
+    end
+
+    protected def send_event(request : Protocol::Request)
+      socket_channel.send(Protocol::Text.new(sequence_id: sequence_id, body: request))
+    rescue Channel::ClosedError
+      nil
+    ensure
+      nil
     end
 
     private def on_message(message)
@@ -210,7 +250,7 @@ module PlaceOS::Edge
       in Protocol::Response
         response_lock.read do
           if channel = responses[message.sequence_id]?
-            channel.send(body)
+            channel.send(body) rescue nil
           else
             Log.error { {
               sequence_id: message.sequence_id.to_s,

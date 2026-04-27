@@ -11,6 +11,7 @@ module PlaceOS::Core
 
     private getter discovery : Clustering::Discovery
     private getter store : DriverStore
+    private getter module_manager : ModuleManager
 
     # Track active execute requests for lazy modules (module_id => count)
     private getter lazy_execute_counts : Hash(String, Atomic(Int32)) = {} of String => Atomic(Int32)
@@ -19,7 +20,7 @@ module PlaceOS::Core
     # Track scheduled unload fibers to cancel them if new executions come in
     private getter lazy_unload_scheduled : Hash(String, Bool) = {} of String => Bool
 
-    def initialize(@discovery : Clustering::Discovery)
+    def initialize(@discovery : Clustering::Discovery, @module_manager : ModuleManager = Services.module_manager)
       @store = DriverStore.new
     end
 
@@ -62,14 +63,22 @@ module PlaceOS::Core
 
     def execute(module_id : String, payload : String | IO, user_id : String?, mod : Model::Module? = nil)
       mod = mod || Model::Module.find?(module_id)
-      raise ModuleError.new("Could not locate module #{module_id}, no matching database record") unless mod
+      if mod
+        # Check if this is a lazy module that needs to be loaded
+        return execute_lazy(mod, payload, user_id) if mod.launch_on_execute
+        raise ModuleError.new("Could not locate module #{module_id}, it is stopped") unless mod.running
+      end
 
-      # Check if this is a lazy module that needs to be loaded
-      return execute_lazy(mod, payload, user_id) if mod.launch_on_execute
-      raise ModuleError.new("Could not locate module #{module_id}, it is stopped") unless mod.running
+      # The module should already be running and have a management module.
+      # If the backing ORM row has disappeared, still allow execution against the
+      # loaded module so in-flight runtimes remain operable.
+      manager = if existing = protocol_manager_by_module?(module_id)
+                  existing
+                elsif mod
+                  ensure_lazy_module_loaded(mod)
+                end
 
-      # the module should be running and have a management module
-      manager = protocol_manager_by_module?(module_id) || ensure_lazy_module_loaded(mod)
+      raise ModuleError.new("Could not locate module #{module_id}, no matching database record") if manager.nil?
       request_body = payload.is_a?(IO) ? payload.gets_to_end : payload
       manager.execute(
         module_id,
@@ -117,8 +126,17 @@ module PlaceOS::Core
         return manager
       end
 
-      driver = mod.driver!
-      repository = driver.repository!
+      driver = mod.driver || mod.driver_id.try { |id| Model::Driver.find?(id) }
+      if driver.nil?
+        Log.debug { {message: "deferring lazy module load until driver exists", module_id: module_id, driver_id: mod.driver_id} }
+        raise ModuleError.new("Driver missing for lazy module #{module_id}")
+      end
+
+      repository = driver.repository || driver.repository_id.try { |id| Model::Repository.find?(id) }
+      if repository.nil?
+        Log.debug { {message: "deferring lazy module load until repository exists", module_id: module_id, driver_id: driver.id} }
+        raise ModuleError.new("Repository missing for lazy module #{module_id}")
+      end
 
       driver_path = store.built?(driver.file_name, driver.commit, repository.branch, repository.uri)
       raise ModuleError.new("Driver not compiled for lazy module #{module_id}") if driver_path.nil?
@@ -180,6 +198,7 @@ module PlaceOS::Core
       # Stop and unload the module
       stop(module_id)
       unload(module_id)
+      module_manager.register_lazy_module(mod)
 
       Log.info { {message: "unloaded lazy module after idle timeout", module_id: module_id, name: mod.name} }
     end
@@ -234,7 +253,11 @@ module PlaceOS::Core
     ###############################################################################################
 
     def on_system_model(request : Request, response_callback : Request ->)
-      request.payload = PlaceOS::Model::ControlSystem.find!(request.id).to_json
+      if control_system = PlaceOS::Model::ControlSystem.find?(request.id)
+        request.payload = control_system.to_json
+      else
+        raise ModuleError.new("Could not locate control system #{request.id}")
+      end
     rescue error
       request.set_error(error)
     ensure
@@ -242,17 +265,16 @@ module PlaceOS::Core
     end
 
     def on_exec(request : Request, response_callback : Request ->)
-      module_manager = ModuleManager.instance
       module_id = request.id
 
       manager, mod_orm = module_manager.process_manager(module_id)
       request = if manager.module_loaded?(module_id)
-                  local_execute(request, module_id, mod_orm)
+                  local_execute(manager, request, module_id, mod_orm)
                 else
                   core_uri = which_core(module_id)
                   if core_uri == discovery.uri
                     # If the module maps to this node
-                    local_execute(request, module_id, mod_orm)
+                    local_execute(manager, request, module_id, mod_orm)
                   else
                     # Otherwise, dial core node responsible for the module
                     remote_execute(core_uri, request)
@@ -302,8 +324,8 @@ module PlaceOS::Core
       request
     end
 
-    protected def local_execute(request, module_id, mod_orm)
-      response = execute(module_id, request.payload.as(String), request.user_id, mod_orm) || {"".as(String?), 500}
+    protected def local_execute(manager : ProcessManager, request, module_id, mod_orm)
+      response = manager.execute(module_id, request.payload.as(String), request.user_id) || {"".as(String?), 500}
       request.code = response[1]
       request.payload = response[0]
       request.cmd = :result
@@ -332,7 +354,11 @@ module PlaceOS::Core
     # Used in `on_exec` for locating the remote module
     #
     def which_core(module_id : String) : URI
-      edge_id = Model::Module.find!(module_id).edge_id if Model::Module.has_edge_hint?(module_id)
+      edge_id = if Model::Module.has_edge_hint?(module_id)
+                  mod = Model::Module.find?(module_id)
+                  raise ModuleError.new("Could not locate module #{module_id}, no matching database record") unless mod
+                  mod.edge_id
+                end
       node = edge_id ? discovery.find?(edge_id) : discovery.find?(module_id)
       raise Error.new("No registered core instances") if node.nil?
       node

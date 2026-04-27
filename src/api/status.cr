@@ -8,8 +8,8 @@ module PlaceOS::Core::Api
   class Status < Application
     base "/api/core/v1/status/"
 
-    getter module_manager : ModuleManager { ModuleManager.instance }
-    getter resource_manager : ResourceManager { ResourceManager.instance }
+    getter module_manager : ModuleManager { Services.module_manager }
+    getter resource_manager : ResourceManager { Services.resource_manager }
 
     record(RunCount, local : PlaceOS::Core::ProcessManager::Count,
       edge : Hash(String, PlaceOS::Core::ProcessManager::Count)) { include JSON::Serializable }
@@ -65,6 +65,16 @@ module PlaceOS::Core::Api
     record(LoadedModules, local : Hash(String, Array(String)),
       edge : Hash(String, Hash(String, Array(String)))) { include JSON::Serializable }
 
+    record(EdgeConnection,
+      online : Bool,
+      last_seen : Time?,
+      websocket_connected : Bool,
+      snapshot_version : String?,
+      pending_updates : Int32,
+      pending_events : Int32,
+      last_event : String?,
+      last_error : String?) { include JSON::Serializable }
+
     # Returns the lists of modules drivers have loaded for this core, and managed edges
     @[AC::Route::GET("/loaded")]
     def loaded : LoadedModules
@@ -72,6 +82,26 @@ module PlaceOS::Core::Api
         local: module_manager.local_processes.loaded_modules,
         edge: module_manager.edge_processes.loaded_modules,
       )
+    end
+
+    @[AC::Route::GET("/edges")]
+    def edges : Hash(String, EdgeConnection)
+      statuses = module_manager.edge_processes.runtime_status
+
+      PlaceOS::Model::Edge.all.each_with_object({} of String => EdgeConnection) do |edge, acc|
+        edge_id = edge.id.as(String)
+        runtime = statuses[edge_id]?
+        acc[edge_id] = EdgeConnection.new(
+          online: edge.online,
+          last_seen: edge.last_seen,
+          websocket_connected: runtime.try(&.connected) || false,
+          snapshot_version: runtime.try(&.snapshot_version),
+          pending_updates: runtime.try(&.pending_updates) || 0,
+          pending_events: runtime.try(&.pending_events) || 0,
+          last_event: runtime.try(&.last_event),
+          last_error: runtime.try(&.last_error)
+        )
+      end
     end
   end
 end

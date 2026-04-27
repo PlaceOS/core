@@ -10,7 +10,7 @@ module PlaceOS::Core
   class Mappings::ModuleNames < Resource(Model::Module)
     protected getter module_manager : ModuleManager
 
-    def initialize(@module_manager : ModuleManager = ModuleManager.instance)
+    def initialize(@module_manager : ModuleManager = Services.module_manager)
       super()
     end
 
@@ -25,7 +25,7 @@ module PlaceOS::Core
 
     def self.update_module_mapping(
       mod : Model::Module,
-      module_manager : ModuleManager = ModuleManager.instance,
+      module_manager : ModuleManager = Services.module_manager,
     ) : Resource::Result
       module_id = mod.id.as(String)
       # Only consider name change events

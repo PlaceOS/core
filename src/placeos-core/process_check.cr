@@ -9,6 +9,7 @@ module PlaceOS::Core
 
     # Begin scanning for dead driver processes
     protected def start_process_check
+      stop_process_check
       @process_check_task = Tasker.every(PROCESS_CHECK_PERIOD) do
         process_check
       end
@@ -16,6 +17,7 @@ module PlaceOS::Core
 
     protected def stop_process_check
       @process_check_task.try &.cancel
+      @process_check_task = nil
     end
 
     enum State

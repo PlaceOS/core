@@ -11,12 +11,6 @@ module PlaceOS::Core::Api
     used_for_place_testing: [] of String,
   }.to_json
 
-  # allow injecting mock manager during testing
-  class Command
-    class_property mock_module_manager : ModuleManager? = nil
-    property module_manager : ModuleManager { @@mock_module_manager || ModuleManager.instance }
-  end
-
   describe Command, tags: "api" do
     client = AC::SpecHelper.client
 
@@ -25,7 +19,7 @@ module PlaceOS::Core::Api
       "Content-Type" => "application/json",
     }
 
-    after_each { Command.mock_module_manager = nil }
+    after_each { Services.reset }
 
     describe "command/:module_id/execute" do
       it "executes a command on a running module" do
@@ -33,7 +27,8 @@ module PlaceOS::Core::Api
         mod_id = mod.id.as(String)
         module_manager = module_manager_mock
         module_manager.load_module(mod)
-        Command.mock_module_manager = module_manager
+        Services.module_manager = module_manager
+        Services.resource_manager = resource_manager
 
         route = File.join(namespace, mod_id, "execute")
         response = client.post(route, headers: json_headers, body: EXEC_PAYLOAD)
@@ -57,7 +52,8 @@ module PlaceOS::Core::Api
         module_manager = module_manager_mock
         # Register as lazy (don't spawn driver)
         module_manager.load_module(mod)
-        Command.mock_module_manager = module_manager
+        Services.module_manager = module_manager
+        Services.resource_manager = resource_manager
 
         # Verify driver is not spawned
         module_manager.local_processes.module_loaded?(mod_id).should be_false
@@ -80,7 +76,7 @@ module PlaceOS::Core::Api
 
         # Don't load the module, but it's not lazy either
         module_manager = module_manager_mock
-        Command.mock_module_manager = module_manager
+        Services.module_manager = module_manager
 
         route = File.join(namespace, mod_id, "execute")
         response = client.post(route, headers: json_headers, body: EXEC_PAYLOAD)
@@ -100,7 +96,8 @@ module PlaceOS::Core::Api
 
         # Load module
         module_manager.load_module(mod)
-        Command.mock_module_manager = module_manager
+        Services.module_manager = module_manager
+        Services.resource_manager = resource_manager
 
         # Create Command controller context
         route = File.join(namespace, mod_id, "debugger")
@@ -117,7 +114,7 @@ module PlaceOS::Core::Api
           message_channel.close
           raise e
         end
-        Fiber.yield
+        sleep 100.milliseconds
 
         # Create an execute request
         route = File.join(namespace, mod_id, "execute")
@@ -126,12 +123,14 @@ module PlaceOS::Core::Api
 
         # Wait for messages on the debugger
         messages = [] of String
-        2.times do
+        deadline = Time.instant + 5.seconds
+        until Time.instant >= deadline
           select
           when message = message_channel.receive
             messages << message
+            break if message == %([1,"this will be propagated to backoffice!"])
           when timeout 2.seconds
-            break
+            next
           end
         end
 
@@ -140,7 +139,5 @@ module PlaceOS::Core::Api
         resource_manager.try &.stop
       end
     end
-
-    pending "command/debugger"
   end
 end

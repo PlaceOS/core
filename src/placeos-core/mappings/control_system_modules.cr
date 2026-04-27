@@ -12,7 +12,7 @@ module PlaceOS::Core
 
     def initialize(
       @startup : Bool = true,
-      @module_manager : ModuleManager = ModuleManager.instance,
+      @module_manager : ModuleManager = Services.module_manager,
     )
       super()
     end
@@ -28,7 +28,7 @@ module PlaceOS::Core
     def self.update_mapping(
       system : Model::ControlSystem,
       startup : Bool = false,
-      module_manager : ModuleManager = ModuleManager.instance,
+      module_manager : ModuleManager = Services.module_manager,
     ) : Resource::Result
       relevant_node = startup || module_manager.discovery.own_node?(system.id.as(String))
       unless relevant_node
@@ -57,7 +57,7 @@ module PlaceOS::Core
     #
     def self.update_logic_modules(
       system : Model::ControlSystem,
-      module_manager : ModuleManager = ModuleManager.instance,
+      module_manager : ModuleManager = Services.module_manager,
     ) : Int32
       return 0 if system.destroyed?
 
@@ -111,8 +111,15 @@ module PlaceOS::Core
       # Construct a hash of resolved module name to ordered module ids
       grouped_modules = control_system.modules.group_by do |id|
         # Save a lookup if a module passed
-        (mod && id == mod.id ? mod : Model::Module.find!(id)).resolved_name
+        resolved_mod = mod && id == mod.id ? mod : Model::Module.find?(id)
+        unless resolved_mod
+          Log.debug { {message: "skipping missing module while rebuilding mappings", system_id: system_id, module_id: id} }
+          next "<missing-module>"
+        end
+        resolved_mod.resolved_name
       end
+
+      grouped_modules.delete("<missing-module>")
 
       # Index the modules
       mappings = grouped_modules.each_with_object({} of String => String) do |(name, ids), mapping|

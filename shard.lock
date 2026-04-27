@@ -143,7 +143,7 @@ shards:
 
   neuroplastic:
     git: https://github.com/spider-gazelle/neuroplastic.git
-    version: 1.13.1
+    version: 1.14.2
 
   office365:
     git: https://github.com/placeos/office365.git
@@ -179,7 +179,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 7.19.0
+    version: 7.21.1
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -187,7 +187,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.85.0
+    version: 9.86.2
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -207,11 +207,11 @@ shards:
 
   redis-cluster:
     git: https://github.com/place-labs/redis-cluster.cr.git
-    version: 0.8.10
+    version: 0.8.11
 
   redis_service_manager:
     git: https://github.com/place-labs/redis_service_manager.git
-    version: 3.3.0
+    version: 3.3.1
 
   rendezvous-hash:
     git: https://github.com/caspiano/rendezvous-hash.git

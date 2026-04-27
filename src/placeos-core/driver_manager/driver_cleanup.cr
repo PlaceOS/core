@@ -9,28 +9,36 @@ module PlaceOS::Core::DriverCleanup
   DEFAULT_STALE_THRESHOLD_DAYS = 15
 
   @@tasker_inst : Tasker::Repeat(Nil)?
+  @@tasker_lock = Mutex.new
 
   def self.start_cleanup
-    tracker = StaleProcessTracker.new(DriverStore::BINARY_PATH, REDIS_CLIENT)
+    @@tasker_lock.synchronize do
+      @@tasker_inst.try &.cancel
 
-    @@tasker_inst = Tasker.every(ENV["STALE_SCAN_INTERVAL"]?.try &.to_i.hours || DEFAULT_STALE_SCAN_INTERVAL) do
-      stale_list = tracker.update_and_find_stale(ENV["STALE_THRESHOLD_DAYS"]?.try &.to_i || DEFAULT_STALE_THRESHOLD_DAYS)
-      tracker.delete_stale_executables(stale_list)
+      tracker = StaleProcessTracker.new(DriverStore::BINARY_PATH, REDIS_CLIENT)
+      @@tasker_inst = Tasker.every(ENV["STALE_SCAN_INTERVAL"]?.try &.to_i.hours || DEFAULT_STALE_SCAN_INTERVAL) do
+        stale_list = tracker.update_and_find_stale(ENV["STALE_THRESHOLD_DAYS"]?.try &.to_i || DEFAULT_STALE_THRESHOLD_DAYS)
+        tracker.delete_stale_executables(stale_list)
+      end
     end
   end
 
   def self.stop_cleanup
-    @@tasker_inst.try &.cancel
+    @@tasker_lock.synchronize do
+      @@tasker_inst.try &.cancel
+      @@tasker_inst = nil
+    end
   end
 
   class StaleProcessTracker
     Log = Core::Log
+    @now : Time = Time.utc
 
     def initialize(@folder : String, @redis : Redis::Client)
-      @now = Time.utc
     end
 
     def update_and_find_stale(days_threshold : Int32 = 30)
+      @now = Time.utc
       Log.info { "Starting stale executable check for #{@folder}" }
 
       current_executables = get_current_executables
@@ -79,7 +87,7 @@ module PlaceOS::Core::DriverCleanup
     private def track_execution_events(current_executables)
       # Register new executables with discovery time
       current_executables.each do |exe|
-        unless @redis.hexists(exe, "discovered_at")
+        unless hash_data_for(exe).has_key?("discovered_at")
           @redis.hset(exe, "discovered_at", @now.to_unix)
         end
       end
@@ -115,7 +123,7 @@ module PlaceOS::Core::DriverCleanup
       stale = [] of String
 
       current_executables.each do |exe|
-        redis_data = @redis.hgetall(exe)
+        redis_data = hash_data_for(exe)
         discovered_at = redis_data["discovered_at"]?.try(&.to_i64)
         last_executed_at = redis_data["last_executed_at"]?.try(&.to_i64)
 
@@ -137,6 +145,21 @@ module PlaceOS::Core::DriverCleanup
       stale
     end
 
+    private def hash_data_for(key : String) : Hash(String, String)
+      case data = @redis.hgetall(key)
+      in Hash
+        data.transform_keys(&.to_s).transform_values(&.to_s)
+      in Array
+        hash = {} of String => String
+        data.each_slice(2) do |slice|
+          next unless field = slice[0]?
+          next unless value = slice[1]?
+          hash[field.to_s] = value.to_s
+        end
+        hash
+      end
+    end
+
     private def process_owned_by_current_user?(pid_dir : String, current_uid : UInt32) : Bool
       status_file = File.join(pid_dir, "status")
       return false unless File.exists?(status_file)
@@ -149,10 +172,9 @@ module PlaceOS::Core::DriverCleanup
     end
 
     private def get_process_executable_name(pid_dir : String) : String?
-      cmdline = File.read(File.join(pid_dir, "cmdline")).split("\0").first?
-      return unless cmdline
-
-      File.basename(cmdline)
+      exe_path = File.readlink(File.join(pid_dir, "exe"))
+      return unless exe_path.starts_with?(@folder)
+      File.basename(exe_path)
     rescue
       nil
     end

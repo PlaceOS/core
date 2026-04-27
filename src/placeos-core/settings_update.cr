@@ -5,7 +5,7 @@ module PlaceOS
   class Core::SettingsUpdate < Resource(Model::Settings)
     private getter module_manager : ModuleManager
 
-    def initialize(@module_manager : ModuleManager = ModuleManager.instance)
+    def initialize(@module_manager : ModuleManager = Services.module_manager)
       super()
     end
 
@@ -30,7 +30,7 @@ module PlaceOS
       result = Result::Success
 
       # Find each module affected by the Settings change
-      settings.dependent_modules.each do |mod|
+      dependent_modules(settings).each do |mod|
         begin
           if module_manager.refresh_module(mod)
             Log.info { {message: "#{mod.running_was == false ? "started" : "updated"} module with new settings", module_id: mod.id, settings_id: settings.id} }
@@ -42,6 +42,30 @@ module PlaceOS
       end
 
       result
+    end
+
+    private def self.dependent_modules(settings : Model::Settings) : Array(Model::Module)
+      model_id = settings.parent_id
+      model_type = settings.parent_type
+      return [] of Model::Module if model_id.nil? || model_type.nil?
+
+      case model_type
+      in .module?
+        mod = Model::Module.find?(model_id)
+        mod ? [mod] : [] of Model::Module
+      in .driver?
+        Model::Module.by_driver_id(model_id).to_a
+      in .control_system?
+        Model::Module
+          .in_control_system(model_id)
+          .select(&.role.logic?)
+          .to_a
+      in .zone?
+        Model::Module
+          .in_zone(model_id)
+          .select(&.role.logic?)
+          .to_a
+      end
     end
   end
 end

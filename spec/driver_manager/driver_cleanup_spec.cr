@@ -24,9 +24,22 @@ module PlaceOS::Core
       tracker = DriverCleanup::StaleProcessTracker.new(DriverStore::BINARY_PATH, REDIS_CLIENT)
       stale_list = tracker.update_and_find_stale(ENV["STALE_THRESHOLD_DAYS"]?.try &.to_i || 30)
       stale_list.size.should eq(0)
-      driver_file = Path[DriverStore::BINARY_PATH, "drivers_place_private_helper_cce023a_#{Core::ARCH}"].to_s
-      value = REDIS_CLIENT.hgetall(driver_file)
+      value = case data = REDIS_CLIENT.hgetall(driver_path)
+              in Hash
+                data.transform_keys(&.to_s).transform_values(&.to_s)
+              in Array
+                hash = {} of String => String
+                data.each_slice(2) do |slice|
+                  next unless field = slice[0]?
+                  next unless raw = slice[1]?
+                  hash[field.to_s] = raw.to_s
+                end
+                hash
+              end
       value["last_executed_at"].to_i64.should be > 0
+    ensure
+      module_manager.try &.stop
+      resource_manager.try &.stop
     end
   end
 end

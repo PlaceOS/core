@@ -10,15 +10,22 @@ module PlaceOS::Core::DriverIntegrity
     include DB::Serializable
   end
   @@tasker_inst : Tasker::Repeat(Nil)?
+  @@tasker_lock = Mutex.new
 
   def self.start_integrity_checker
-    @@tasker_inst = Tasker.every(ENV["INTEGRITY_SCAN_INTERVAL"]?.try &.to_i.hours || DEFAULT_SCAN_INTERVAL) do
-      sync_drivers
+    @@tasker_lock.synchronize do
+      @@tasker_inst.try &.cancel
+      @@tasker_inst = Tasker.every(ENV["INTEGRITY_SCAN_INTERVAL"]?.try &.to_i.hours || DEFAULT_SCAN_INTERVAL) do
+        sync_drivers
+      end
     end
   end
 
   def self.stop_integrity_checker
-    @@tasker_inst.try &.cancel
+    @@tasker_lock.synchronize do
+      @@tasker_inst.try &.cancel
+      @@tasker_inst = nil
+    end
   end
 
   def self.remove_blank_files
@@ -79,9 +86,12 @@ module PlaceOS::Core::DriverIntegrity
     drivers_delta = should_be_running - find_running_drivers
     return if drivers_delta.empty?
     drivers_to_start = drivers.select { |rec| (rec.driver_file + Core::ARCH).in?(drivers_delta) }
-    module_manager = ModuleManager.instance
+    module_manager = Services.current_module_manager? || ModuleManager.current_instance?
+    return unless module_manager
     drivers_to_start.each do |driver|
-      module_manager.reload_modules(Model::Driver.find!(driver.id))
+      if model = Model::Driver.find?(driver.id)
+        module_manager.reload_modules(model)
+      end
     end
   end
 

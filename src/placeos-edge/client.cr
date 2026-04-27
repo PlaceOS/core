@@ -1,56 +1,63 @@
 require "simple_retry"
-require "rwlock"
 require "uri"
 
 require "placeos-driver/protocol/management"
 
-require "../placeos-core/process_manager/common"
 require "../placeos-core/driver_manager"
 
+require "./binary_manager"
 require "./constants"
+require "./desired_state_client"
 require "./protocol"
-require "./transport"
+require "./realtime_channel"
+require "./reconciler"
+require "./runtime_manager"
+require "./runtime_store"
+require "./state"
 
 module PlaceOS::Edge
   class Client
-    include Core::ProcessManager::Common
-
     Log                = ::Log.for(self)
-    WEBSOCKET_API_PATH = "/api/engine/v2/edges/control"
+    WEBSOCKET_API_PATH = "/api/core/v1/edge/control"
 
-    protected getter store : Core::DriverStore
+    protected getter store : PlaceOS::Core::DriverStore
+    getter runtime_store : RuntimeStore
+    getter runtime_manager : RuntimeManager
+    @binary_manager : BinaryManager? = nil
+    @desired_state : DesiredStateClient? = nil
+    @reconciler : Reconciler? = nil
 
     private getter secret : String
-
+    private getter edge_id : String
+    private getter poll_interval : Time::Span
     private getter! uri : URI
-    protected getter! transport : Transport
+    @realtime : RealtimeChannel? = nil
 
-    # NOTE: For testing purposes
+    # NOTE: injected socket controls are only for deterministic spec coverage of
+    # realtime transport behavior; production flow uses the normal websocket path.
     private getter? skip_handshake : Bool
     private getter? ping : Bool
+    private getter? sync_injected_socket : Bool
 
     private getter close_channel = Channel(Nil).new
-
-    # structures for tracking what has been loaded and what has been requested
-    # this allows us do some of these things out of order when they become available
-    @loading_mutex = Mutex.new(:reentrant)
-    # driver_key => downloaded signal
-    @loading_driver_keys = {} of String => Channel(Nil)
-    # driver_key => [mod_ids]
-    @loading_modules = Hash(String, Array(String)).new { |hash, key| hash[key] = [] of String }
-    # module_id => payload
-    @pending_start = {} of String => String
-
-    getter host : String { uri.to_s.gsub(uri.request_target, "") }
+    @connect_sync_count = Atomic(Int32).new(0)
+    @injected_socket_mode : Bool = false
 
     def initialize(
       uri : URI = PLACE_URI,
       secret : String? = nil,
-      @sequence_id : UInt64 = 0,
+      @edge_id : String = EDGE_ID,
       @skip_handshake : Bool = false,
       @ping : Bool = true,
-      @store = Core::DriverStore.new,
+      @sync_injected_socket : Bool = false,
+      @store : PlaceOS::Core::DriverStore = PlaceOS::Core::DriverStore.new,
+      @runtime_store : RuntimeStore = RuntimeStore.new,
+      @poll_interval : Time::Span = SNAPSHOT_POLL_INTERVAL,
     )
+      # Validate configuration
+      raise ArgumentError.new("edge_id cannot be empty") if @edge_id.empty?
+      raise ArgumentError.new("poll_interval must be positive") if @poll_interval <= Time::Span.zero
+
       @secret = if secret && secret.presence
                   secret
                 else
@@ -58,80 +65,55 @@ module PlaceOS::Edge
                   CLIENT_SECRET
                 end
 
-      # Mutate a copy as secret is embedded in uri
-      uri = uri.dup
-      uri.path = WEBSOCKET_API_PATH
-      uri.query = "api-key=#{@secret}"
-      @uri = uri
-    end
+      raise ArgumentError.new("secret cannot be empty") if @secret.empty?
 
-    alias ModuleError = ::PlaceOS::Core::ModuleError
+      @uri = uri.dup
 
-    # Implement the abstract method from Common
-    def execute(module_id : String, payload : String | IO, user_id : String?, mod : Model::Module? = nil)
-      manager = protocol_manager_by_module?(module_id)
-
-      raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
-
-      request_body = payload.is_a?(IO) ? payload.gets_to_end : payload
-      manager.execute(
-        module_id,
-        request_body,
-        user_id: user_id,
+      @runtime_manager = RuntimeManager.new(
+        store: store,
+        on_setting_callback: ->on_setting(String, String, String),
+        on_redis_callback: ->on_redis(Protocol::RedisAction, String, String, String?)
       )
-    rescue error : PlaceOS::Driver::RemoteException
-      raise error
-    rescue exception
-      raise module_error(module_id, exception)
+
+      @binary_manager = binary_manager = BinaryManager.new(edge_id, self.uri, @secret, @store)
+      @desired_state = DesiredStateClient.new(edge_id, self.uri, @secret)
+      @reconciler = Reconciler.new(
+        runtime_store: @runtime_store,
+        binary_manager: binary_manager,
+        runtime_manager: @runtime_manager,
+        on_event: ->send_runtime_event(State::RuntimeEvent)
+      )
     end
 
-    # Initialize the WebSocket API
-    #
-    # Optionally accepts a block called after connection has been established.
+    # Initialize the WebSocket API and desired-state polling loop.
     def connect(initial_socket : HTTP::WebSocket? = nil, &)
-      Log.info { "connecting to #{host}" }
+      Log.info { "connecting to #{uri}" }
+      @injected_socket_mode = !initial_socket.nil?
 
-      @transport = Transport.new(
-        on_disconnect: ->(_error : HTTP::WebSocket::CloseCode | IO::Error) {
-          Log.debug { "core connection lost. Cleaning up pending operations" }
-
-          @loading_mutex.synchronize do
-            @loading_driver_keys.each { |_driver_key, channel| channel.close }
-            @loading_driver_keys = {} of String => Channel(Nil)
-            @loading_modules = Hash(String, Array(String)).new { |hash, key| hash[key] = [] of String }
-            @pending_start = {} of String => String
-          end
-          nil
-        },
-        on_connect: -> {
-          handshake unless skip_handshake?
-          nil
-        }
-      ) do |(sequence_id, request)|
-        if request.is_a?(Protocol::Server::Request)
-          handle_request(sequence_id, request)
+      channel = RealtimeChannel.new(uri, secret, edge_id, ping? || false)
+      @realtime = channel
+      channel.connect(
+        initial_socket,
+        on_disconnect: ->on_disconnect(IO::Error | HTTP::WebSocket::CloseCode),
+        on_connect: ->on_connect
+      ) do |message|
+        if request = message[1].as?(Protocol::Server::Request)
+          handle_request(message[0], request)
         else
-          Log.error { {message: "unexpected core request", request: request.to_json} }
+          Log.error { {message: "unexpected core request", request: message[1].to_json} }
         end
       end
 
-      spawn { transport.connect(uri, initial_socket) }
+      spawn { desired_state_loop } unless skip_handshake? || injected_socket_mode?
 
-      while transport.closed?
-        sleep 10.milliseconds
-        Fiber.yield
-      end
-
-      # Send ping frames
-      spawn { transport.ping if ping? }
+      load_persisted_snapshot unless skip_handshake? || injected_socket_mode?
 
       yield
 
       close_channel.receive?
-      transport.disconnect
+      realtime?.try &.disconnect
     end
 
-    # :ditto:
     def connect(initial_socket : HTTP::WebSocket? = nil)
       connect(initial_socket) { }
     end
@@ -145,85 +127,44 @@ module PlaceOS::Edge
 
       case request
       in Protocol::Message::Debug
-        boolean_command(sequence_id, request) do
-          debug(request.module_id)
-        end
+        boolean_command(sequence_id, request) { debug(request.module_id) }
       in Protocol::Message::DriverLoaded
-        boolean_command(sequence_id, request) do
-          driver_loaded?(request.driver_key)
-        end
+        boolean_command(sequence_id, request) { runtime_manager.driver_loaded?(request.driver_key) }
       in Protocol::Message::DriverStatus
-        status = driver_status(request.driver_key)
-        send_response(sequence_id, Protocol::Message::DriverStatusResponse.new(status))
+        send_response(sequence_id, Protocol::Message::DriverStatusResponse.new(runtime_manager.driver_status(request.driver_key)))
       in Protocol::Message::Execute
         success, output, response_code = begin
-          result = execute(
-            request.module_id,
-            request.payload,
-            user_id: request.user_id,
-          )
-
-          ({true, result[0], result[1]})
+          result = runtime_manager.execute(request.module_id, request.payload, user_id: request.user_id)
+          {true, result[0], result[1]}
         rescue error : PlaceOS::Driver::RemoteException
-          Log.error(exception: error) { {
-            module_id: request.module_id,
-            message:   "execute errored",
-          } }
-          ({false, {message: error.message, backtrace: error.backtrace?, code: error.code}.to_json, error.code})
+          Log.error(exception: error) { {module_id: request.module_id, message: "execute errored"} }
+          {false, {message: error.message, backtrace: error.backtrace?, code: error.code}.to_json, error.code}
         end
 
         send_response(sequence_id, Protocol::Message::ExecuteResponse.new(success, output, response_code))
       in Protocol::Message::Ignore
-        boolean_command(sequence_id, request) do
-          ignore(request.module_id)
-        end
+        boolean_command(sequence_id, request) { ignore(request.module_id) }
       in Protocol::Message::Kill
-        boolean_command(sequence_id, request) do
-          kill(request.driver_key)
-        end
+        boolean_command(sequence_id, request) { runtime_manager.kill(request.driver_key) }
       in Protocol::Message::Load
-        boolean_command(sequence_id, request) do
-          # @loading_mutex.synchronize do
-          #   File.delete(path(request.driver_key)) if !protocol_manager_by_driver?(request.driver_key) && File.exists?(path(request.driver_key))
-          # end
-          load(request.module_id, request.driver_key)
-        end
+        boolean_command(sequence_id, request) { runtime_manager.load(request.module_id, request.driver_key) }
       in Protocol::Message::LoadedModules
-        send_response(sequence_id, Protocol::Message::LoadedModulesResponse.new(loaded_modules))
+        send_response(sequence_id, Protocol::Message::LoadedModulesResponse.new(runtime_manager.loaded_modules))
       in Protocol::Message::ModuleLoaded
-        boolean_command(sequence_id, request) do
-          module_loaded?(request.module_id)
-        end
+        boolean_command(sequence_id, request) { runtime_manager.module_loaded?(request.module_id) }
       in Protocol::Message::RunCount
-        send_response(sequence_id, run_count_message)
+        send_response(sequence_id, Protocol::Message::RunCountResponse.new(count: runtime_manager.run_count))
       in Protocol::Message::Start
-        boolean_command(sequence_id, request) do
-          queue_start(request.module_id, request.payload)
-        end
+        boolean_command(sequence_id, request) { runtime_manager.start(request.module_id, request.payload) }
       in Protocol::Message::Stop
-        boolean_command(sequence_id, request) do
-          @loading_mutex.synchronize do
-            @pending_start.delete(request.module_id)
-            stop(request.module_id)
-          end
-        end
+        boolean_command(sequence_id, request) { runtime_manager.stop(request.module_id) }
       in Protocol::Message::SystemStatus
-        send_response(sequence_id, Protocol::Message::SystemStatusResponse.new(system_status))
+        send_response(sequence_id, Protocol::Message::SystemStatusResponse.new(runtime_manager.system_status))
       in Protocol::Message::Unload
         boolean_command(sequence_id, request) do
-          @loading_mutex.synchronize do
-            @pending_start.delete(request.module_id)
-            if driver_key = driver_key_for?(request.module_id)
-              if modules = @loading_modules[driver_key]?
-                modules.delete(request.module_id)
-                if modules.empty? && (channel = @loading_driver_keys.delete(driver_key))
-                  # abort downloading of driver
-                  channel.close
-                end
-              end
-            end
-            unload(request.module_id)
-          end
+          runtime_manager.unload(request.module_id)
+          runtime_store.delete_runtime_module(request.module_id)
+          true
         end
       in Protocol::Message::Body
         Log.warn { {message: "unexpected message in handle request", type: request.type.to_s} }
@@ -232,252 +173,40 @@ module PlaceOS::Edge
       Log.error(exception: e) { {message: "failed to handle core request", request: request.to_json} }
     end
 
-    def handshake
-      SimpleRetry.try_to(base_interval: 500.milliseconds, max_interval: 5.seconds) do
-        begin
-          response = Protocol.request(registration_message, expect: Protocol::Message::RegisterResponse)
-          unless response
-            Log.warn { "failed to register to core" }
-            raise "handshake failed"
-          end
-
-          response.remove_modules.each do |mod|
-            unload(mod)
-          end
-
-          response.remove_drivers.each do |driver|
-            remove_binary(driver)
-          end
-
-          load_binaries(response.add_drivers)
-
-          response.add_modules.each do |mod|
-            load(mod[:module_id], mod[:key])
-          end
-
-          response.running_modules.each do |(module_id, payload)|
-            queue_start(module_id, payload)
-          end
-
-          Log.info { "handshake success, edge registered" }
-        rescue error
-          Log.error(exception: error) { "during handshake" }
-          raise error
-        end
-      end
-    end
-
-    def queue_start(module_id : String, payload : String)
-      @loading_mutex.synchronize do
-        if protocol_manager_by_module?(module_id)
-          start(module_id, payload)
-        else
-          @pending_start[module_id] = payload
-        end
-      end
-    end
-
-    # Kicks off downloading all the binaries
-    def load_binaries(binaries : Array(String))
-      promises = binaries.map do |driver_key|
-        File.delete(path(driver_key)) if File.exists?(path(driver_key))
-        Promise.defer do
-          if wait_load = load_binary(driver_key)
-            select
-            when wait_load.receive?
-            when timeout(90.seconds)
-              Log.error { "timeout loading #{driver_key}" }
-            end
-          end
-        end
-      end
-
-      Promise.all(promises).get
-    end
-
-    # Message
-    ###########################################################################
-
-    # Extracts the running modules and drivers on the edge
-    #
-    protected def registration_message : Protocol::Message::Register
-      Protocol::Message::Register.new(
-        modules: modules,
-        drivers: drivers,
-      )
-    end
-
-    protected def run_count_message : Protocol::Message::RunCountResponse
-      Protocol::Message::RunCountResponse.new(count: run_count)
-    end
-
-    # Driver binaries
-    ###########################################################################
-
-    # List the driver binaries present on this client
-    #
     def drivers
-      store.compiled_drivers.to_set
+      binary_manager.compiled_drivers
     end
 
-    # Load binary, first checking if present locally then fetch from core
-    #
-    def load_binary(key : String) : Channel(Nil)?
-      perform_load = true
-      loaded_channel = Channel(Nil).new
-
-      @loading_mutex.synchronize do
-        Log.debug { {key: key, message: "loading binary"} }
-
-        if loading = @loading_driver_keys[key]?
-          perform_load = false
-          loaded_channel = loading
-        else
-          return if File.exists?(path(key))
-          @loading_driver_keys[key] = loaded_channel
-        end
-      end
-
-      return loaded_channel unless perform_load
-      spawn { attempt_download(loaded_channel, key) }
-
-      loaded_channel
+    def driver_loaded?(driver_key : String) : Bool
+      runtime_manager.driver_loaded?(driver_key)
     end
 
-    def attempt_download(loaded_channel, key)
-      binary = SimpleRetry.try_to(base_interval: 5.seconds, max_interval: 30.seconds) do
-        result = fetch_binary(key) unless loaded_channel.closed?
-        raise "retry" if result.nil? && !loaded_channel.closed? && @loading_driver_keys[key]? == loaded_channel
-        result
-      end
-
-      @loading_mutex.synchronize do
-        if !loaded_channel.closed?
-          # write the executable
-          if binary
-            add_binary(key, binary)
-          end
-
-          # signal that we're ready to run
-          loaded_channel.close
-          @loading_driver_keys.delete(key)
-
-          # load any requests that have come in the mean time
-          if pending = @loading_modules.delete(key)
-            pending.each do |module_id|
-              load(module_id, key)
-              if payload = @pending_start.delete(module_id)
-                start(module_id, payload)
-              end
-            end
-          end
-        end
-      end
-    rescue error
-      Log.error(exception: error) { "error during download attempt" }
-      spawn { attempt_download(loaded_channel, key) } unless loaded_channel.closed?
+    def module_loaded?(module_id : String) : Bool
+      runtime_manager.module_loaded?(module_id)
     end
 
-    def fetch_binary(key : String) : IO?
-      response = Protocol.request(Protocol::Message::FetchBinary.new(key), expect: Protocol::Message::BinaryBody)
-      response.try &.io
+    def driver_status(driver_key : String)
+      runtime_manager.driver_status(driver_key)
     end
 
-    def add_binary(key : String, binary : IO)
-      path = path(key)
-      File.delete(path) if File.exists?(path)
-      Log.debug { {path: path, message: "writing binary"} }
-
-      # Default permissions + execute for owner
-      File.open(path, mode: "w+", perm: File::Permissions.new(0o744)) do |file|
-        IO.copy(binary, file)
-      end
+    def loaded_modules
+      runtime_manager.loaded_modules
     end
 
-    def remove_binary(key : String)
-      @loading_mutex.synchronize do
-        # clean up any pending operations
-        if loading = @loading_driver_keys.delete(key)
-          loading.close
-        end
-        if pending = @loading_modules.delete(key)
-          pending.each { |module_id| @pending_start.delete(module_id) }
-        end
-        File.delete(path(key))
-      end
-      true
-    rescue
-      false
+    def run_count
+      runtime_manager.run_count
     end
 
-    protected def path(key : String)
-      store.path(key).to_s
+    def apply_snapshot(snapshot : State::Snapshot)
+      reconciler.apply(snapshot)
     end
 
-    # Modules
-    ###########################################################################
-
-    # Check for binary, request if it's not present
-    # Start the module with redis hooks
-    def load(module_id, driver_key)
-      Log.context.set(module_id: module_id, driver_key: driver_key)
-
-      if !protocol_manager_by_module?(module_id)
-        if existing_driver_manager = protocol_manager_by_driver?(driver_key)
-          # Use the existing driver protocol manager
-          set_module_protocol_manager(module_id, existing_driver_manager)
-        else
-          if wait_load = load_binary(driver_key)
-            select
-            when wait_load.receive?
-              @loading_mutex.synchronize do
-                unless File.exists?(path(driver_key))
-                  Log.info { "module load aborted" }
-                  return
-                end
-              end
-            when timeout(20.seconds)
-              @loading_mutex.synchronize do
-                # ensure we are still loading this
-                if @loading_driver_keys[driver_key]?
-                  @loading_modules[driver_key] << module_id
-                  Log.info { "queuing module load" }
-                  return
-                end
-              end
-            end
-          end
-
-          # Create a new protocol manager
-          manager = Driver::Protocol::Management.new(path(driver_key), on_edge: true)
-
-          # Callbacks
-          manager.on_setting = ->(id : String, setting_name : String, setting_value : YAML::Any) {
-            Log.debug { {module_id: module_id, driver_key: driver_key, message: "on_setting"} }
-            on_setting(id, setting_name, setting_value.to_yaml)
-          }
-
-          manager.on_redis = ->(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?) {
-            Log.debug { {module_id: module_id, driver_key: driver_key, action: action.to_s, message: "on_redis"} }
-            on_redis(action, hash_id, key_name, status_value)
-          }
-
-          set_module_protocol_manager(module_id, manager)
-          set_driver_protocol_manager(driver_key, manager)
-        end
-
-        Log.info { "module loaded" }
-      else
-        Log.info { "module already loaded" }
-      end
+    def protocol_manager_by_driver?(driver_key : String)
+      runtime_manager.protocol_manager_by_driver?(driver_key)
     end
 
-    # List the modules running on this client
-    #
-    def modules
-      protocol_manager_lock.synchronize do
-        @module_protocol_managers.keys.to_set
-      end
+    def protocol_manager_by_module?(module_id : String)
+      runtime_manager.protocol_manager_by_module?(module_id)
     end
 
     # Debugging
@@ -491,7 +220,7 @@ module PlaceOS::Edge
         unless debug_callbacks.has_key?(module_id)
           callback = ->(message : String) { forward_debug_message(module_id, message); nil }
           debug_callbacks[module_id] = callback
-          protocol_manager_by_module?(module_id).try &.debug(module_id, &callback)
+          runtime_manager.debug(module_id, &callback)
         end
       end
     end
@@ -499,18 +228,21 @@ module PlaceOS::Edge
     def ignore(module_id : String)
       debug_lock.synchronize do
         callback = debug_callbacks.delete(module_id)
-        protocol_manager_by_module?(module_id).try &.ignore(module_id, &callback) unless callback.nil?
+        runtime_manager.ignore(module_id, &callback) unless callback.nil?
       end
     end
 
     def forward_debug_message(module_id, message)
-      send_request(Protocol::Message::DebugMessage.new(module_id, message))
+      spawn do
+        send_event(Protocol::Message::DebugMessage.new(module_id, message))
+      rescue error
+        Log.error(exception: error) { {message: "forward_debug_message errored", module_id: module_id} }
+      end
     end
 
-    # Module Callbacks
+    # Edge-originated sync
     ###########################################################################
 
-    # Proxy a settings write via Core
     def on_setting(module_id : String, setting_name : String, setting_value : String)
       request = Protocol::Message::SettingsAction.new(
         module_id: module_id,
@@ -521,23 +253,127 @@ module PlaceOS::Edge
       Protocol.request(request, expect: Protocol::Message::Success)
     end
 
-    # Proxy a redis action via Core
     def on_redis(action : Protocol::RedisAction, hash_id : String, key_name : String, status_value : String?)
+      update = runtime_store.queue_update(action, hash_id, key_name, status_value)
+      flush_update(update) if connected?
+    end
+
+    private def flush_pending_updates
+      runtime_store.pending_updates.each do |update|
+        flush_update(update)
+      end
+    end
+
+    private def flush_pending_events
+      runtime_store.pending_events.each do |pending|
+        flush_event(pending)
+      end
+    end
+
+    private def flush_update(update : State::PendingRedisUpdate)
+      return unless connected?
+      return if injected_socket_mode? && !sync_injected_socket?
+
       request = Protocol::Message::ProxyRedis.new(
-        action: action,
-        hash_id: hash_id,
-        key_name: key_name,
-        status_value: status_value,
+        action: update.action,
+        hash_id: update.hash_id,
+        key_name: update.key_name,
+        status_value: update.status_value,
+      )
+
+      response = Protocol.request(request, expect: Protocol::Message::Success)
+      runtime_store.acknowledge_update(update.id) if response.try(&.success)
+    end
+
+    private def send_runtime_event(event : State::RuntimeEvent)
+      pending = runtime_store.queue_event(event)
+      flush_event(pending) if connected?
+    end
+
+    private def flush_event(pending : State::PendingRuntimeEvent)
+      return unless connected?
+      return if injected_socket_mode? && !sync_injected_socket?
+
+      event = pending.event
+
+      request = Protocol::Message::RuntimeEvent.new(
+        kind: event.kind.to_s.underscore,
+        module_id: event.module_id,
+        driver_key: event.driver_key,
+        message: event.message,
+        snapshot_version: event.snapshot_version,
+        backlog_depth: event.backlog_depth
+      )
+
+      response = Protocol.request(request, expect: Protocol::Message::Success)
+      runtime_store.acknowledge_event(pending.id) if response.try(&.success)
+    end
+
+    private def send_heartbeat
+      return unless connected?
+      return if injected_socket_mode? && !sync_injected_socket?
+
+      request = Protocol::Message::Heartbeat.new(
+        timestamp: Time.utc,
+        snapshot_version: runtime_store.last_snapshot_version,
+        pending_updates: runtime_store.pending_update_count,
+        pending_events: runtime_store.pending_event_count
       )
 
       Protocol.request(request, expect: Protocol::Message::Success)
     end
 
+    private def on_connect
+      flush_pending_updates
+      flush_pending_events
+      send_heartbeat
+      @connect_sync_count.add(1)
+      nil
+    end
+
+    private def on_disconnect(_error : IO::Error | HTTP::WebSocket::CloseCode)
+      nil
+    end
+
+    private def connected?
+      realtime?.try(&.closed?) == false
+    end
+
+    # Desired state reconciliation
+    ###########################################################################
+
+    private def desired_state_loop
+      last_modified = runtime_store.snapshot.try(&.last_modified)
+
+      until close_channel.closed?
+        begin
+          if snapshot = desired_state.fetch(last_modified)
+            # Don't hold lock during reconciliation - it can take minutes
+            reconciler.apply(snapshot)
+            last_modified = snapshot.last_modified
+          end
+        rescue error
+          runtime_store.set_last_error(error.message)
+          send_runtime_event(State::RuntimeEvent.new(:sync_status, message: error.message, snapshot_version: runtime_store.last_snapshot_version, backlog_depth: runtime_store.pending_update_count))
+        ensure
+          send_heartbeat if connected?
+        end
+
+        sleep poll_interval
+      end
+    end
+
+    private def load_persisted_snapshot
+      if snapshot = runtime_store.snapshot
+        reconciler.apply(snapshot)
+      end
+    rescue error
+      runtime_store.set_last_error(error.message)
+    end
+
     # Transport
     ###########################################################################
 
-    # Bundles up the result of a command into a `Success` response
-    #
     protected def boolean_command(sequence_id, request, &)
       success = begin
         result = yield
@@ -551,15 +387,41 @@ module PlaceOS::Edge
     end
 
     protected def send_response(sequence_id : UInt64, response : Protocol::Client::Response | Protocol::Message::Success)
-      t = transport?
-      raise "cannot send response over closed transport" if t.nil?
-      t.send_response(sequence_id, response)
+      channel = realtime?
+      raise "cannot send response over closed transport" if channel.nil?
+      channel.send_response(sequence_id, response)
     end
 
     protected def send_request(request : Protocol::Client::Request)
-      t = transport?
-      raise "cannot send request over closed transport" if t.nil?
-      t.send_request(request)
+      channel = realtime?
+      raise "cannot send request over closed transport" if channel.nil?
+      channel.send_request(request)
+    end
+
+    protected def send_event(request : Protocol::Client::Request)
+      channel = realtime?
+      raise "cannot send event over closed transport" if channel.nil?
+      channel.send_event(request)
+    end
+
+    private def realtime?
+      @realtime
+    end
+
+    private def injected_socket_mode?
+      @injected_socket_mode
+    end
+
+    private def binary_manager
+      @binary_manager.not_nil!
+    end
+
+    private def desired_state
+      @desired_state.not_nil!
+    end
+
+    private def reconciler
+      @reconciler.not_nil!
     end
   end
 end

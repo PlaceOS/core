@@ -10,6 +10,7 @@ require "./logging"
 module PlaceOS::Edge
   uri = PLACE_URI
   secret = CLIENT_SECRET
+  edge_id = EDGE_ID
 
   # Command line options
   OptionParser.parse(ARGV.dup) do |parser|
@@ -18,6 +19,7 @@ module PlaceOS::Edge
     parser.on("-u", "--uri", "Set URI for PlaceOS instance") { |u| uri = URI.parse(u) }
 
     parser.on("-s", "--secret", "Set application secret") { |s| secret = s }
+    parser.on("-i EDGE_ID", "--edge-id=EDGE_ID", "Set edge identifier") { |id| edge_id = id }
 
     parser.on("-v", "--version", "Display the application version") do
       puts "#{APP_NAME} v#{VERSION}"
@@ -31,7 +33,21 @@ module PlaceOS::Edge
   end
 
   Log.info { "starting #{APP_NAME} v#{VERSION}" }
-  Client.new(uri, secret).connect do
+
+  client = Client.new(uri, secret, edge_id: edge_id)
+
+  # Handle graceful shutdown
+  shutdown = -> do
+    Log.info { "shutting down gracefully..." }
+    client.disconnect
+    sleep 100.milliseconds # Give time for cleanup
+    exit(0)
+  end
+
+  Signal::INT.trap { shutdown.call }
+  Signal::TERM.trap { shutdown.call }
+
+  client.connect do
     Log.info { "started #{APP_NAME} connected to #{uri}" }
   end
 end

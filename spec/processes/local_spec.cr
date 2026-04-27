@@ -1,42 +1,41 @@
-require "../helper"
+require "./support"
 
 module PlaceOS::Core::ProcessManager
-  class_getter(store : DriverStore) { DriverStore.new }
-
-  def self.with_driver(&)
-    _, driver, mod = setup(role: PlaceOS::Model::Driver::Role::Service)
-    result = DriverResource.load(driver, store, true)
-
-    driver_key = ProcessManager.path_to_key(result.path)
-    puts "\n\nPROCESSING DRIVER key: #{driver_key}, path: #{result.path}, driver: #{driver.inspect}\n\n"
-    yield mod, result.path, driver_key, driver
-  end
-
-  def self.test_starting(manager, mod, driver_key)
-    module_id = mod.id.as(String)
-    manager.load(module_id: module_id, driver_key: driver_key)
-    manager.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
-    manager.loaded_modules.should eq({driver_key => [module_id]})
-  end
-
   describe Local, tags: "processes" do
+    managed = [] of Local
+
+    build_pm = -> {
+      Local.new(discovery_mock).tap do |pm|
+        managed << pm
+      end
+    }
+
+    Spec.before_each do
+      managed.clear
+    end
+
+    Spec.after_each do
+      managed.each(&.shutdown)
+      managed.clear
+    end
+
     with_driver do |mod, driver_path, driver_key, _driver|
       describe Local::Common do
         describe "driver_loaded?" do
           it "confirms a driver is loaded" do
-            pm = Local.new(discovery_mock)
+            pm = build_pm.call
             pm.load(module_id: "mod", driver_key: driver_key)
             pm.driver_loaded?(driver_key).should be_true
           end
 
           it "confirms a driver is not loaded" do
-            Local.new(discovery_mock).driver_loaded?("does-not-exist").should be_false
+            build_pm.call.driver_loaded?("does-not-exist").should be_false
           end
         end
 
         describe "driver_status" do
           it "returns driver status if present" do
-            pm = Local.new(discovery_mock)
+            pm = build_pm.call
             pm.load(module_id: "mod", driver_key: driver_key)
 
             status = pm.driver_status(driver_key)
@@ -44,12 +43,12 @@ module PlaceOS::Core::ProcessManager
           end
 
           it "returns nil in not present" do
-            Local.new(discovery_mock).driver_status("doesntexist").should be_nil
+            build_pm.call.driver_status("doesntexist").should be_nil
           end
         end
 
         it "execute" do
-          pm = Local.new(discovery_mock)
+          pm = build_pm.call
           module_id = mod.id.as(String)
           pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
@@ -59,7 +58,7 @@ module PlaceOS::Core::ProcessManager
         end
 
         it "debug" do
-          pm = Local.new(discovery_mock)
+          pm = build_pm.call
           module_id = mod.id.as(String)
           pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
@@ -74,10 +73,11 @@ module PlaceOS::Core::ProcessManager
           code.should eq 200
 
           messages = [] of String
-          2.times do
+          6.times do
             select
             when message = message_channel.receive
               messages << message
+              break if message == %([1,"hello"])
             when timeout 2.seconds
               break
             end
@@ -87,7 +87,7 @@ module PlaceOS::Core::ProcessManager
         end
 
         it "ignore" do
-          pm = Local.new(discovery_mock)
+          pm = build_pm.call
           module_id = mod.id.as(String)
           pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
@@ -98,6 +98,16 @@ module PlaceOS::Core::ProcessManager
           end
 
           pm.debug(module_id, &callback)
+
+          # Drain startup/status debug noise so the next assertion only checks
+          # messages associated with the execute request below.
+          loop do
+            select
+            when message_channel.receive
+            when timeout 200.milliseconds
+              break
+            end
+          end
 
           result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
           result.should eq %("hello")
@@ -131,7 +141,7 @@ module PlaceOS::Core::ProcessManager
         end
 
         it "start" do
-          pm = Local.new(discovery_mock)
+          pm = build_pm.call
           module_id = mod.id.as(String)
           pm.load(module_id: module_id, driver_key: driver_key)
           pm.start(module_id: module_id, payload: ModuleManager.start_payload(mod))
@@ -140,7 +150,7 @@ module PlaceOS::Core::ProcessManager
         end
 
         it "stop" do
-          pm = Local.new(discovery_mock)
+          pm = build_pm.call
           pm.kill(driver_key)
           test_starting(pm, mod, driver_key)
           pm.stop(mod.id.as(String))
@@ -150,11 +160,11 @@ module PlaceOS::Core::ProcessManager
         end
 
         it "system_status" do
-          Local.new(discovery_mock).system_status.should be_a(SystemStatus)
+          build_pm.call.system_status.should be_a(SystemStatus)
         end
 
         it "kill" do
-          pm = Local.new(discovery_mock)
+          pm = build_pm.call
           test_starting(pm, mod, driver_key)
           pid = pm.protocol_manager_by_driver?(driver_key).try(&.pid).not_nil!
 
@@ -179,25 +189,25 @@ module PlaceOS::Core::ProcessManager
         end
 
         it "loaded_modules" do
-          pm = Local.new(discovery_mock)
+          pm = build_pm.call
           test_starting(pm, mod, driver_key)
           pm.kill(driver_key)
         end
 
         describe "module_loaded?" do
           it "confirms a module is loaded" do
-            pm = Local.new(discovery_mock)
+            pm = build_pm.call
             pm.load(module_id: "mod", driver_key: driver_key)
             pm.module_loaded?("mod").should be_true
           end
 
           it "confirms a module is not loaded" do
-            Local.new(discovery_mock).module_loaded?("does-not-exist").should be_false
+            build_pm.call.module_loaded?("does-not-exist").should be_false
           end
         end
 
         it "run_count" do
-          pm = Local.new(discovery_mock)
+          pm = build_pm.call
           pm.load(module_id: "mod", driver_key: driver_key)
           pm.run_count.should eq(ProcessManager::Count.new(1, 1))
         end
@@ -208,7 +218,7 @@ module PlaceOS::Core::ProcessManager
             module_id = "mod"
             File.copy(driver_path, path)
 
-            pm = Local.new(discovery_mock)
+            pm = build_pm.call
             pm.load(module_id: module_id, driver_key: path)
             pm.driver_loaded?(path).should be_true
             pm.module_loaded?(module_id).should be_true
@@ -226,7 +236,7 @@ module PlaceOS::Core::ProcessManager
             module1 = "mod1"
             File.copy(driver_path, path)
 
-            pm = Local.new(discovery_mock)
+            pm = build_pm.call
             pm.load(module_id: module0, driver_key: path)
             pm.load(module_id: module1, driver_key: path)
             pm.driver_loaded?(path).should be_true
@@ -244,7 +254,7 @@ module PlaceOS::Core::ProcessManager
       end
 
       it "load" do
-        pm = Local.new(discovery_mock)
+        pm = build_pm.call
         pm.driver_loaded?(driver_key).should be_false
         pm.module_loaded?("mod").should be_false
         pm.load(module_id: "mod", driver_key: driver_key)
@@ -252,10 +262,41 @@ module PlaceOS::Core::ProcessManager
         pm.module_loaded?("mod").should be_true
       end
 
-      pending "on_exec" do
+      it "on_exec" do
+        module_manager = module_manager_mock
+        pm = module_manager.local_processes
+        _, _, current_mod = setup(role: PlaceOS::Model::Driver::Role::Service)
+        module_id = current_mod.id.as(String)
+        pm.load(module_id: module_id, driver_key: driver_key)
+        pm.start(module_id: module_id, payload: ModuleManager.start_payload(current_mod))
+
+        request = Request.new(module_id, :exec, ModuleManager.execute_payload(:used_for_place_testing))
+        response_channel = Channel(Request).new(1)
+
+        pm.on_exec(request, ->(response : Request) {
+          response_channel.send(response)
+        })
+
+        response = response_channel.receive
+        response.cmd.should eq Request::Command::Result
+        response.error.should be_nil
+        response.code.should eq 200
+        response.payload.should eq %("you can delete this file")
+      ensure
+        module_manager.try &.stop
       end
 
-      pending "save_setting" do
+      it "save_setting" do
+        pm = build_pm.call
+        _, _, current_mod = setup(role: PlaceOS::Model::Driver::Role::Service)
+        module_id = current_mod.id.as(String)
+
+        pm.on_setting(module_id, "spec_key", YAML::Any.new("spec_value"))
+
+        refreshed = Model::Module.find!(module_id)
+        setting = refreshed.settings_at?(:none)
+        setting.should_not be_nil
+        setting.not_nil!.any[YAML::Any.new("spec_key")].raw.should eq "spec_value"
       end
     end
   end

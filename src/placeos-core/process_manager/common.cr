@@ -48,13 +48,55 @@ module PlaceOS::Core::ProcessManager::Common
   end
 
   def kill(driver_key : String) : Bool
-    !!protocol_manager_by_driver?(driver_key).try do |manager|
-      pid = manager.pid
-      Process.signal(Signal::KILL, pid)
-      true
+    manager = protocol_manager_by_driver?(driver_key)
+    return false unless manager
+
+    protocol_manager_lock.synchronize do
+      @driver_protocol_managers.delete(ProcessManager.path_to_key(driver_key))
+      @module_protocol_managers.reject! { |_, current| current == manager }
     end
+
+    begin
+      manager.terminate
+    rescue
+      nil
+    end
+
+    pid = manager.pid
+    return true if pid <= 0
+
+    Process.signal(Signal::KILL, pid)
+    true
   rescue
     false
+  end
+
+  def shutdown : Nil
+    managers = protocol_manager_lock.synchronize do
+      @driver_protocol_managers.values.dup
+    end
+
+    managers.each do |manager|
+      begin
+        manager.terminate
+      rescue
+        nil
+      end
+
+      pid = manager.pid
+      if pid > 0
+        begin
+          Process.signal(Signal::KILL, pid)
+        rescue
+          nil
+        end
+      end
+    end
+
+    protocol_manager_lock.synchronize do
+      @module_protocol_managers.clear
+      @driver_protocol_managers.clear
+    end
   end
 
   def debug(module_id : String, &on_message : DebugCallback)
@@ -189,7 +231,14 @@ module PlaceOS::Core::ProcessManager::Common
   end
 
   def remove_driver_manager(key)
-    set_driver_protocol_manager(key, nil)
+    manager = set_driver_protocol_manager(key, nil)
+    return unless manager
+
+    begin
+      manager.terminate
+    rescue
+      nil
+    end
   end
 
   private getter protocol_manager_lock = Mutex.new(protection: :reentrant)

@@ -5,7 +5,7 @@ module PlaceOS::Core::Api
   class Command < Application
     base "/api/core/v1/command/"
 
-    property module_manager : ModuleManager { ModuleManager.instance }
+    getter module_manager : ModuleManager { Services.module_manager }
 
     # Loads if not already loaded
     # If the module is already running, it will be updated to latest settings.
