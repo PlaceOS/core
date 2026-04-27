@@ -44,7 +44,6 @@ module PlaceOS::Core
         lazy_modules.clear
       end
       clustering.unregister
-      clustering.clear_callbacks
       stop_process_check
       @started = false
     end
