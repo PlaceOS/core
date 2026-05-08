@@ -179,7 +179,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 7.21.1
+    version: 7.22.0
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -187,7 +187,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.89.0
+    version: 9.90.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -211,7 +211,7 @@ shards:
 
   redis_service_manager:
     git: https://github.com/place-labs/redis_service_manager.git
-    version: 3.3.1
+    version: 3.4.0
 
   rendezvous-hash:
     git: https://github.com/caspiano/rendezvous-hash.git
