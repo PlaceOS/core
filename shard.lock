@@ -11,7 +11,7 @@ shards:
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
-    version: 4.3.3
+    version: 4.4.2
 
   ameba:
     git: https://github.com/crystal-ameba/ameba.git
@@ -179,7 +179,7 @@ shards:
 
   placeos-driver:
     git: https://github.com/placeos/driver.git
-    version: 7.23.0
+    version: 7.24.2
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -187,7 +187,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.91.0
+    version: 9.93.0
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
@@ -229,6 +229,10 @@ shards:
     git: https://github.com/spider-gazelle/readers-writer.git
     version: 1.0.7
 
+  sanitize:
+    git: https://github.com/straight-shoota/sanitize.git
+    version: 0.1.0+git.commit.c17d933fed22c6d3d615cca91a895166414389af
+
   secrets-env:
     git: https://github.com/spider-gazelle/secrets-env.git
     version: 1.3.1
@@ -243,7 +247,7 @@ shards:
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
-    version: 2.1.4
+    version: 3.0.0
 
   tokenizer:
     git: https://github.com/spider-gazelle/tokenizer.git
