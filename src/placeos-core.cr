@@ -18,7 +18,7 @@ module PlaceOS::Core
     # Acquire resources on startup
     resource_manager.start do
       # Start managing modules once relevant resources present
-      spawn { module_manager.start }
+      spawn(name: "module-manager-start") { module_manager.start }
       Fiber.yield
     end
   end

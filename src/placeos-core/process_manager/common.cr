@@ -9,6 +9,14 @@ module PlaceOS::Core::ProcessManager::Common
 
     raise ModuleError.new("No protocol manager for #{module_id}") if manager.nil?
 
+    # Fail fast when the driver binary is missing. Without this check, the
+    # underlying `Management#start_process` would time out internally without
+    # ever rejecting the `@starting` promise, leaving the caller blocked forever.
+    driver_path = manager.@driver_path
+    unless File.exists?(driver_path)
+      raise ModuleError.new("Driver binary missing for #{module_id} at #{driver_path}")
+    end
+
     manager.start(module_id, payload)
   rescue exception
     raise module_error(module_id, exception)
@@ -239,14 +247,17 @@ module PlaceOS::Core::ProcessManager::Common
   protected def set_driver_protocol_manager(driver_key, manager : Driver::Protocol::Management?)
     driver_key = ProcessManager.path_to_key(driver_key)
     Log.trace { {message: "#{manager.nil? ? "removing" : "setting"} driver process manager", driver_key: driver_key} }
+    removed_man = nil
     protocol_manager_lock.synchronize do
       if manager.nil?
-        @driver_protocol_managers.delete(driver_key)
+        removed_man = @driver_protocol_managers.delete(driver_key)
       else
         @driver_protocol_managers[driver_key] = manager
         manager
       end
     end
+    removed_man.try(&.terminate) rescue nil
+    manager
   end
 
   # Error handling

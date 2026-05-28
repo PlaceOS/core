@@ -62,14 +62,21 @@ module PlaceOS::Core
 
     def execute(module_id : String, payload : String | IO, user_id : String?, mod : Model::Module? = nil)
       mod = mod || Model::Module.find?(module_id)
-      raise ModuleError.new("Could not locate module #{module_id}, no matching database record") unless mod
 
-      # Check if this is a lazy module that needs to be loaded
-      return execute_lazy(mod, payload, user_id) if mod.launch_on_execute
-      raise ModuleError.new("Could not locate module #{module_id}, it is stopped") unless mod.running
+      # Lazy modules are launched on demand and require the database record
+      return execute_lazy(mod, payload, user_id) if mod && mod.launch_on_execute
 
-      # the module should be running and have a management module
-      manager = protocol_manager_by_module?(module_id) || ensure_lazy_module_loaded(mod)
+      # Prefer an already-loaded module: a running process can be executed even
+      # when the database lookup is unavailable (e.g. a stale/missing record).
+      manager = protocol_manager_by_module?(module_id)
+
+      if manager.nil?
+        # Not loaded: the database record is needed to (re)load the module
+        raise ModuleError.new("Could not locate module #{module_id}, no matching database record") unless mod
+        raise ModuleError.new("Could not locate module #{module_id}, it is stopped") unless mod.running
+        manager = ensure_lazy_module_loaded(mod)
+      end
+
       request_body = payload.is_a?(IO) ? payload.gets_to_end : payload
       manager.execute(
         module_id,
@@ -107,35 +114,82 @@ module PlaceOS::Core
       end
     end
 
+    # Per-module load coordination. While a module is being lazy-loaded an entry
+    # exists in this hash holding a `Channel(Nil)`; concurrent callers see the
+    # entry and wait on the channel — the loader closes it (in `ensure`) on
+    # success or failure, waking everyone to re-check `protocol_manager_by_module?`.
+    # The entry is removed when the load resolves, so the hash size stays bounded
+    # by the number of modules *currently* loading (typically a handful), not by
+    # the cumulative count of distinct modules ever seen. One mutex protects the
+    # whole hash — same approach as `Edge::Client#load_binary`.
+    private getter lazy_loading : Hash(String, Channel(Nil)) = {} of String => Channel(Nil)
+    private getter lazy_loading_lock : Mutex = Mutex.new
+
     # Spawn driver and load module for lazy execution
+    #
+    # Serialized so that `load()` registering the manager and `manager.start`
+    # finishing happen atomically from the perspective of other callers: without
+    # this a second fiber could observe the freshly-mapped manager (set by `load`)
+    # and call `manager.execute` while the driver-side module isn't registered
+    # yet ("driver not available").
     private def ensure_lazy_module_loaded(mod : Model::Module)
       module_id = mod.id.as(String)
 
-      # Already loaded?
-      if manager = protocol_manager_by_module?(module_id)
-        Log.debug { {message: "lazy module already loaded", module_id: module_id} }
-        return manager
+      loop do
+        waiter, perform_load = lazy_loading_lock.synchronize do
+          # An in-flight load entry is the source of truth while loading is
+          # in progress. `load()` registers the manager in
+          # `protocol_manager_by_module?` *before* `manager.start` returns, so
+          # checking that map first would let us observe a half-started manager
+          # and proceed to `manager.execute` before the driver has acked start.
+          # Only trust the manager map once the load entry is gone.
+          if existing = lazy_loading[module_id]?
+            {existing, false}
+          elsif manager = protocol_manager_by_module?(module_id)
+            Log.debug { {message: "lazy module already loaded", module_id: module_id} }
+            return manager
+          else
+            chan = Channel(Nil).new
+            lazy_loading[module_id] = chan
+            {chan, true}
+          end
+        end
+
+        unless perform_load
+          # Another fiber is loading — wait for it to finish, then re-check.
+          waiter.receive?
+          next
+        end
+
+        begin
+          driver = mod.driver!
+          repository = driver.repository!
+
+          driver_path = store.built?(driver.file_name, driver.commit, repository.branch, repository.uri)
+          raise ModuleError.new("Driver not compiled for lazy module #{module_id}") if driver_path.nil?
+
+          ::Log.with_context(module_id: module_id, driver_key: driver_path) do
+            # Spawn driver and register module
+            load(module_id, driver_path.to_s)
+
+            # Start the module instance — blocks until the driver acks the start,
+            # so the manager is fully ready by the time we signal waiters.
+            manager = protocol_manager_by_module?(module_id)
+            raise ModuleError.new("Failed to load lazy module #{module_id}") if manager.nil?
+
+            manager.start(module_id, ModuleManager.start_payload(mod))
+
+            Log.info { {message: "spawned driver for lazy module execution", module_id: module_id, name: mod.name} }
+          end
+          return protocol_manager_by_module?(module_id).as(Driver::Protocol::Management)
+        ensure
+          # Clear the in-flight marker and wake any waiters (on success or failure).
+          # On failure, one of the waiters will re-check, find no manager, and
+          # become the next loader.
+          lazy_loading_lock.synchronize { lazy_loading.delete(module_id) }
+          waiter.close
+        end
       end
-
-      driver = mod.driver!
-      repository = driver.repository!
-
-      driver_path = store.built?(driver.file_name, driver.commit, repository.branch, repository.uri)
-      raise ModuleError.new("Driver not compiled for lazy module #{module_id}") if driver_path.nil?
-
-      ::Log.with_context(module_id: module_id, driver_key: driver_path) do
-        # Spawn driver and register module
-        load(module_id, driver_path.to_s)
-
-        # Start the module instance
-        manager = protocol_manager_by_module?(module_id)
-        raise ModuleError.new("Failed to load lazy module #{module_id}") if manager.nil?
-
-        manager.start(module_id, ModuleManager.start_payload(mod))
-
-        Log.info { {message: "spawned driver for lazy module execution", module_id: module_id, name: mod.name} }
-      end
-      manager.as(Driver::Protocol::Management)
     end
 
     # Schedule unload of lazy module after idle timeout
@@ -147,7 +201,7 @@ module PlaceOS::Core
         lazy_unload_scheduled[module_id] = true
       end
 
-      spawn do
+      spawn(name: "lazy-unload") do
         sleep ModuleManager.lazy_unload_delay
 
         # Check if still no active executions and unload still scheduled
