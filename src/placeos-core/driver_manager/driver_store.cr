@@ -1,5 +1,6 @@
 require "uri"
 require "digest"
+require "promise"
 require "connect-proxy"
 require "./build_api"
 
@@ -15,24 +16,93 @@ module PlaceOS::Core
       Dir.mkdir_p binary_path
     end
 
+    # Per-binary fetch coordination. Multiple modules can share a binary (same
+    # `file_name + commit`); without this, concurrent `compiled?` calls from
+    # different module loads would each `File.exists?` (false), each call out to
+    # the build service, and each `fetch_binary` would write to the same path at
+    # the same time — corrupting the file and hammering the build service for
+    # the same driver.
+    #
+    # While a fetch is in flight an entry exists in this hash holding a
+    # `Promise(Bool)`. The loader resolves the promise with its result on
+    # success, or rejects it with the underlying exception on failure;
+    # concurrent waiters call `promise.get` and observe exactly the same
+    # outcome (one fetch attempt per wave, success or failure shared). Hash
+    # entries are removed before the promise resolves, so storage is bounded by
+    # the number of binaries currently being fetched (typically zero in steady
+    # state).
+    @@loading_binaries : Hash(String, Promise::DeferredPromise(Bool)) = {} of String => Promise::DeferredPromise(Bool)
+    @@loading_binaries_lock : Mutex = Mutex.new
+
+    # Counts traversals of the slow path in `compiled?` — i.e. how many times a
+    # fiber actually became the loader and called the build service. Exposed for
+    # tests so specs can assert that N concurrent first-time `compiled?` calls
+    # result in exactly one fetch attempt, not N.
+    @@compiled_attempts : Atomic(Int32) = Atomic(Int32).new(0)
+
+    def self.compiled_attempts : Int32
+      @@compiled_attempts.get
+    end
+
+    def self.reset_compiled_attempts : Nil
+      @@compiled_attempts.set(0)
+    end
+
     def compiled?(file_name : String, commit : String, branch : String, uri : String) : Bool
       Log.debug { {message: "Checking whether driver is compiled or not?", driver: file_name, commit: commit, branch: branch, repo: uri} }
       path = Path[binary_path, executable_name(file_name, commit)]
 
-      if File.exists?(path)
-        # Validate that the local file is a valid executable by running it with -h
-        if validate_binary(path)
-          return true
+      # Fast path — the binary is already on disk and intact. Validating outside
+      # the lock is safe: a partial write from a concurrent fetch will fail the
+      # `-h` probe and we'll fall through into the slow path.
+      return true if File.exists?(path) && validate_binary(path)
+
+      key = path.to_s
+      promise, perform_fetch = @@loading_binaries_lock.synchronize do
+        if existing = @@loading_binaries[key]?
+          {existing, false}
         else
-          Log.warn { {message: "Local binary exists but is corrupted, removing and re-downloading", driver_file: file_name, path: path.to_s} }
-          File.delete(path) rescue nil
+          # Re-check under the lock — another fiber may have completed a
+          # fetch between our fast-path check and acquiring the lock.
+          if File.exists?(path)
+            if validate_binary(path)
+              return true
+            else
+              Log.warn { {message: "Local binary exists but is corrupted, removing and re-downloading", driver_file: file_name, path: path.to_s} }
+              File.delete(path) rescue nil
+            end
+          end
+          prom = Promise.new(Bool)
+          @@loading_binaries[key] = prom
+          {prom, true}
         end
       end
 
-      resp = BuildApi.compiled?(file_name, commit, branch, uri)
-      return false unless resp.success?
-      ret = fetch_binary(LinkData.from_json(resp.body)) rescue nil
-      !ret.nil?
+      # Waiter — share the in-flight loader's outcome (returns its value or
+      # re-raises its exception).
+      return promise.get unless perform_fetch
+
+      # Loader — perform the fetch exactly once and broadcast the result.
+      result = false
+      error = nil
+      begin
+        @@compiled_attempts.add(1)
+        resp = BuildApi.compiled?(file_name, commit, branch, uri)
+        if resp.success?
+          fetched = fetch_binary(LinkData.from_json(resp.body)) rescue nil
+          result = !fetched.nil?
+        end
+      rescue ex
+        error = ex
+      end
+
+      @@loading_binaries_lock.synchronize { @@loading_binaries.delete(key) }
+      if error
+        promise.reject(error)
+        raise error
+      end
+      promise.resolve(result)
+      result
     end
 
     def compile(file_name : String, url : String, commit : String, branch : String, force : Bool, username : String? = nil, password : String? = nil, fetch : Bool = true) : Result
