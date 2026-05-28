@@ -2,6 +2,7 @@
 
 ### Feat
 
+- Improve driver management ([#290](https://github.com/PlaceOS/core/pull/290))
 - **driver_integrity**: optimise SQL query
 - improve exec flows ([#288](https://github.com/PlaceOS/core/pull/288))
 - [PPT-2215] add support for launch on execute drivers ([#287](https://github.com/PlaceOS/core/pull/287))
