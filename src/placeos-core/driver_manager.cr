@@ -133,8 +133,30 @@ module PlaceOS::Core
 
     def self.remove_driver(driver : Model::Driver, store : DriverStore)
       path = store.driver_binary_path(driver.file_name, driver.commit)
-      Log.info { {message: "removing driver binary as it got removed from drivers", driver_id: driver.id.as(String), path: path.to_s} }
-      remove_stale_driver(path, driver.id.as(String))
+      driver_id = driver.id.as(String)
+
+      # A binary is keyed by `file_name + commit` and may be shared by multiple
+      # `Model::Driver` rows (e.g., the same source compiled for different roles,
+      # or a row recreated mid-flight). Deleting the file on every :Deleted event
+      # creates a race where a sibling row that still needs the binary loses it.
+      # Skip the deletion when another row references the same binary; otherwise
+      # `DriverIntegrity.sync_drivers` handles cleanup of truly-stale binaries.
+      still_referenced = begin
+        Model::Driver.where(file_name: driver.file_name, commit: driver.commit).any? do |other|
+          other.id != driver_id
+        end
+      rescue ex
+        Log.warn(exception: ex) { {message: "could not check for sibling driver rows; skipping binary removal", driver_id: driver_id, path: path.to_s} }
+        true
+      end
+
+      if still_referenced
+        Log.info { {message: "skipping driver binary removal, still referenced by another driver row", driver_id: driver_id, path: path.to_s} }
+        return
+      end
+
+      Log.info { {message: "removing driver binary as it got removed from drivers", driver_id: driver_id, path: path.to_s} }
+      remove_stale_driver(path, driver_id)
     end
 
     def start_driver_jobs

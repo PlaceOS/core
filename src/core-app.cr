@@ -90,7 +90,7 @@ server.cluster(process_count, "-w", "--workers") if cluster
 
 terminate = Proc(Signal, Nil).new do |signal|
   puts " > terminating gracefully"
-  spawn { server.close }
+  spawn(name: "server-shutdown") { server.close }
   signal.ignore
 end
 
@@ -102,7 +102,7 @@ Signal::TERM.trap &terminate
 # Wait for redis and postgres to be ready
 PlaceOS::Core.wait_for_resources
 
-spawn do
+spawn(name: "start-managers") do
   begin
     PlaceOS::Core.start_managers
   rescue error

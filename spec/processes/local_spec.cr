@@ -58,6 +58,28 @@ module PlaceOS::Core::ProcessManager
           code.should eq 200
         end
 
+        # Drain debug messages from the channel until we see the expected echo
+        # or hit the deadline. The driver emits startup status messages
+        # (e.g. `proxy_in_use`, `connected`) after `start` runs, and those land
+        # on the debug channel ahead of the echo response — collecting a fixed
+        # count of 2 messages is racy and skips past `[1,"hello"]` on slow boots.
+        drain_for_echo = ->(channel : Channel(String), deadline : Time::Span) {
+          collected = [] of String
+          ends_at = Time.monotonic + deadline
+          loop do
+            remaining = ends_at - Time.monotonic
+            break if remaining <= Time::Span.zero
+            select
+            when message = channel.receive
+              collected << message
+              break if message == %([1,"hello"])
+            when timeout remaining
+              break
+            end
+          end
+          collected
+        }
+
         it "debug" do
           pm = Local.new(discovery_mock)
           module_id = mod.id.as(String)
@@ -73,17 +95,7 @@ module PlaceOS::Core::ProcessManager
           result.should eq %("hello")
           code.should eq 200
 
-          messages = [] of String
-          2.times do
-            select
-            when message = message_channel.receive
-              messages << message
-            when timeout 2.seconds
-              break
-            end
-          end
-
-          messages.should contain %([1,"hello"])
+          drain_for_echo.call(message_channel, 5.seconds).should contain %([1,"hello"])
         end
 
         it "ignore" do
@@ -103,17 +115,7 @@ module PlaceOS::Core::ProcessManager
           result.should eq %("hello")
           code.should eq 200
 
-          messages = [] of String
-          2.times do
-            select
-            when message = message_channel.receive
-              messages << message
-            when timeout 2.seconds
-              break
-            end
-          end
-
-          messages.should contain %([1,"hello"])
+          drain_for_echo.call(message_channel, 5.seconds).should contain %([1,"hello"])
 
           pm.ignore(module_id, &callback)
 
