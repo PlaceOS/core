@@ -114,57 +114,81 @@ module PlaceOS::Core
       end
     end
 
-    # Per-module load locks: serialize concurrent `ensure_lazy_module_loaded` calls
-    # for the same module so only one fiber spawns the driver. Without this,
-    # concurrent first-time executes race past the `protocol_manager_by_module?`
-    # check, each create their own `Driver::Protocol::Management` (and a child
-    # driver process), and only the last to `set_module_protocol_manager` wins —
-    # the rest leak orphaned managers + zombie driver processes.
-    private getter lazy_load_locks : Hash(String, Mutex) = {} of String => Mutex
-    private getter lazy_load_locks_lock : Mutex = Mutex.new
-
-    private def lazy_load_lock_for(module_id : String) : Mutex
-      lazy_load_locks_lock.synchronize do
-        lazy_load_locks[module_id] ||= Mutex.new
-      end
-    end
+    # Per-module load coordination. While a module is being lazy-loaded an entry
+    # exists in this hash holding a `Channel(Nil)`; concurrent callers see the
+    # entry and wait on the channel — the loader closes it (in `ensure`) on
+    # success or failure, waking everyone to re-check `protocol_manager_by_module?`.
+    # The entry is removed when the load resolves, so the hash size stays bounded
+    # by the number of modules *currently* loading (typically a handful), not by
+    # the cumulative count of distinct modules ever seen. One mutex protects the
+    # whole hash — same approach as `Edge::Client#load_binary`.
+    private getter lazy_loading : Hash(String, Channel(Nil)) = {} of String => Channel(Nil)
+    private getter lazy_loading_lock : Mutex = Mutex.new
 
     # Spawn driver and load module for lazy execution
     #
-    # No fast path here — `load()` registers the manager in `protocol_manager_by_module?`
-    # *before* `manager.start` returns. A check outside the lock would let a second
-    # fiber observe the freshly-mapped manager and proceed to `manager.execute` while
-    # the driver-side module hasn't been registered yet ("driver not available").
-    # Every caller goes through the lock so all execs happen strictly after start.
+    # Serialized so that `load()` registering the manager and `manager.start`
+    # finishing happen atomically from the perspective of other callers: without
+    # this a second fiber could observe the freshly-mapped manager (set by `load`)
+    # and call `manager.execute` while the driver-side module isn't registered
+    # yet ("driver not available").
     private def ensure_lazy_module_loaded(mod : Model::Module)
       module_id = mod.id.as(String)
 
-      lazy_load_lock_for(module_id).synchronize do
-        if manager = protocol_manager_by_module?(module_id)
-          Log.debug { {message: "lazy module already loaded", module_id: module_id} }
-          return manager
+      loop do
+        waiter, perform_load = lazy_loading_lock.synchronize do
+          # An in-flight load entry is the source of truth while loading is
+          # in progress. `load()` registers the manager in
+          # `protocol_manager_by_module?` *before* `manager.start` returns, so
+          # checking that map first would let us observe a half-started manager
+          # and proceed to `manager.execute` before the driver has acked start.
+          # Only trust the manager map once the load entry is gone.
+          if existing = lazy_loading[module_id]?
+            {existing, false}
+          elsif manager = protocol_manager_by_module?(module_id)
+            Log.debug { {message: "lazy module already loaded", module_id: module_id} }
+            return manager
+          else
+            chan = Channel(Nil).new
+            lazy_loading[module_id] = chan
+            {chan, true}
+          end
         end
 
-        driver = mod.driver!
-        repository = driver.repository!
-
-        driver_path = store.built?(driver.file_name, driver.commit, repository.branch, repository.uri)
-        raise ModuleError.new("Driver not compiled for lazy module #{module_id}") if driver_path.nil?
-
-        ::Log.with_context(module_id: module_id, driver_key: driver_path) do
-          # Spawn driver and register module
-          load(module_id, driver_path.to_s)
-
-          # Start the module instance — blocks until the driver acks the start,
-          # so the manager is fully ready by the time we release the lock.
-          manager = protocol_manager_by_module?(module_id)
-          raise ModuleError.new("Failed to load lazy module #{module_id}") if manager.nil?
-
-          manager.start(module_id, ModuleManager.start_payload(mod))
-
-          Log.info { {message: "spawned driver for lazy module execution", module_id: module_id, name: mod.name} }
+        unless perform_load
+          # Another fiber is loading — wait for it to finish, then re-check.
+          waiter.receive?
+          next
         end
-        protocol_manager_by_module?(module_id).as(Driver::Protocol::Management)
+
+        begin
+          driver = mod.driver!
+          repository = driver.repository!
+
+          driver_path = store.built?(driver.file_name, driver.commit, repository.branch, repository.uri)
+          raise ModuleError.new("Driver not compiled for lazy module #{module_id}") if driver_path.nil?
+
+          ::Log.with_context(module_id: module_id, driver_key: driver_path) do
+            # Spawn driver and register module
+            load(module_id, driver_path.to_s)
+
+            # Start the module instance — blocks until the driver acks the start,
+            # so the manager is fully ready by the time we signal waiters.
+            manager = protocol_manager_by_module?(module_id)
+            raise ModuleError.new("Failed to load lazy module #{module_id}") if manager.nil?
+
+            manager.start(module_id, ModuleManager.start_payload(mod))
+
+            Log.info { {message: "spawned driver for lazy module execution", module_id: module_id, name: mod.name} }
+          end
+          return protocol_manager_by_module?(module_id).as(Driver::Protocol::Management)
+        ensure
+          # Clear the in-flight marker and wake any waiters (on success or failure).
+          # On failure, one of the waiters will re-check, find no manager, and
+          # become the next loader.
+          lazy_loading_lock.synchronize { lazy_loading.delete(module_id) }
+          waiter.close
+        end
       end
     end
 
