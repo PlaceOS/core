@@ -5,6 +5,15 @@ module PlaceOS::Core
   module BuildApi
     BUILD_API_BASE = "/api/build/v1"
 
+    # [PPT-2524]: Identifies the cluster making the request to the build service.
+    # Compatible with https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/User-Agent
+    USER_AGENT = "PlaceOS/#{VERSION} #{ENV["CLUSTER_NAME"]? || "unnamed"}"
+
+    # Builds the default headers sent with every build service request.
+    def self.default_headers : HTTP::Headers
+      HTTP::Headers{"User-Agent" => USER_AGENT}
+    end
+
     def self.metadata(file_name : String, commit : String, branch : String, uri : String)
       host = URI.parse(Core.build_host)
       file_name = URI.encode_www_form(file_name)
@@ -12,7 +21,7 @@ module PlaceOS::Core
         path = "#{BUILD_API_BASE}/metadata/#{file_name}"
         params = URI::Params.encode({"url" => uri, "branch" => branch, "commit" => commit})
         uri = "#{path}?#{params}"
-        rep = client.get(uri)
+        rep = client.get(uri, headers: default_headers)
         Log.debug { {message: "Getting driver metadata. Server respose: #{rep.status_code}", file_name: file_name, commit: commit, branch: branch} }
         rep
       end
@@ -25,7 +34,7 @@ module PlaceOS::Core
         path = "#{BUILD_API_BASE}/defaults/#{file_name}"
         params = URI::Params.encode({"url" => uri, "branch" => branch, "commit" => commit})
         uri = "#{path}?#{params}"
-        rep = client.get(uri)
+        rep = client.get(uri, headers: default_headers)
         Log.debug { {message: "Getting driver defaults. Server respose: #{rep.status_code}", file_name: file_name, commit: commit, branch: branch} }
         rep
       end
@@ -38,7 +47,7 @@ module PlaceOS::Core
         path = "#{BUILD_API_BASE}/#{Core::ARCH}/compiled/#{file_name}"
         params = URI::Params.encode({"url" => uri, "branch" => branch, "commit" => commit})
         uri = "#{path}?#{params}"
-        rep = client.get(uri)
+        rep = client.get(uri, headers: default_headers)
         Log.debug { {message: "Checking if driver is compiled?. Server respose: #{rep.status_code}", file_name: file_name, commit: commit, branch: branch, server_rep: rep.body} }
         rep
       end
@@ -47,7 +56,7 @@ module PlaceOS::Core
     def self.compile(file_name : String, url : String, commit : String, branch : String, force : Bool, username : String? = nil, password : String? = nil, fetch : Bool = true)
       host = URI.parse(Core.build_host)
       file_name = URI.encode_www_form(file_name)
-      headers = HTTP::Headers.new
+      headers = default_headers
       headers["X-Git-Username"] = username.not_nil! unless username.nil?
       headers["X-Git-Password"] = password.not_nil! unless password.nil?
 
@@ -66,7 +75,7 @@ module PlaceOS::Core
       task = JSON.parse(resp.body).as_h
       loop do
         resp = ConnectProxy::HTTPClient.new(host) do |client|
-          rep = client.get(link)
+          rep = client.get(link, headers: default_headers)
           Log.debug { {message: "Invoked request: URI: #{link} . Server response: #{rep.status_code}", server_resp: rep.body} }
           rep
         end
@@ -84,7 +93,7 @@ module PlaceOS::Core
       hdr = resp.headers["Location"] rescue raise "Build API returned compilation done, but missing Location URL"
       if fetch
         ConnectProxy::HTTPClient.new(host) do |client|
-          client.get(hdr)
+          client.get(hdr, headers: default_headers)
         end
       end
     end
@@ -95,7 +104,7 @@ module PlaceOS::Core
         path = "#{BUILD_API_BASE}/monitor"
         params = URI::Params.encode({"state" => state})
         uri = "#{path}?#{params}"
-        rep = client.get(uri)
+        rep = client.get(uri, headers: default_headers)
         Log.debug { {message: "Getting build service monitor. Server respose: #{rep.status_code}", state: state} }
         rep
       end
@@ -105,7 +114,7 @@ module PlaceOS::Core
       host = URI.parse(Core.build_host)
       ConnectProxy::HTTPClient.new(host) do |client|
         path = "#{BUILD_API_BASE}/cancel/#{URI.encode_www_form(job)}"
-        rep = client.delete(path)
+        rep = client.delete(path, headers: default_headers)
         Log.debug { {message: "Cancelling build job. Server respose: #{rep.status_code}", job: job} }
         rep
       end
