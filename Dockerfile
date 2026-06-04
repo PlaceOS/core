@@ -33,7 +33,11 @@ RUN apk add \
   --no-cache \
   'apk-tools>=2.10.8-r0' \
   'expat>=2.2.10-r1' \
-  'libcurl>=7.79.1-r0'
+  'libcurl>=7.79.1-r0' \
+  libunwind-static \
+  libunwind-dev \
+  xz-static \
+  xz-dev
 
 # Install shards for caching
 COPY shard.yml shard.yml
@@ -52,9 +56,13 @@ ENV UNAME_AT_COMPILE_TIME=true
 RUN PLACE_VERSION=$PLACE_VERSION \
   PLACE_COMMIT=$PLACE_COMMIT \
   shards build $TARGET \
-  --error-trace \
-  --production \
-  --static
+      --debug \
+      --error-trace \
+      --no-color \
+      --static \
+      -O1 \
+      --frame-pointers=always \
+      --link-flags "-no-pie -Wl,-no-pie -Wl,--eh-frame-hdr -Wl,--build-id -rdynamic -Wl,--export-dynamic -lunwind -llzma"
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
