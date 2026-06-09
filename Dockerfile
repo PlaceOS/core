@@ -52,9 +52,13 @@ ENV UNAME_AT_COMPILE_TIME=true
 RUN PLACE_VERSION=$PLACE_VERSION \
   PLACE_COMMIT=$PLACE_COMMIT \
   shards build $TARGET \
-  --error-trace \
-  --production \
-  --static
+      --debug \
+      --error-trace \
+      --no-color \
+      --static \
+      -O1 \
+      --frame-pointers=always \
+      --link-flags "-no-pie -Wl,-no-pie -Wl,--eh-frame-hdr -Wl,--build-id -rdynamic -Wl,--export-dynamic -lunwind -llzma"
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
