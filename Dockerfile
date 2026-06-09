@@ -33,11 +33,7 @@ RUN apk add \
   --no-cache \
   'apk-tools>=2.10.8-r0' \
   'expat>=2.2.10-r1' \
-  'libcurl>=7.79.1-r0' \
-  libunwind-static \
-  libunwind-dev \
-  xz-static \
-  xz-dev
+  'libcurl>=7.79.1-r0'
 
 # Install shards for caching
 COPY shard.yml shard.yml
