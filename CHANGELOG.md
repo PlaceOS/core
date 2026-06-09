@@ -2,6 +2,7 @@
 
 ### Feat
 
+- [PPT-2525] Update crystal build for unwind support ([#292](https://github.com/PlaceOS/core/pull/292))
 - **build_api**: [PPT-2524] Add a user-agent header to build service requests ([#291](https://github.com/PlaceOS/core/pull/291))
 - Improve driver management ([#290](https://github.com/PlaceOS/core/pull/290))
 - **driver_integrity**: optimise SQL query
