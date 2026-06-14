@@ -262,6 +262,9 @@ module PlaceOS::Core
       driver_id = driver.id.as(String)
       # Set when a module_manager found for stale driver
       stale_path = driver.modules.reduce(nil) do |path, mod|
+        # Let pending HTTP requests be serviced between module reloads
+        Fiber.yield
+
         module_id = mod.id.as(String)
 
         # Grab the stale driver path, if there is one
@@ -399,6 +402,11 @@ module PlaceOS::Core
                 end
               end
               waiting.clear
+
+              # Give the scheduler a chance to service HTTP requests (probes)
+              # between module loads, the loop is otherwise hot enough to
+              # starve the accept loop on a single threaded event loop.
+              Fiber.yield
             end
           end
         end

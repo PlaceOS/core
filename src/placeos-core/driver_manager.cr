@@ -21,6 +21,10 @@ module PlaceOS::Core
     end
 
     def process_resource(action : Resource::Action, resource driver : Model::Driver) : Resource::Result
+      # Processed concurrently in batches during startup; yield so pending
+      # HTTP requests (k8s probes) are serviced between driver loads.
+      Fiber.yield
+
       case action
       in .created?, .updated?
         result = DriverResource.load(driver, store, startup?, module_manager)

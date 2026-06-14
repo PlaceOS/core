@@ -4,6 +4,19 @@ require "../placeos-core/healthcheck"
 require "placeos-models/version"
 
 module PlaceOS::Core::Api
+  # Liveness probe target. Served as soon as the HTTP server is accepting
+  # connections, before resource and module managers have loaded, and with no
+  # dependency on redis, postgres or the build service — readiness is reported
+  # separately by `GET /api/core/v1/ready`.
+  class Liveness < ActionController::Base
+    base "/"
+
+    # responds once the server is listening, indicating the process is alive
+    @[AC::Route::GET("/")]
+    def alive : Nil
+    end
+  end
+
   class Root < Application
     base "/api/core/v1/"
 
