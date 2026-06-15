@@ -1,3 +1,6 @@
+require "dns"
+require "dns/ext/addrinfo"
+
 # Application dependencies
 require "action-controller"
 
