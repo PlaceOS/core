@@ -63,7 +63,7 @@ shards:
 
   dns:
     git: https://github.com/spider-gazelle/dns.git
-    version: 1.6.0
+    version: 1.6.1
 
   dtls:
     git: https://github.com/spider-gazelle/crystal-dtls.git
@@ -191,7 +191,7 @@ shards:
 
   placeos-models:
     git: https://github.com/placeos/models.git
-    version: 9.98.0
+    version: 9.98.1
 
   placeos-resource:
     git: https://github.com/place-labs/resource.git
