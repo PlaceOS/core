@@ -11,11 +11,11 @@ targets:
 dependencies:
   action-controller:
     github: spider-gazelle/action-controller
-    version: ~> 7.2
+    version: ">= 8.1"
 
   habitat:
     github: luckyframework/habitat
-    version: ~> 0.4
+    version: ">= 0.4"
 
   hardware:
     github: crystal-community/hardware
@@ -35,7 +35,7 @@ dependencies:
 
   placeos-models:
     github: placeos/models
-    version: ~> 9.0
+    version: ">= 9.0"
 
   placeos-resource:
     github: place-labs/resource
@@ -43,7 +43,7 @@ dependencies:
 
   promise:
     github: spider-gazelle/promise
-    version: ~> 3.0
+    version: ">= 3.0"
 
   redis-cluster:
     github: place-labs/redis-cluster.cr
@@ -56,7 +56,7 @@ dependencies:
 
   responsible:
     github: place-labs/responsible
-    version: ~> 1.2
+    version: ">= 1.2"
 
   pg-orm:
     github: spider-gazelle/pg-orm
@@ -73,7 +73,7 @@ dependencies:
 
   connect-proxy:
     github: spider-gazelle/connect-proxy
-    version: ~> 2.0
+    version: ">= 2.0"
 
   dns:
     github: spider-gazelle/dns
