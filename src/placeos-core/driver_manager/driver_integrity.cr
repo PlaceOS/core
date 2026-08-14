@@ -97,8 +97,7 @@ module PlaceOS::Core::DriverIntegrity
     Log.warn { "[driver integrity] downloading #{drivers.size} missing executables" }
     store = DriverStore.new
     drivers.each do |driver|
-      next if store.built?(driver.file_name, driver.commit, driver.branch, driver.uri)
-      store.compile(driver.file_name, driver.uri, driver.commit, driver.branch, false, driver.username, driver.password)
+      store.fetch_or_build?(driver.file_name, driver.commit, driver.branch, driver.uri, driver.username, driver.password)
     end
   end
 

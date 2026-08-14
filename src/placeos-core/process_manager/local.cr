@@ -19,8 +19,7 @@ module PlaceOS::Core
     # Track scheduled unload fibers to cancel them if new executions come in
     private getter lazy_unload_scheduled : Hash(String, Bool) = {} of String => Bool
 
-    def initialize(@discovery : Clustering::Discovery)
-      @store = DriverStore.new
+    def initialize(@discovery : Clustering::Discovery, @store : DriverStore = DriverStore.new)
     end
 
     def load(module_id : String, driver_key : String)
@@ -165,8 +164,22 @@ module PlaceOS::Core
           driver = mod.driver!
           repository = driver.repository!
 
-          driver_path = store.built?(driver.file_name, driver.commit, repository.branch, repository.uri)
-          raise ModuleError.new("Driver not compiled for lazy module #{module_id}") if driver_path.nil?
+          # `fetch_or_build?` rather than `built?`: a lazy module may be executed
+          # long after its binary was cleaned up locally *and* expired from the
+          # build service's artifact store, and nothing else in this path would
+          # ever ask for it to be rebuilt.
+          driver_path = store.fetch_or_build?(
+            driver.file_name,
+            driver.commit,
+            repository.branch,
+            repository.uri,
+            repository.username,
+            repository.decrypt_password,
+          )
+
+          if driver_path.nil?
+            raise ModuleError.new("Driver not compiled for lazy module #{module_id}: the build service could not supply or build #{driver.file_name}@#{driver.commit}")
+          end
 
           ::Log.with_context(module_id: module_id, driver_key: driver_path) do
             # Spawn driver and register module
@@ -177,7 +190,17 @@ module PlaceOS::Core
             manager = protocol_manager_by_module?(module_id)
             raise ModuleError.new("Failed to load lazy module #{module_id}") if manager.nil?
 
-            manager.start(module_id, ModuleManager.start_payload(mod))
+            begin
+              manager.start(module_id, ModuleManager.start_payload(mod))
+            rescue error
+              # `load` maps the manager *before* the module is started. Leaving a
+              # never-started manager mapped makes it the answer to every later
+              # `protocol_manager_by_module?`, so subsequent executes resolve to
+              # a dead module until this service restarts.
+              Log.warn(exception: error) { {message: "discarding half-loaded lazy module after failed start", module_id: module_id} }
+              unload(module_id) rescue nil
+              raise error
+            end
 
             Log.info { {message: "spawned driver for lazy module execution", module_id: module_id, name: mod.name} }
           end
@@ -231,11 +254,20 @@ module PlaceOS::Core
         return
       end
 
-      # Stop and unload the module
-      stop(module_id)
+      # Stop and unload the module. A failed stop must not skip the unload:
+      # leaving the manager mapped leaks its `process_events` fiber along with
+      # the driver process it was supposed to reap.
+      begin
+        stop(module_id)
+      rescue error
+        Log.warn(exception: error) { {message: "error stopping idle lazy module, unloading anyway", module_id: module_id} }
+      end
+
       unload(module_id)
 
       Log.info { {message: "unloaded lazy module after idle timeout", module_id: module_id, name: mod.name} }
+    rescue error
+      Log.error(exception: error) { {message: "failed to unload lazy module after idle timeout", module_id: mod.id, name: mod.name} }
     end
 
     # Increment active execution count for a lazy module
@@ -274,7 +306,9 @@ module PlaceOS::Core
       Log.info { {driver_path: path, message: "creating new driver protocol manager"} }
 
       Driver::Protocol::Management.new(path).tap do
-        unless File.exists?(path)
+        # `File.file?`, not `exists?` — an uncompiled driver yields an empty key,
+        # leaving `path` pointing at the binaries directory rather than a binary.
+        unless File.file?(path)
           Log.warn { {driver_path: path, message: "driver manager created for a driver that is not compiled"} }
         end
       end

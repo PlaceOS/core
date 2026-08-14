@@ -16,28 +16,14 @@ module PlaceOS::Core
       Dir.mkdir_p binary_path
     end
 
-    # Per-binary fetch coordination. Multiple modules can share a binary (same
-    # `file_name + commit`); without this, concurrent `compiled?` calls from
-    # different module loads would each `File.exists?` (false), each call out to
-    # the build service, and each `fetch_binary` would write to the same path at
-    # the same time — corrupting the file and hammering the build service for
-    # the same driver.
-    #
-    # While a fetch is in flight an entry exists in this hash holding a
-    # `Promise(Bool)`. The loader resolves the promise with its result on
-    # success, or rejects it with the underlying exception on failure;
-    # concurrent waiters call `promise.get` and observe exactly the same
-    # outcome (one fetch attempt per wave, success or failure shared). Hash
-    # entries are removed before the promise resolves, so storage is bounded by
-    # the number of binaries currently being fetched (typically zero in steady
-    # state).
+    # Per-binary fetch coordination — see `single_flight`.
     @@loading_binaries : Hash(String, Promise::DeferredPromise(Bool)) = {} of String => Promise::DeferredPromise(Bool)
     @@loading_binaries_lock : Mutex = Mutex.new
 
-    # Counts traversals of the slow path in `compiled?` — i.e. how many times a
-    # fiber actually became the loader and called the build service. Exposed for
-    # tests so specs can assert that N concurrent first-time `compiled?` calls
-    # result in exactly one fetch attempt, not N.
+    # Counts calls out to the build service's `compiled?` endpoint — i.e. how
+    # many times a fiber actually became the loader and asked for an artifact.
+    # Exposed for tests so specs can assert that N concurrent first-time
+    # `compiled?` calls result in exactly one fetch attempt, not N.
     @@compiled_attempts : Atomic(Int32) = Atomic(Int32).new(0)
 
     def self.compiled_attempts : Int32
@@ -48,30 +34,101 @@ module PlaceOS::Core
       @@compiled_attempts.set(0)
     end
 
+    # Is there a prebuilt artifact for this driver available locally, or on the
+    # build service? Downloads it when the build service has one.
+    #
+    # Note this only ever *asks* — it will never trigger a build. Callers that
+    # need the driver to actually run want `fetch_or_build?`.
     def compiled?(file_name : String, commit : String, branch : String, uri : String) : Bool
       Log.debug { {message: "Checking whether driver is compiled or not?", driver: file_name, commit: commit, branch: branch, repo: uri} }
-      path = Path[binary_path, executable_name(file_name, commit)]
+      path = driver_binary_path(file_name, commit)
 
-      # Fast path — the binary is already on disk and intact. Validating outside
-      # the lock is safe: a partial write from a concurrent fetch will fail the
-      # `-h` probe and we'll fall through into the slow path.
-      return true if File.exists?(path) && validate_binary(path)
+      # Fast path — the binary is already on disk and intact.
+      return true if binary_ready?(path)
 
+      available, _ = single_flight(path) do
+        # Re-check now that we hold the fetch slot: another fiber may have
+        # completed a fetch between the fast-path check and us claiming it.
+        binary_ready?(path) || begin
+          discard_unusable_binary(path, file_name)
+          download_compiled(file_name, commit, branch, uri)
+        end
+      end
+      available
+    end
+
+    # Returns the path to a usable driver binary, asking the build service to
+    # *compile* the driver when no prebuilt artifact is available.
+    #
+    # `compiled?` alone is not enough for anything that loads a driver on
+    # demand. When the build service has never built — or has since expired —
+    # an artifact for this `file_name + commit + arch`, it answers "no" and the
+    # caller is stuck: nothing in that path can make the artifact appear, so
+    # every subsequent attempt fails identically until something else triggers
+    # a build (in practice, a restart of this service). Startup
+    # (`DriverResource.load`) and the integrity checker have always fallen back
+    # to compiling for exactly this reason.
+    def fetch_or_build?(
+      file_name : String,
+      commit : String,
+      branch : String,
+      uri : String,
+      username : String? = nil,
+      password : String? = nil,
+    ) : String?
+      path = driver_binary_path(file_name, commit)
+      return path.to_s if binary_ready?(path)
+
+      usable, performed = single_flight(path) { obtain_or_build(path, file_name, commit, branch, uri, username, password) }
+
+      # `compiled?` shares this coordination slot (both write the same file) but
+      # gives a weaker answer: it never escalates to a build. If one of those was
+      # the loader, we just inherited its "no prebuilt artifact" verdict and the
+      # build we were asked for was never requested — so try again as the loader.
+      # Bounded at one retry; concurrent callers collapse onto it, so it stays a
+      # single build.
+      unless usable || performed
+        usable, _ = single_flight(path) { obtain_or_build(path, file_name, commit, branch, uri, username, password) }
+      end
+
+      usable ? path.to_s : nil
+    end
+
+    private def obtain_or_build(path : Path, file_name : String, commit : String, branch : String, uri : String, username : String?, password : String?) : Bool
+      binary_ready?(path) || begin
+        discard_unusable_binary(path, file_name)
+        download_compiled(file_name, commit, branch, uri) ||
+          request_build(path, file_name, commit, branch, uri, username, password)
+      end
+    end
+
+    # Runs the block at most once per binary, sharing its outcome with every
+    # concurrent caller for the same path.
+    #
+    # Multiple modules can share a binary (same `file_name + commit`); without
+    # this each module load would see `File.exists?` as false, call out to the
+    # build service, and write to the same path at the same time — corrupting
+    # the file and hammering the build service for the same driver.
+    #
+    # While a fetch is in flight an entry exists in `@@loading_binaries` holding
+    # a `Promise(Bool)`. The loader settles it with its result, or with the
+    # underlying exception on failure; concurrent waiters call `promise.get` and
+    # observe exactly the same outcome. The slot is *always* released and the
+    # promise *always* settled before the loader returns — a slot left behind
+    # holding an unsettled promise would block every future caller for that
+    # binary on `promise.get` until the process restarts. Storage is bounded by
+    # the number of binaries currently being fetched (typically zero).
+    #
+    # Returns `{result, performed}` — `performed` distinguishing "I did this
+    # work" from "I rode along on someone else's", which callers need when their
+    # request is stronger than the one already in flight.
+    private def single_flight(path : Path, & : -> Bool) : {Bool, Bool}
       key = path.to_s
+
       promise, perform_fetch = @@loading_binaries_lock.synchronize do
         if existing = @@loading_binaries[key]?
           {existing, false}
         else
-          # Re-check under the lock — another fiber may have completed a
-          # fetch between our fast-path check and acquiring the lock.
-          if File.exists?(path)
-            if validate_binary(path)
-              return true
-            else
-              Log.warn { {message: "Local binary exists but is corrupted, removing and re-downloading", driver_file: file_name, path: path.to_s} }
-              File.delete(path) rescue nil
-            end
-          end
           prom = Promise.new(Bool)
           @@loading_binaries[key] = prom
           {prom, true}
@@ -80,29 +137,90 @@ module PlaceOS::Core
 
       # Waiter — share the in-flight loader's outcome (returns its value or
       # re-raises its exception).
-      return promise.get unless perform_fetch
+      return {promise.get, false} unless perform_fetch
 
-      # Loader — perform the fetch exactly once and broadcast the result.
-      result = false
-      error = nil
+      settled = false
       begin
-        @@compiled_attempts.add(1)
-        resp = BuildApi.compiled?(file_name, commit, branch, uri)
-        if resp.success?
-          fetched = fetch_binary(LinkData.from_json(resp.body)) rescue nil
-          result = !fetched.nil?
-        end
-      rescue ex
-        error = ex
-      end
-
-      @@loading_binaries_lock.synchronize { @@loading_binaries.delete(key) }
-      if error
+        result = yield
+        release_fetch_slot(key)
+        settled = true
+        promise.resolve(result)
+        {result, true}
+      rescue error
+        release_fetch_slot(key)
+        settled = true
         promise.reject(error)
         raise error
+      ensure
+        unless settled
+          release_fetch_slot(key)
+          promise.reject(Error.new("driver fetch for #{key} did not complete"))
+        end
       end
-      promise.resolve(result)
-      result
+    end
+
+    private def release_fetch_slot(key : String) : Nil
+      @@loading_binaries_lock.synchronize { @@loading_binaries.delete(key) }
+    end
+
+    # Is there a working binary at `path`?
+    #
+    # This shells out to the binary, so it must never run while holding
+    # `@@loading_binaries_lock` — a slow or hung probe under the global lock
+    # would stall every other driver's fetch. A partially written file from a
+    # concurrent fetch simply fails the probe and is treated as missing.
+    private def binary_ready?(path : Path) : Bool
+      File.exists?(path) && validate_binary(path)
+    end
+
+    private def discard_unusable_binary(path : Path, file_name : String) : Nil
+      return unless File.exists?(path)
+      Log.warn { {message: "Local binary exists but is corrupted, removing and re-downloading", driver_file: file_name, path: path.to_s} }
+      File.delete(path) rescue nil
+    end
+
+    # Ask the build service for an existing artifact and download it. Returns
+    # false when it has nothing for this `file_name + commit + arch`, leaving
+    # the caller to decide whether to escalate to a build.
+    protected def download_compiled(file_name : String, commit : String, branch : String, uri : String) : Bool
+      @@compiled_attempts.add(1)
+      resp = BuildApi.compiled?(file_name, commit, branch, uri)
+
+      unless resp.success?
+        Log.warn { {message: "build service has no compiled driver for this commit", driver_file: file_name, commit: commit, branch: branch, repo: uri, status_code: resp.status_code, response: resp.body} }
+        return false
+      end
+
+      begin
+        fetch_binary(LinkData.from_json(resp.body))
+        true
+      rescue error
+        Log.warn(exception: error) { {message: "failed to download compiled driver binary", driver_file: file_name, commit: commit, branch: branch, repo: uri} }
+        false
+      end
+    end
+
+    # No prebuilt artifact exists — ask the build service to produce one. Runs
+    # inside the caller's fetch slot, so concurrent loads of the same driver
+    # trigger a single build rather than one per caller.
+    protected def request_build(path : Path, file_name : String, commit : String, branch : String, uri : String, username : String?, password : String?) : Bool
+      Log.info { {message: "no compiled driver available, requesting a build", driver_file: file_name, commit: commit, branch: branch, repo: uri} }
+
+      result = compile(file_name, uri, commit, branch, false, username, password)
+      unless result.success
+        Log.error { {message: "build service failed to compile driver", output: result.output, driver_file: file_name, commit: commit, branch: branch, repo: uri} }
+        return false
+      end
+
+      # `compile` writes the artifact under the name the build service hands
+      # back, which only matches `path` when the commit we asked for is the one
+      # that got built (it won't be for a `HEAD` commit resolved server side).
+      unless File.exists?(path)
+        Log.error { {message: "build reported success but the expected binary is missing", path: path.to_s, driver_file: file_name, commit: commit} }
+        return false
+      end
+
+      true
     end
 
     def compile(file_name : String, url : String, commit : String, branch : String, force : Bool, username : String? = nil, password : String? = nil, fetch : Bool = true) : Result
@@ -199,16 +317,30 @@ module PlaceOS::Core
       {status: 200, message: "OK"}
     end
 
+    # Downloads from the artifact store share the build service's timeouts: an
+    # untimed download would park the fiber holding this binary's fetch slot,
+    # blocking every later load of the driver until the process restarts.
+    private def with_download_client(url : URI, &)
+      client = if Core.production? || url.scheme == "https"
+                 ConnectProxy::HTTPClient.new(url)
+               else
+                 ConnectProxy::HTTPClient.new(url.host.not_nil!, 9000)
+               end
+      client.connect_timeout = BuildApi::CONNECT_TIMEOUT
+      client.read_timeout = BuildApi::READ_TIMEOUT
+      begin
+        yield client
+      ensure
+        client.close rescue nil
+      end
+    end
+
     private def fetch_binary(link : LinkData) : String
       url = URI.parse(link.url)
       driver_file = Path[url.path].basename
       filename = Path[binary_path, driver_file]
-      resp = if Core.production? || url.scheme == "https"
-               ConnectProxy::HTTPClient.get(url.to_s)
-             else
-               uri = URI.new(path: url.path, query: url.query)
-               ConnectProxy::HTTPClient.new(url.host.not_nil!, 9000).get(uri.to_s)
-             end
+      request_target = URI.new(path: url.path, query: url.query).to_s
+      resp = with_download_client(url, &.get(request_target))
       if resp.success?
         # Check Content-Length header first if available
         content_length = resp.headers.fetch("Content-Length", "0").to_i64

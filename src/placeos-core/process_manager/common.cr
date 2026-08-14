@@ -12,8 +12,13 @@ module PlaceOS::Core::ProcessManager::Common
     # Fail fast when the driver binary is missing. Without this check, the
     # underlying `Management#start_process` would time out internally without
     # ever rejecting the `@starting` promise, leaving the caller blocked forever.
+    #
+    # `File.file?` rather than `File.exists?`: a driver that failed to compile
+    # degrades to an empty driver key, which makes the path the binaries
+    # *directory*. That exists, so `exists?` waves it through and we spend
+    # forever relaunching a directory we can never execute.
     driver_path = manager.@driver_path
-    unless File.exists?(driver_path)
+    unless File.file?(driver_path)
       raise ModuleError.new("Driver binary missing for #{module_id} at #{driver_path}")
     end
 
@@ -33,7 +38,14 @@ module PlaceOS::Core::ProcessManager::Common
   def unload(module_id : String)
     driver_key = driver_key_for?(module_id)
     ::Log.with_context(driver_key: driver_key, module_id: module_id) do
-      stop(module_id)
+      # A module that can't be stopped (unresponsive driver, dead process) must
+      # still be unloaded — bailing out here leaves the manager mapped and leaks
+      # its `process_events` fiber along with the driver process.
+      begin
+        stop(module_id)
+      rescue error
+        Log.warn(exception: error) { "error stopping module while unloading, continuing with unload" }
+      end
 
       existing_manager = set_module_protocol_manager(module_id, nil)
 
