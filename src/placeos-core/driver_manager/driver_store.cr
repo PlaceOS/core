@@ -241,7 +241,10 @@ module PlaceOS::Core
         rescue ex
           return Result.new(output: ex.message.not_nil!, name: file_name)
         end
-        Result.new(success: true, name: driver, path: binary_path)
+        # `path` is the binary itself, not the directory it lives in — matching
+        # what the already-compiled path in `DriverResource.load` returns.
+        # `fetch_binary` hands back the full path, so reuse it.
+        Result.new(success: true, name: driver, path: driver)
       rescue ex
         msg = ex.message || "compiled returned no exception message"
         Log.error(exception: ex) { {message: msg, driver: file_name, commit: commit, branch: branch, force: force} }

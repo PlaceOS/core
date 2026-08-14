@@ -82,7 +82,7 @@ module PlaceOS::Core
         module_manager.lazy_module?(mod_id).should be_true
 
         # Metadata should be populated in Redis
-        metadata = Driver::RedisStorage.with_redis { |r| r.get("interface/#{mod_id}") }
+        metadata = Driver::RedisStorage.with_redis(&.get("interface/#{mod_id}"))
         metadata.should_not be_nil
       ensure
         module_manager.try &.stop
@@ -141,7 +141,7 @@ module PlaceOS::Core
         module_manager.lazy_module?(mod_id).should be_true
 
         # Metadata should still be in Redis
-        metadata = Driver::RedisStorage.with_redis { |r| r.get("interface/#{mod_id}") }
+        metadata = Driver::RedisStorage.with_redis(&.get("interface/#{mod_id}"))
         metadata.should_not be_nil
       ensure
         ModuleManager.lazy_unload_delay = original_delay.not_nil!
@@ -171,23 +171,39 @@ module PlaceOS::Core
 
         module_manager.load_module(mod)
 
-        # Start multiple concurrent executions
-        results = Channel(Tuple(String, Int32)).new(3)
+        # Start multiple concurrent executions.
+        #
+        # The channel carries failures as well as results: if `execute` raises,
+        # the spawned fiber dies with it, and a plain `receive` below would block
+        # forever — wedging the whole suite instead of failing this one example.
+        results = Channel(Tuple(String, Int32) | Exception).new(3)
 
         3.times do
           spawn do
-            r, c = module_manager.local_processes.execute(
-              module_id: mod_id,
-              payload: ModuleManager.execute_payload(:used_for_place_testing),
-              user_id: nil
-            )
-            results.send({r, c})
+            begin
+              r, c = module_manager.local_processes.execute(
+                module_id: mod_id,
+                payload: ModuleManager.execute_payload(:used_for_place_testing),
+                user_id: nil
+              )
+              results.send({r, c})
+            rescue error
+              results.send error
+            end
           end
         end
 
         # Collect results
         3.times do
-          result, code = results.receive
+          outcome = select
+          when received = results.receive
+            received
+          when timeout 30.seconds
+            raise "timed out waiting for concurrent executions to report"
+          end
+
+          raise outcome if outcome.is_a?(Exception)
+          result, code = outcome
           result.should eq %("you can delete this file")
           code.should eq 200
         end
@@ -226,14 +242,14 @@ module PlaceOS::Core
         module_manager.load_module(mod)
 
         # Metadata should exist
-        metadata = Driver::RedisStorage.with_redis { |r| r.get("interface/#{mod_id}") }
+        metadata = Driver::RedisStorage.with_redis(&.get("interface/#{mod_id}"))
         metadata.should_not be_nil
 
         # Stop the module
         module_manager.stop_module(mod)
 
         # Metadata should be cleared
-        metadata = Driver::RedisStorage.with_redis { |r| r.get("interface/#{mod_id}") }
+        metadata = Driver::RedisStorage.with_redis(&.get("interface/#{mod_id}"))
         metadata.should be_nil
 
         # Module should not be in lazy tracking

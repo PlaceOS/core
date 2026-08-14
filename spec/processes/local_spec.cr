@@ -119,17 +119,32 @@ module PlaceOS::Core::ProcessManager
 
           pm.ignore(module_id, &callback)
 
+          # Debug frames emitted before `ignore` took effect can still be in
+          # flight. Drain them until the channel goes quiet, so the assertion
+          # below only observes output produced *after* unsubscribing —
+          # otherwise a straggler from the previous execute lands inside the
+          # observation window and fails the spec intermittently.
+          loop do
+            select
+            when message_channel.receive
+              # discard a frame that predates the ignore
+            when timeout 500.milliseconds
+              break
+            end
+          end
+
           result, code = pm.execute(module_id: module_id, payload: ModuleManager.execute_payload(:echo, ["hello"]), user_id: nil)
           result.should eq %("hello")
           code.should eq 200
 
-          expect_raises(Exception) do
-            select
-            when message_channel.receive
-            when timeout 0.5.seconds
-              raise "timeout"
-            end
+          # The callback is unsubscribed, so this execute must produce nothing.
+          received = select
+          when message = message_channel.receive
+            message
+          when timeout 1.second
+            nil
           end
+          received.should be_nil
         end
 
         it "start" do
