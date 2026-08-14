@@ -14,6 +14,7 @@
 
 ### Fix
 
+- specs and bump driver
 - **driver_manager**: ensure drivers are compiled if missing on lazy load path
 - **driver_integrity**: standardize env vars
 - **driver_integrity**: disable by default
