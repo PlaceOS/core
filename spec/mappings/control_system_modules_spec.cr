@@ -99,7 +99,7 @@ module PlaceOS::Core::Mappings
         storage = Driver::RedisStorage.new(cs.id.as(String), "system")
 
         # an earlier update of this system is part way through writing
-        lock = ControlSystemModules.mapping_lock(cs.id.as(String))
+        lock = ControlSystemModules.mapping_lock
         lock.lock
 
         finished = false

@@ -85,8 +85,8 @@ module PlaceOS::Core
       updated_modules
     end
 
-    # One lock per system, so two updates of the same system write its mappings
-    # one after the other rather than interleaved
+    # Held while a system's mappings are written, so two updates write one after
+    # the other rather than interleaved
     class_getter mapping_lock : Mutex = Mutex.new
 
     # Set the module mappings for a ControlSystem

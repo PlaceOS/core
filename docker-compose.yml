@@ -98,7 +98,7 @@ services:
       <<: *s3-client-env
 
   minio:
-    image: minio/minio:latest
+    image: pgsty/minio:latest
     volumes:
       - s3:/data
     ports:
@@ -111,7 +111,7 @@ services:
     command: server /data --console-address ":9090"
 
   testbucket:
-    image: minio/mc:latest
+    image: pgsty/mc:latest
     depends_on:
       - minio
     environment:
