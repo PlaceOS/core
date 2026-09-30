@@ -14,6 +14,7 @@
 
 ### Fix
 
+- **mappings**: serialise module mapping writes for a system (PPT-2816) ([#293](https://github.com/PlaceOS/core/pull/293))
 - specs and bump driver
 - **driver_manager**: ensure drivers are compiled if missing on lazy load path
 - **driver_integrity**: standardize env vars
