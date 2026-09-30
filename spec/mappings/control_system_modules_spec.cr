@@ -81,6 +81,54 @@ module PlaceOS::Core::Mappings
       end
     end
 
+    describe ".set_mappings" do
+      it "waits for an update of the same system that is still writing" do
+        driver = Model::Generator.driver(:device).save!
+
+        modules = %w(alpha beta gamma delta epsilon).map do |name|
+          m = Model::Generator.module(driver)
+          m.custom_name = name
+          m.save!
+        end
+
+        cs = Model::Generator.control_system
+        cs.modules = modules.compact_map &.id
+        cs.save!
+
+        expected = modules.map { |m| "#{m.custom_name}/1" }
+        storage = Driver::RedisStorage.new(cs.id.as(String), "system")
+
+        # an earlier update of this system is part way through writing
+        lock = ControlSystemModules.mapping_lock
+        lock.lock
+
+        finished = false
+        done = Channel(Nil).new
+        spawn do
+          ControlSystemModules.set_mappings(cs, nil)
+          finished = true
+        ensure
+          done.send(nil)
+        end
+
+        # plenty of time for the second update to run if nothing held it back
+        sleep 0.3.seconds
+        finished.should be_false
+
+        # the earlier update's writes land while the second one waits
+        storage.clear
+        modules.reverse_each { |m| storage["#{m.custom_name}/1"] = m.id.as(String) }
+        storage.keys.should eq expected.reverse
+
+        lock.unlock
+        done.receive
+        finished.should be_true
+
+        # the second update rewrote the mapping in the system's order
+        storage.keys.should eq expected
+      end
+    end
+
     describe ".update_logic_modules" do
       it "does not update if system is destroyed" do
         cs = Model::ControlSystem.new

@@ -85,6 +85,10 @@ module PlaceOS::Core
       updated_modules
     end
 
+    # Held while a system's mappings are written, so two updates write one after
+    # the other rather than interleaved
+    class_getter mapping_lock : Mutex = Mutex.new
+
     # Set the module mappings for a ControlSystem
     #
     # Pass module_id and updated_name to overrride a lookup
@@ -93,13 +97,19 @@ module PlaceOS::Core
       mod : Model::Module?,
     ) : Hash(String, String)
       system_id = control_system.id.as(String)
-      storage = Driver::RedisStorage.new(system_id, "system")
+      mapping_lock.synchronize { write_mappings(control_system, mod, system_id) }
+    end
 
-      # Clear out the ControlSystem's mapping
-      storage.clear
+    protected def self.write_mappings(
+      control_system : Model::ControlSystem,
+      mod : Model::Module?,
+      system_id : String,
+    ) : Hash(String, String)
+      storage = Driver::RedisStorage.new(system_id, "system")
 
       # No mappings to set if ControlSystem has been destroyed
       if control_system.destroyed?
+        storage.clear
         Log.info { {
           message:   "module mappings deleted",
           system_id: control_system.id,
@@ -122,7 +132,9 @@ module PlaceOS::Core
         end
       end
 
-      # Set the mappings in redis
+      # Replace the ControlSystem's mapping. The lookups above can take a
+      # while, so the hash is only empty for the time it takes to write it.
+      storage.clear
       mappings.each do |mapping, module_id|
         storage[mapping] = module_id
       end
