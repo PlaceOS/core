@@ -87,14 +87,7 @@ module PlaceOS::Core
 
     # One lock per system, so two updates of the same system write its mappings
     # one after the other rather than interleaved
-    @@mapping_locks = {} of String => Mutex
-    @@mapping_locks_lock = Mutex.new
-
-    def self.mapping_lock(system_id : String) : Mutex
-      @@mapping_locks_lock.synchronize do
-        @@mapping_locks[system_id] ||= Mutex.new
-      end
-    end
+    class_getter mapping_lock : Mutex = Mutex.new
 
     # Set the module mappings for a ControlSystem
     #
@@ -104,9 +97,7 @@ module PlaceOS::Core
       mod : Model::Module?,
     ) : Hash(String, String)
       system_id = control_system.id.as(String)
-      mapping_lock(system_id).synchronize do
-        write_mappings(control_system, mod, system_id)
-      end
+      mapping_lock.synchronize { write_mappings(control_system, mod, system_id) }
     end
 
     protected def self.write_mappings(
