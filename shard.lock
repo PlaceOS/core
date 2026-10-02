@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 8.2.1
+    version: 8.3.0
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -79,7 +79,7 @@ shards:
 
   eventbus:
     git: https://github.com/spider-gazelle/eventbus.git
-    version: 1.1.0
+    version: 1.2.0
 
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
