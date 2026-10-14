@@ -46,6 +46,7 @@ RUN shards install --production --ignore-crystal-version --skip-postinstall --sk
 COPY ./src /app/src
 
 # Build the required target
+# -no-pie: backtraces of a static PIE binary can't be resolved, they print `from ???`
 # -Devloop=libevent: the native epoll event loop corrupts its timers under load
 # (crystal-lang/crystal#17058)
 ENV UNAME_AT_COMPILE_TIME=true
@@ -57,6 +58,7 @@ RUN PLACE_VERSION=$PLACE_VERSION \
   --error-trace \
   --production \
   --static \
+  --link-flags=-no-pie \
   -Devloop=libevent
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
