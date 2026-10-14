@@ -46,6 +46,8 @@ RUN shards install --production --ignore-crystal-version --skip-postinstall --sk
 COPY ./src /app/src
 
 # Build the required target
+# -Devloop=libevent: the native epoll event loop corrupts its timers under load
+# (crystal-lang/crystal#17058)
 ENV UNAME_AT_COMPILE_TIME=true
 
 # hadolint ignore=SC2086
@@ -54,7 +56,8 @@ RUN PLACE_VERSION=$PLACE_VERSION \
   shards build $TARGET \
   --error-trace \
   --production \
-  --static
+  --static \
+  -Devloop=libevent
 
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
