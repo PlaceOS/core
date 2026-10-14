@@ -7,7 +7,7 @@ shards:
 
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 9.1.1
+    version: 9.1.4
 
   active-model:
     git: https://github.com/spider-gazelle/active-model.git
@@ -138,8 +138,8 @@ shards:
     version: 1.0.3
 
   lucky_router:
-    git: https://github.com/stakach/lucky_router.git
-    version: 0.6.2+git.commit.78cbfda312ec638ed6e180b7842080d8bf37621a
+    git: https://github.com/luckyframework/lucky_router.git
+    version: 0.6.2+git.commit.fb9ee92d12dc1bf24a309a5c1f9aeb07a68ecfe2
 
   murmur3:
     git: https://github.com/aca-labs/murmur3.git
